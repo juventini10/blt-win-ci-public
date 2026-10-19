@@ -652,7 +652,7 @@ if ($py) {
   $ghost = Join-Path $HOME_SIM "[记忆共享中心]"
   $glog = Join-Path $ghost "logs"
   New-Item -ItemType Directory -Path $glog -Force | Out-Null
-  Set-Content -Path (Join-Path $glog "probe.jsonl") -Value '{"t":1}' -Encoding UTF8
+  [System.IO.File]::WriteAllText((Join-Path $glog "probe.jsonl"), '{"t":1}')
   $r20 = & $py (Join-Path $PKG "install_scripts.py") $MC --sweep-ghost $HOME_SIM 2>&1 | Out-String
   $ghostGone = -not (Test-Path -LiteralPath $ghost)
   $bak = Get-ChildItem -Path (Join-Path $MC ".install/ghost-sweep") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*记忆共享中心*" }
