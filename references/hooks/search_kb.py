@@ -93,10 +93,15 @@ def _pick_engine_dir(_mc):
             return os.path.normpath(_c)
     return os.path.join(_mc, "脚本中心", "知识联邦引擎")                     # 兜底：保持旧行为
 _ENGINE_DIR = _pick_engine_dir(_MC)
+def _venv_py(eng_dir, sub=".venv-st"):
+    # 2026-10-19 Win反馈 A-1：Windows venv 实体=Scripts/python.exe，POSIX=bin/python，
+    #   写死 bin/python 在 Win 恒判 exists=False→重投分支永不进→语义层静默降级 BM25。
+    _rel = ("Scripts", "python.exe") if os.name == "nt" else ("bin", "python")
+    return os.path.join(eng_dir, sub, *_rel)
 # ── 语义层自路由（2026-08-12）── 当前解释器无 sentence_transformers → 重投专用 venv，
 # 从根上杜绝「任意 python 跑本会静默降级 BM25」的回归（Intel Mac 无 torch≥2.6 wheel，
 # 语义层必须用 .venv-st：py3.12+torch2.2.2+st3.4.1+transformers4.48.3，模型已本地缓存）。
-_VENV_PY = os.path.join(_ENGINE_DIR, ".venv-st", "bin", "python")
+_VENV_PY = _venv_py(_ENGINE_DIR)
 # v0.3.5 预检前置（2026-09-09 童灵根治·SIGTERM 137 三次复现）：模型缓存缺失时连 venv 重投都不做——
 # 重投 venv-st 只为 torch/st 语义层；纯 BM25 用当前轻量解释器即可（足迹 ~100MB vs 重投+torch ~800MB）。
 # 内存压力下（16GB 机 free~138MB 实测）重投+torch import 即可被 macOS SIGKILL(137)，时活时死。
@@ -265,9 +270,20 @@ for _nm, _alt in _LAYOUT_ALT.items():
         continue                                     # 在位（功能判据/非空判据），不动
     # 2026-10-06 判据加固：空目录壳（迁移残留/makedirs 误建）此前被当"在位"⇒ 检索读空库静默0命中
     #   且不告警——isdir 存在性判据与"有内容"错位（PAT-043/053 家族·实证=立场卡+概念卡整源消失4天）
-    _cand = os.path.join(os.path.expanduser("~"), *_alt)
-    if os.path.isdir(_cand):
-        globals()[_nm] = _cand
+    # 2026-10-19 Win反馈 A-4：_alt[0] 是安装期占位符 token（如 "[日记仓库]"），
+    #   Win 装机 _fill 未供该 token 时 join 出 ~/[日记仓库]/… 字面路径·永不存在→每跑必⚠️。
+    #   改候选根链（token 位由真实根替换），全不中仍如实告警；Mac 命中同一根不受影响。
+    _resolved = None
+    for _root in (os.path.join(os.path.expanduser("~"), "[日记仓库]"),
+                  os.path.join(os.path.expanduser("~"), "[记忆共享中心]"),
+                  os.path.join(os.path.expanduser("~"), "记忆共享中心"),
+                  _MC, os.path.expanduser("~")):
+        _c = os.path.join(_root, *_alt[1:])
+        if os.path.isdir(_c):
+            _resolved = _c
+            break
+    if _resolved:
+        globals()[_nm] = _resolved
         _LAYOUT_DIAG.append("%s 回落作者态" % _nm)
     else:
         _LAYOUT_DIAG.append("⚠️%s 两种布局均缺失（检索源不可达）" % _nm)
@@ -294,7 +310,7 @@ for _c in _ENGINE_CANDIDATES:
 if _picked and _picked != os.path.normpath(_ENGINE_DIR):
     _LAYOUT_DIAG.append("引擎根 %s→%s（原指处缺 route_table）" % (_ENGINE_DIR.replace(os.path.expanduser("~"), "~"), _picked.replace(os.path.expanduser("~"), "~")))
     _ENGINE_DIR = _picked
-    _VENV_PY = os.path.join(_ENGINE_DIR, ".venv-st", "bin", "python")
+    _VENV_PY = _venv_py(_ENGINE_DIR)
     _DEGRADE_LOG = os.path.join(_ENGINE_DIR, "logs", "kb_degrade.jsonl")
     _ROUTE_TABLE_JSON = os.path.join(_ENGINE_DIR, "route_table.json")
     _DOC_CACHE = os.path.join(_ENGINE_DIR, "cache", "doc_corpus.json")
