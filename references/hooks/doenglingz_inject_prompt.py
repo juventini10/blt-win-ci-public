@@ -1120,6 +1120,12 @@ def _selfcheck() -> None:
     }
     for port, path in ports.items():
         found = False
+        # 2026-10-20（#7 假红根治）：端未安装（settings.json 不存在）= 本机没有这个端，
+        # 报「⚠️ 未注册」是噪声（用户只装了 1-2 个端，其余端恒红=狼来了）。
+        # 判据：配置文件缺失 ⇒ 显式「未安装（跳过）」，⛔不计入未挂载告警。
+        if not os.path.isfile(path):
+            print("  [%s] ➖ 未安装（无 %s·跳过）" % (port, path))
+            continue
         try:
             with open(path) as f:
                 d = json.load(f)

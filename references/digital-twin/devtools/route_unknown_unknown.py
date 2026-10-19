@@ -148,9 +148,28 @@ def parse_transcript(path):
     return msgs
 
 
+def _real_residue_nums(target_text: str):
+    """只数「真实残差」的编号（#4 悬置撞锚根治·2026-10-20）。
+
+    病形：出厂模板 `references/未知未知/悬置区.md` 带一条 `### 残差#000（示例…）`
+    演示条目——整文件 max() 计数会把示例当真实条目（号位/统计被模板锚污染）。
+    判据（只数 ###残差# 后行）：标题后紧随的字段块里 `- 状态:` 含「示例-非残差」
+    或标题含「（示例」⇒ 非真实残差，跳过；其余按号位计。
+    """
+    nums = []
+    for m in RESIDUE_RE.finditer(target_text):
+        tail = target_text[m.end():m.end() + 400]
+        block = tail.split("\n### ", 1)[0]
+        if "示例-非残差" in block or "（示例" in m.group(0) + target_text[max(0, m.start()-40):m.start()]:
+            continue
+        nums.append(int(m.group(1)))
+    return nums
+
+
 def next_index(target_text: str) -> int:
-    nums = [int(m.group(1)) for m in RESIDUE_RE.finditer(target_text)]
-    return (max(nums) + 1) if nums else 0
+    # 号位地板=1（与出厂模板「从 #001 开始追加」一致；示例 #000 被 _real_residue_nums 跳过）
+    nums = _real_residue_nums(target_text)
+    return (max(nums) + 1) if nums else 1
 
 
 def already_routed(text: str, target_text: str) -> bool:
