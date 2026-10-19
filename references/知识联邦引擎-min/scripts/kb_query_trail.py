@@ -26,6 +26,14 @@ import sys
 import time
 from datetime import datetime
 
+# Windows 控制台守卫（V9·包内判据）：cp1252/cp936 控制台下中文/emoji print 必崩
+try:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 # logs 目录在引擎根（知识联邦引擎/logs/），非 scripts/logs/——与 kb_degrade.jsonl 同位
 ENGINE_ROOT = os.path.dirname(BASE)
