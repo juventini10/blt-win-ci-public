@@ -1,5 +1,5 @@
 {
- "package_version": "2.2.4",
+ "package_version": "2.2.5",
  "as_of": "2026-10-19",
  "components": {
   "system_rules": "v8.37",
@@ -24,7 +24,7 @@
    "scope": "运行件白名单（09-19 融包终裁·09-20 方案A：运行件随包·本体内容件禁）",
    "files": {
     "devtools": 263,
-    "scripts": 12,
+    "scripts": 14,
     "gates": 5,
     "k2-slice-generator": 3,
     "hexaco": 7,

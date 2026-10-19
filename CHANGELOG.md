@@ -37,6 +37,21 @@
      本行由发布侧在每次对外发布时上移（写发布 Loop 的封口清单·G 路径报告必核该行与 GitHub 实况一致，不一致=红）。
      消费方=INSTALL Step -0.9 第6点「本次更新了什么」抽取区间：本行版本段(不含)→顶段(含)。） -->
 
+## [2.2.5] — 2026-10-19（Q1分发补件 + Q3分身周期守护路线C进包 + WorkBuddy亮牌纠黄 + 首触第6点增补）
+
+**变更**：
+- `references/知识联邦引擎-min/` 补 route_table.json + kb_query_trail.py（V2.2.4 审计#1 分发漏件根治：装机端语义检索判据+TSL L7-3 动作账）
+- Q3 路线C装机周期守护进包：`references/digital-twin/guardians.json`（声明层单一真源·Q6门禁②对账源）+ `scripts/com.doenglingz.slice-watch.plist.template`（mac）+ `scripts/slice-watch-install-task.ps1`（win·Find-Python规范+间隔型触发）+ install_scripts DT_SUITE 接线 + INSTALL §slice-watch 注册段
+- 阈值单源化（方案①）：state_bus_sync `--update` 写 `l6_policy.stale_days` 入账本，tsl_verify L6 读账本（fallback=3 等价旧值）——同值双写分叉根除
+- `path_migration_sweep_guard.py` v1.4：字面 `[记忆共享中心]` 目录盘上实存跨端判据（影子目录根治·包面副本随正链）
+- install_scripts L931 注释归一：route_table 从"⛔不入包"改判为引擎根功能判据（防下个读者按旧口径删）
+- 话术与亮牌：WorkBuddy 🟢→🟡（第5件自定义指令=设置框字段需粘贴1步·与豆包办公同构·capability.yaml L45/L144 实证）；首触第6点增补检索修复与自动巡检两行（用户话术·三查定屏）；README 头 2.1→2.2.5 归位
+- venv 跨端形态修复入包账（A-1~A-7）已记 2.2.4.x 系列见作者侧变更日志·本包面为其载体
+
+**判据**：twin_chain_check 沙箱三步绿·mirror-sync 826条目/0漂移·隐私A7 RED=0·路径完整性模板面PASS·tsl_verify L6 负例🟡/复原✅。Win 真机腿（5.1语义/注册实跑）留 Q7 harness 轮，⛔Mac绿不顶真机账。
+
+---
+
 ## [2.2.4] — 2026-10-19（安静模式实装·D3分层开关+包面安全词表同步）
 
 **变更**：

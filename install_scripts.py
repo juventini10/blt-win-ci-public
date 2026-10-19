@@ -162,6 +162,9 @@ DT_SUITE = {
                 "state_bus_sync.py",          # growth-box SKILL.md:540 硬指令「晋升后必须 --update」
                 "doenglingz_drift_check_remind.py",
                 "com.doenglingz.drift-check-remind.plist.template",
+                # 2026-10-19 Q3路线C装机周期守护两件（声明见 digital-twin/guardians.json·Q6门禁②对账）
+                "com.doenglingz.slice-watch.plist.template",
+                "slice-watch-install-task.ps1",
                 # K2 造芯链路引用（立场卡 triggers 机械核验 / H4 冲突样本采集）
                 "blank_claim_guard.py", "h4_sample_log.py"),
     # 童灵治理套件（守护/闸门运行器/TSL 报告器）
@@ -928,7 +931,11 @@ def deploy_script_center(mc, dry=False):
     #    补收7件=SKILL.md 引用却未随包的碰撞闭环承诺资产（sync_collision_queue/lint_collision_card/
     #    concept_projection/scan_card_citations/cross_type_collision_scan/scan_citation_candidates/concept_coverage_stats）；
     #    （2026-10-07 你裁决：模型压缩件 quantize_export 撤出对外包·作者自用；量化识别逻辑保留在 build/search 内·仅产物存在时生效）
-    #    完整版含作者侧运营数据（cache/logs/vectors/calibration/route_table等）→ ⛔不入包。
+    #    完整版含作者侧运营数据（cache/logs/vectors/calibration 等）→ ⛔不入包。
+    #    ⚠️ route_table.json 例外(2026-10-19 Q1 归正)：非运营数据，是 search_kb 引擎根
+    #      **功能判据**(search_kb L88 靠"目录含 route_table.json"选根·缺则语义层降级 BM25)，
+    #      V2.2.4 审计#1 判定为分发漏件已补入包·勿再按旧口径当"运营数据"删掉。
+    #    vectors/INDEX 属派生产物(用户机 build_kb_vectors/regen 自建)·仍 ⛔ 不入包(隐私+无用)。
     kb_dst = os.path.join(mc, "知识联邦引擎")
     min_src = os.path.join(PKG, "references", "知识联邦引擎-min")
     if os.path.isdir(min_src):
