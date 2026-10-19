@@ -646,6 +646,31 @@ if (-not (Test-Path $SL_INSTALL)) {
   }
 }
 
+# ---------- T20: 装后清扫——字面占位符幽灵目录必须被移入备份（tiger① 存量根治·可逆不删除） ----------
+info "T20: 装后清扫（幽灵目录迁移）..."
+if ($py) {
+  $ghost = Join-Path $HOME_SIM "[记忆共享中心]"
+  $glog = Join-Path $ghost "logs"
+  New-Item -ItemType Directory -Path $glog -Force | Out-Null
+  Set-Content -Path (Join-Path $glog "probe.jsonl") -Value '{"t":1}' -Encoding UTF8
+  $r20 = & $py (Join-Path $PKG "install_scripts.py") $MC --sweep-ghost $HOME_SIM 2>&1 | Out-String
+  $ghostGone = -not (Test-Path -LiteralPath $ghost)
+  $bak = Get-ChildItem -Path (Join-Path $MC ".install/ghost-sweep") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*记忆共享中心*" }
+  if ($ghostGone -and $bak) {
+    if (Test-Path -LiteralPath (Join-Path $bak.FullName "logs/probe.jsonl")) {
+      ok "T20 幽灵目录已移入备份且内容完整（可逆·未删除）"
+    } else {
+      no "T20 备份内容缺失——清扫吞数据"
+    }
+  } else {
+    no "T20 幽灵目录未被清走（gone=$ghostGone bak=$([bool]$bak)）"
+    Write-Host "    T20OUT: $r20" -ForegroundColor DarkGray
+  }
+  $r20b = & $py (Join-Path $PKG "install_scripts.py") $MC --sweep-ghost $HOME_SIM 2>&1 | Out-String
+  if ($LASTEXITCODE -eq 0 -and $r20b -match "未发现") { ok "T20 二次清扫幂等（干净）" }
+  else { no "T20 二次清扫不幂等/rc=$LASTEXITCODE"; Write-Host "    T20OUT2: $r20b" -ForegroundColor DarkGray }
+} else { info "T20 跳过: 无 python" }
+
 # ---------- 收尾 ----------
 $env:USERPROFILE = $oldHome
 $env:HOME = $oldHome

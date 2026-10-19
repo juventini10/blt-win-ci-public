@@ -741,6 +741,46 @@ def report_hook_three_state():
             print("   · %s：%d 件：%s" % (lab, len(names[k]), show))
 
 
+def _sweep_ghost_mc(mc, home, dry=False):
+    """装后清扫：把历史版本误建的字面 `[记忆共享中心]` 幽灵目录移到备份（⛔永不删除·tiger①存量根治 2026-10-20）。
+
+    判据（极保守）：
+      - 只认字面名 `[记忆共享中心]` 的**目录**，扫描 HOME 根与 MC 根；
+      - 处置=**移动**到 `<MC>/.install/ghost-sweep/<name>-<ts>/`（可逆·用户可自行还原）；
+      - 移动失败只告警不中止安装（不因清扫失败坏掉主流程）；
+      - 合法数据零风险：整个目录原样搬走，不做任何删除/筛选。
+    """
+    import time as _t
+    name = "[记忆共享中心]"
+    roots = [home]
+    try:
+        if mc and os.path.abspath(mc) != os.path.abspath(home):
+            roots.append(mc)
+    except Exception:
+        pass
+    dest_root = os.path.join(mc, ".install", "ghost-sweep") if mc else os.path.join(home, ".install", "ghost-sweep")
+    ts = _t.strftime("%Y%m%d_%H%M%S")
+    found = 0
+    for root in roots:
+        cand = os.path.join(root, name)
+        if not os.path.isdir(cand):
+            continue
+        found += 1
+        if dry:
+            print("[dry-run] 装后清扫将移动: %s → %s" % (cand, dest_root))
+            continue
+        dest = os.path.join(dest_root, "%s-%s" % (name, ts))
+        try:
+            os.makedirs(dest_root, exist_ok=True)
+            shutil.move(cand, dest)
+            print("🧹 装后清扫：已移动幽灵目录 %s → %s（可逆·⛔未删除）" % (cand, dest))
+        except Exception as e:
+            print("⚠️ 装后清扫：%s 移动失败（%r）——保留原位，请手动处理" % (cand, e))
+    if not found and not dry:
+        print("🧹 装后清扫：未发现字面占位符幽灵目录（干净）")
+    return 0
+
+
 def deploy_skills(mc, dry=False, only=None):
     """Skill 面程序化部署腿（2026-10-11 批次8·T16 根因 + D1 收编三件之二）。
 
@@ -2535,7 +2575,7 @@ def main():
                           help="覆盖端配置根（隔离装/夹具用·⛔ 不传则读 capability.yaml）")
     _platform_explicit = any(a == "--platform" for a in sys.argv)  # G2-2·显式/缺省分轨（while 清除前判定）
     # F3/F21（2026-10-17）：查询模式（--list/--verify）不需要端上下文——ROSTER 是全局数据。
-    _QUERY_MODE = ("--list" in sys.argv) or ("--verify" in sys.argv)
+    _QUERY_MODE = ("--list" in sys.argv) or ("--verify" in sys.argv) or ("--sweep-ghost" in sys.argv)
     _plat_args, _ = _plat_ap.parse_known_args()
     # 从 argv 中清除 --platform 避免主 parser 报 unrecognized
     while "--platform" in __import__("sys").argv:
@@ -2701,6 +2741,8 @@ def main():
     ap.add_argument("--verify", action="store_true", help="核对已装态（文件落盘 + 已注册；带 MC 路径时再核规则数据）")
     ap.add_argument("--gate", action="store_true",
                     help="发版前置门禁（用户令·2026-10-03）：端适配 100%% 才放行打包——调 platform_adaptation_check.py --gate")
+    ap.add_argument("--sweep-ghost", nargs="?", const="", default=None, metavar="HOME",
+                    help="只跑装后幽灵目录清扫（tiger① 存量根治·真机验证用）：扫描 HOME 根与 MC 根的字面 [记忆共享中心] 目录并移动到 .install/ghost-sweep 备份（⛔不删除）")
     a = ap.parse_args()
     if getattr(a, "deploy_skills", False):
         _mc0 = a.mc or MC_PATH
@@ -2730,6 +2772,11 @@ def main():
 
     if a.gate:
         return gate_check(_plat_args.platform)
+
+    if getattr(a, "sweep_ghost", None) is not None:
+        _home = os.path.expanduser(a.sweep_ghost or "~")
+        _mc = os.path.expanduser(a.mc or "") or _home
+        return _sweep_ghost_mc(mc=_mc, home=_home, dry=a.dry_run)
 
     if a.list:
         print("%-18s %-8s %-28s %s" % ("事件", "落位", "主件", "依赖"))
@@ -2806,6 +2853,8 @@ def main():
 
     rd = install_rule_data(MC_PATH, a.dry_run)
     rf = install_rule_files(MC_PATH, a.dry_run)
+    # 装后清扫（tiger① 存量根治·2026-10-20）：字面 `[记忆共享中心]` 幽灵目录 → 移入备份（⛔不删除）
+    _sweep_ghost_mc(mc=MC_PATH, home=os.path.expanduser("~"), dry=a.dry_run)
     _st = {"CREATED": "新建", "UPDATED": "更新", "UNCHANGED": "无变化",
            "CONFLICT": "⚠️冲突", "MERGE_ERROR": "❌硬失败",
            "PRECHECK_SKIP": "⚠️号位预检·未写"}
