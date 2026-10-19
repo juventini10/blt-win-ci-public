@@ -1,0 +1,38 @@
+# 配置文件清单 —— 这些文件需要三路比较（MD5），不全量覆盖
+# 不在本清单内的文件（如 SKILL.md / 模板文件）直接覆盖
+#
+# 三路比较逻辑：
+#   MD5(新包文件) vs MD5(manifest.md 中旧版快照) → 包改了没？
+#   MD5(用户当前文件) vs MD5(manifest.md 中旧版快照) → 用户改了没？
+#   两者都改 → 提示用户手工合并
+#   包改用户没改 → 自动升级
+#   包没改用户改 → 保留用户版
+#   都没改 → 不动
+
+[记忆共享中心]/核心层/CORE.md
+~/.workbuddy/IDENTITY.md
+~/.workbuddy/MEMORY.md
+[记忆共享中心]/情境层/动态状态快照.md
+[记忆共享中心]/潜意识层/SHADOW.md
+~/.workbuddy/USER.md
+~/.workbuddy/SOUL.md
+~/.qoder-cn/rules/core-identity.md
+~/.qoder-cn/rules/core-soul.md
+~/.qoder-cn/rules/core-user.md
+~/.qoder-cn/rules/execution-guidelines.md
+[记忆共享中心]/记忆规则/用户基本规则-铁律版.md
+[记忆共享中心]/记忆规则/用户基本规则-摘要版.md
+[记忆共享中心]/记忆规则/用户基本规则-详解存档版.md
+
+# LobsterAI 端五系统文件（2026-10-05 补·本端 config_root=~/Library/Application Support/LobsterAI/openclaw/state）
+# ⚠️ 落点是 bootstrap 工作区·⛔ 不用 [记忆共享中心] 前缀（本端五件是端自有实体·非中心副本）
+~/Library/Application Support/LobsterAI/openclaw/state/workspace-main/SOUL.md
+~/Library/Application Support/LobsterAI/openclaw/state/workspace-main/IDENTITY.md
+~/Library/Application Support/LobsterAI/openclaw/state/workspace-main/USER.md
+~/Library/Application Support/LobsterAI/openclaw/state/workspace-main/MEMORY.md
+
+# 2026-10-09 缺陷②根治（布洛陀2.1.0上游反馈）：规则层运行时数据进三路比较册
+# 病根=install_rule_data 原幂等覆盖，把手工维护的触发规格真源冲成包内编译产物（40→30条实证）。
+# 入册后升级流按三路比较处置；install 直装路径同步加「外部维护声明→[SKIP]」守卫（双保险）。
+[记忆共享中心]/记忆规则/rule_triggers.yaml
+[记忆共享中心]/记忆规则/rule_conflict_signals.yaml
