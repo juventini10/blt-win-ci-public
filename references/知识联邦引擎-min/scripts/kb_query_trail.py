@@ -28,9 +28,9 @@ from datetime import datetime
 
 # Windows 控制台守卫（V9·包内判据）：cp1252/cp936 控制台下中文/emoji print 必崩
 try:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
 except Exception:
     pass
 
