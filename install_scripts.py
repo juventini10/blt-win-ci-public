@@ -569,6 +569,9 @@ def _fill_text(txt, mc, ext=None, paths=None):
                           ("DIARY_SUBDIR", "日记子目录")):
             _v = (paths or {}).get(_key)
             if _v:
+                # 2026-10-20：.py/.json 转义敏感面统一正斜杠（否则 Windows 路径的 \_ 等
+                # 会落进普通字符串 → SyntaxWarning / 编译雷；fill_syntax_scan 真机实锤）
+                _v = _mc_for(ext or "", _v)
                 # 先处理带家目录前缀的形态（~/[日记仓库] 直接填成绝对值，否则变 ~/C:/… 双前缀）
                 t = (t.replace("~/[" + _ph + "]", _v)
                       .replace("~/{ " + _ph + " }", _v)
@@ -580,6 +583,7 @@ def _fill_text(txt, mc, ext=None, paths=None):
         for _ph, _key in (("{{DIARY_ROOT}}", "DIARY_ROOT"), ("{{KB_ROOT}}", "KB_ROOT")):
             _v = (paths or {}).get(_key)
             if _v:
+                _v = _mc_for(ext or "", _v)
                 t = t.replace(_ph, _v)
     return t
 

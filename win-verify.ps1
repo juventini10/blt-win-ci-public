@@ -506,7 +506,7 @@ if (-not $PSH) { info "T15 跳过: 无 powershell" } else {
   if (-not $log) { $log = "" }
   $t15Fail = ([regex]::Matches($log, '\[FAIL\]')).Count
   if ($t15Exit -eq 0) { ok "T15 正确安装后 verify.ps1 exit=0（$t15Fail 个 FAIL）" }
-  else { no "T15 正确安装后 verify.ps1 仍 exit=$t15Exit（$t15Fail 个 FAIL）——端用户会被误判安装失败"; ($log -split "`n") | Where-Object { $_ -match '\[FAIL\]' } | Select-Object -First 8 | ForEach-Object { Write-Host "    T15FAIL: $($_.Trim())" }; ($log -split "`n") | Select-Object -Last 20 | ForEach-Object { Write-Host "    T15TAIL: $($_.Trim())" } }
+  else { no "T15 正确安装后 verify.ps1 仍 exit=$t15Exit（$t15Fail 个 FAIL）——端用户会被误判安装失败"; ($log -split "`n") | Where-Object { $_ -match '\[FAIL\]' } | Select-Object -First 8 | ForEach-Object { Write-Host "    T15FAIL: $($_.Trim())" } }
 }
 
 # ---------- T16: 端到端安装演练（bash 端同沙盒）----------
