@@ -11,7 +11,7 @@ author: 布洛陀体系（豆包办公端适配）
 source: doubao-work-adapted
 upstream: 端专属Skill直部署S1（2026-10-06起⛔不进MC/技能配置/共享目录·其他端不可见）· 切片真源 <记忆共享中心>/数字分身/K2切片蒸馏/slices/
 modifiable: true
-version: "1.4.1"
+version: "1.4.2"
 license: Proprietary
 ---
 
