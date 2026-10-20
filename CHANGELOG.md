@@ -37,6 +37,25 @@
      本行由发布侧在每次对外发布时上移（写发布 Loop 的封口清单·G 路径报告必核该行与 GitHub 实况一致，不一致=红）。
      消费方=INSTALL Step -0.9 第6点「本次更新了什么」抽取区间：本行版本段(不含)→顶段(含)。） -->
 
+## [2.2.8] — 2026-10-20（分身岗位心跳机检 + launchd 漂移重指提案 + Qoder CN 钩子126风暴根治）
+
+**变更**：
+- 对账官 `position3_audit.py` v1.10→v1.11：新增**判据⑥「岗位心跳」**——数字分身各岗位按判决台账机械聚合，在册岗位连续 30 天零判决自动显形 🟡休眠（只显形不撤岗，撤留归用户）。作者端首发第 176 轮四岗全✅并实证推翻一条二手旧账。负例夹具 11-15 五例全过。
+- 巡检 `launchd_health_daily.sh`：新增 1b 段「plist 脚本漂移重指提案」——脚本搬家后 plist 未跟随时自动出提案（唯一同名才提案，多义不猜）。配套工具 `plist_repoint.py` 本批**未随包**（新包件待裁），daily 段以 `[ -x ]` 缺件跳过为设计内安全态，端机不崩仅少提案。
+- 用户可感变化：系统建设页的「数字分身在岗情况」从"人翻台账"变"每日对账自报"；升级者无需操作，对账作业（position3）在装机链路原有 deploy 步骤自动带上新版。
+
+**判据**：待本轮出包+真机跑验（T20/T21 沿用上轮 harness 口径·⛔Mac 绿≠可发布）。真源 commit=ce9f52ee7。
+
+**变更（Qoder CN 钩子126风暴根治线·交接卡 2026-10-20 21:05）**：
+- `qodercn_config_guard.py` v0.27（风暴判据部分，执行位判据已在 2.2.7 收录）：
+  ① 判活窗口收编轮转日志 `hooks.N.log`（按 run 目录分组·PROBE_MAX_FILES 封顶）——旧 glob 精确名致风暴 48 败中 40 条结构性不可见；
+  ② 新增 `_storm_flip_scan` 双判据：FLIP_ALERT=同命令最新 run 连崩≥3 条 126/127 无成功回执（分布形态判据·不依赖绝对计数），跨 run 翻转/persistent/intra-run 三型；STORM_ATTR=libxpc 断言指纹 ±2s 配对加分路；
+  ③ Stop 强提醒自带会话级自愈指引「先重新登录·⛔不怀疑文件权限」（10-20 两次实测重登录自愈，人肉判据吸收进机制）。
+- `sescan_shim.py` 首次入包（references/hooks/·读模式镜像扫描钩子·PASSTHROUGH 参数透传）：官方 security-scan 插件钩子在 macOS 因无 shebang .cmd 依赖 shell fallback 间歇全崩时的本端兜底件；随 install_scripts 全量投递，⚠️ 挂载不自注入——装机端按需挂（Qoder CN settings.json PostToolUse）。
+- 伴生：mirror-manifest +1 条目；doenglingz_guard 条目 src 直址化（既存断链修复）；sescan_shim 真源归位 `脚本中心/守卫/`（执行位改软链同源·先例=search_kb 派生副本口径）。
+
+**判据（126风暴线）**：守卫自测 84/0（39 系 5 例含真机跨 run 形态夹具+双负例）；真机风暴日志直投 FLIP_ALERT 抓到（hard=48·首09:05:54末17:13:25）；consistency_guard 0 偏离；重启后产品 config loaded handlers 71 证实新挂载加载、if 过滤生效。根治效果挂 FU-209/210 回访（到期 11-03·判假式已绑）。
+
 ## [2.2.7] — 2026-10-20（路由引擎新装机根治 + 升级路径三缺口 + Windows 判据对等）
 
 **变更**：

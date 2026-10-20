@@ -96,8 +96,7 @@ def _venv_py_probe():
     #   两错叠加 exists 恒 False→永不 execv 换身。改引擎根候选×平台形态双探，单点不中续探。
     _rel = ("Scripts", "python.exe") if os.name == "nt" else ("bin", "python")
     for _c in (os.path.expanduser("[记忆共享中心]/脚本中心/知识联邦引擎"),
-               os.path.expanduser("[记忆共享中心]/知识联邦引擎"),
-               os.path.expanduser("[记忆共享中心]/脚本中心")):
+               os.path.expanduser("[记忆共享中心]/脚本中心")):  # 2026-10-20 批E拆链：档案根候选=死位已删
         _p = os.path.join(_c, ".venv-st", *_rel)
         if os.path.isfile(_p):
             return _p

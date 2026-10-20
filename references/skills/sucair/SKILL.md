@@ -13,7 +13,7 @@ dependencies:
     version: "1.6.2"
     note: "前置配套——深度对话结束时同步读书成果到认知发现；钩子#11卡片质证回写；「阅读复习模式」消费 {书名}-题库.md（v4.7.0 消费边）"
   - name: daily-buddy
-    version: "3.51.8"
+    version: "3.51.10"
     note: "前置配套——读书笔记写入Obsidian知识池，由日记/月报消费端触发复习"
 python_dependencies:
   - name: markitdown
@@ -28,7 +28,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/sucair/
 modifiable: true
-version: "4.15.2"
+version: "4.15.3"
 license: MIT
 complies_with: 文件格式规范(⛔不写版本号·以源 frontmatter 为唯一真相源=#142)
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
