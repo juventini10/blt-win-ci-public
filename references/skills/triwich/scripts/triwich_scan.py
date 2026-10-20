@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+try:  # Win console UTF-8 guard (V9 · 2026-10-20 Loop CI红项根治·kb_query_trail先例形)
+    import sys as _v9sys
+    for _stream in (_v9sys.stdout, _v9sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 # REG: skip=triwich Skill 包内预算工具件（非脚本中心独立守卫族）·挂载与守卫S4接入随任务卡2026-10-20议题⑥条款落 SKILL.md 时统一登记
 """triwich_scan.py — 三明智 L3 盘点类检索的物理预算闸门（v1.0 · 2026-10-20）
 
