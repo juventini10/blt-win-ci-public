@@ -158,9 +158,12 @@ def _real_residue_nums(target_text: str):
     """
     nums = []
     for m in RESIDUE_RE.finditer(target_text):
-        tail = target_text[m.end():m.end() + 400]
-        block = tail.split("\n### ", 1)[0]
-        if "示例-非残差" in block or "（示例" in m.group(0) + target_text[max(0, m.start()-40):m.start()]:
+        # 只判本条：标题行 + 到下一个残差标题为止的整块（2026-10-20 审查吸收：
+        # 旧实现把「（示例」判到标题之前的正文、且用 400 字窗口会越界/漏检）
+        head_line = target_text[m.start():target_text.find("\n", m.start()) if target_text.find("\n", m.start()) != -1 else len(target_text)]
+        nxt = RESIDUE_RE.search(target_text, m.end())
+        block = target_text[m.end(): nxt.start() if nxt else len(target_text)]
+        if "示例-非残差" in block or "（示例" in head_line or "（示例" in block[:60]:
             continue
         nums.append(int(m.group(1)))
     return nums

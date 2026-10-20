@@ -1,6 +1,6 @@
 {
  "package_version": "2.2.6",
- "as_of": "2026-10-19",
+ "as_of": "2026-10-20",
  "components": {
   "system_rules": "v8.37",
   "skills": {
@@ -11,7 +11,7 @@
    "growth-box": "4.12.15",
    "meta-aletheia": "3.6.0",
    "shall-we-talk": "1.6.2",
-   "sucair": "4.14.2",
+   "sucair": "4.15.0",
    "system-logger": "3.17.6",
    "triwich": "4.5.4"
   },

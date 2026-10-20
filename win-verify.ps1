@@ -649,13 +649,16 @@ if (-not (Test-Path $SL_INSTALL)) {
 # ---------- T20: 装后清扫——字面占位符幽灵目录必须被移入备份（tiger① 存量根治·可逆不删除） ----------
 info "T20: 装后清扫（幽灵目录迁移）..."
 if ($py) {
+  # 前置清场：同一 $SB 复跑会累积多份备份 → $bak 变数组，Test-Path 数组恒真（审查 2026-10-20）
+  $gsRoot = Join-Path $MC ".install/ghost-sweep"
+  if (Test-Path -LiteralPath $gsRoot) { Remove-Item -LiteralPath $gsRoot -Recurse -Force -ErrorAction SilentlyContinue }
   $ghost = Join-Path $HOME_SIM "[记忆共享中心]"
   $glog = Join-Path $ghost "logs"
   New-Item -ItemType Directory -Path $glog -Force | Out-Null
   [System.IO.File]::WriteAllText((Join-Path $glog "probe.jsonl"), '{"t":1}')
   $r20 = & $py (Join-Path $PKG "install_scripts.py") $MC --sweep-ghost $HOME_SIM 2>&1 | Out-String
   $ghostGone = -not (Test-Path -LiteralPath $ghost)
-  $bak = Get-ChildItem -Path (Join-Path $MC ".install/ghost-sweep") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*记忆共享中心*" }
+  $bak = @(Get-ChildItem -Path (Join-Path $MC ".install/ghost-sweep") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*记忆共享中心*" }) | Select-Object -Last 1
   if ($ghostGone -and $bak) {
     if (Test-Path -LiteralPath (Join-Path $bak.FullName "logs/probe.jsonl")) {
       ok "T20 幽灵目录已移入备份且内容完整（可逆·未删除）"

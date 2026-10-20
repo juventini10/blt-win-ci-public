@@ -1110,6 +1110,7 @@ def _smoke_d3():
 
 
 def _selfcheck() -> None:
+    _selfcheck_fail = False
     print("=== doenglingz_inject_prompt.py 挂载自检 ===（版本真源=本件 __version__=%s）" % __version__)
     ports = {
         "WorkBuddy": os.path.expanduser("~/.workbuddy/settings.json"),
@@ -1123,8 +1124,12 @@ def _selfcheck() -> None:
         # 2026-10-20（#7 假红根治）：端未安装（settings.json 不存在）= 本机没有这个端，
         # 报「⚠️ 未注册」是噪声（用户只装了 1-2 个端，其余端恒红=狼来了）。
         # 判据：配置文件缺失 ⇒ 显式「未安装（跳过）」，⛔不计入未挂载告警。
+        if not os.path.isdir(os.path.dirname(path)):
+            print("  [%s] ➖ 端未安装（无 %s·跳过）" % (port, os.path.dirname(path)))
+            continue
         if not os.path.isfile(path):
-            print("  [%s] ➖ 未安装（无 %s·跳过）" % (port, path))
+            print("  [%s] ❌ 端已装但缺 %s——钩子必未注册，请核配置根" % (port, path))
+            _selfcheck_fail = True
             continue
         try:
             with open(path) as f:
@@ -1181,7 +1186,7 @@ def _selfcheck() -> None:
               "（2026-09-30 实证连续崩 7 次·AI 只能自造 D1 标签）")
         _rc = 1
     print("=== 自检结束 ===")
-    sys.exit(_rc)
+    sys.exit(1 if _selfcheck_fail else _rc)
 
 
 def main() -> None:

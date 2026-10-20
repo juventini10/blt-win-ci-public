@@ -769,7 +769,8 @@ def _sweep_ghost_mc(mc, home, dry=False):
         if dry:
             print("[dry-run] 装后清扫将移动: %s → %s" % (cand, dest_root))
             continue
-        dest = os.path.join(dest_root, "%s-%s" % (name, ts))
+        _root_tag = "home" if os.path.abspath(root) == os.path.abspath(home) else "mc"
+        dest = os.path.join(dest_root, "%s-%s-%s" % (name, ts, _root_tag))
         try:
             os.makedirs(dest_root, exist_ok=True)
             shutil.move(cand, dest)
@@ -2640,7 +2641,7 @@ def main():
             ROSTER.append(tuple(_er))
         # ⚠️ 2026-10-03 回归修正：委派只属安装模式——--verify/--list/--help/--gate 是查询面，
         #    走委派会把端 setup 真跑一遍（本端实测 --verify 触发了完整安装流程输出）。
-        _install_mode = not any(a in sys.argv for a in ("--verify", "--list", "-h", "--help", "--gate"))
+        _install_mode = not any(a in sys.argv for a in ("--verify", "--list", "-h", "--help", "--gate", "--sweep-ghost"))
         # 钩子形态分派：hooks_event=false → 跳过标准钩子注册（端钩子由端 setup 自管·条文8）
         if not cap.get("capabilities", {}).get("hooks_event", False):
             _skip_hooks = True
