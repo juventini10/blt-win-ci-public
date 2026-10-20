@@ -5,6 +5,14 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 ---
 
 
+### v4.15.2 — 2026-10-20（依赖声明跟随 daily-buddy 3.51.8）
+
+下游声明位随 daily-buddy 3.51.8 对齐；功能零变更。
+
+### v4.15.1 — 2026-10-20（依赖声明级联：daily-buddy 3.51.7）
+
+daily-buddy 升 3.51.7（日记根占位符化）后，本件 dependencies 声明位跟随；功能零变更。教训沿用 v4.14.2：升版轮尾必须全树 grep 下游声明位回扫。
+
 ### v4.15.0 — 2026-10-20 06:46（扫描件分支新增 A2 路：macOS 原生 Vision OCR）
 
 起因=《毛泽东文集》第八卷蒸馏实测：本机无 RapidOCR（`--probe` 返回 `OCR_ENGINE=none`），按 v4.14.x 口径只剩 B 路人工视觉转写 461 页——不可行。改用 macOS 自带 Vision 框架（Swift `VNRecognizeTextRequest` accurate + zh-Hans + 300dpi + 4 路并行），461 页 63 分钟跑完，产出 263,052 字，引文 100% 可回查。

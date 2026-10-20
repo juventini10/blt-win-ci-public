@@ -134,6 +134,17 @@ def derive_required(rep: dict):
                         keys = [k.value for k in v.keys
                                 if isinstance(k, ast.Constant)
                                 and isinstance(k.value, str)]
+                    elif isinstance(v, ast.Call):
+                        # 2026-10-20：router.py 的 SKILLS 改为运行期目录派生（_discover_skills），
+                        # AST 无字面表 → 直接扫真源目录（同判据：目录含 SKILL.md 即 Skill）
+                        try:
+                            keys = sorted(d for d in os.listdir(SRC)
+                                          if os.path.isfile(os.path.join(SRC, d, "SKILL.md")))
+                        except OSError:
+                            keys = []
+                        if keys:
+                            return keys
+                        continue
                     else:
                         continue
                     if keys:

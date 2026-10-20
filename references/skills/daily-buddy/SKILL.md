@@ -11,7 +11,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/daily-buddy/
 modifiable: true
-version: "3.51.7"
+version: "3.51.8"
 license: MIT
 complies_with: 文件格式规范 v2.0.0
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
@@ -403,7 +403,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 <example>
 用户：早上好
-AI：📋 每日伙伴 v3.51.6 · 早晨规划
+AI：📋 每日伙伴 v3.51.8 · 早晨规划
 🧭 早晨规划 · 2026-06-04
 ■ 运行 `bash scripts/dbbin.sh create_skeleton.py --date 2026-06-04` → 骨架已生成（day_of_week=周三·脚本注入）
 ■ 未完成结转：昨日日记的"完成视频素材粗剪"未完成，是否移入今日？（需确认优先级和🍅数）

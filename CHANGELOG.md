@@ -41,7 +41,7 @@
 
 **变更**：
 - 路由引擎 `router.py`：`SKILLS` 由硬编码 17 名改为**目录扫描派生**（目录含 SKILL.md 即入表）。旧表含 7 个不随包的 Skill，新装机 `get_desc` 首个缺件即 FileNotFoundError，被上层失败放行吞掉 → 路由整条静默死。新增 `BULUOTUO_SKILLS_DIR` 测试隔离缝。
-- 升级路径缺口：①钩子注册增"语义后缀族"去重（改名 fork 不再双注册同一注入钩子）；②老用户身份判据补 `.install/versions.json`（此前漏它 → 已装用户被误判首次安装）。
+- 升级路径缺口：①钩子注册增"同内容副本（sha）"去重（改名 fork 不再双注册同一注入钩子；⛔不用后缀族——kb_/doenglingz_ 同后缀不同职能）；②老用户身份判据补 `.install/versions.json`（此前漏它 → 已装用户被误判首次安装）。
 - Windows 判据对等：`workbuddy_skill_health_guard` 认 Junction/reparse point（此前 junction 被当实目录报 WARN）。
 - 安装器 `TEXT_EXT` 扩 .jsonl/.txt/.cmd/.swift（Skill 拷贝链未来形态的占位符本地化）。
 - `verify.sh` 增"装后自检"语义头注（未安装目录运行必报失败≠包缺件）；`version_diff` 增快照滞后注记（落后判定以实盘为准）。

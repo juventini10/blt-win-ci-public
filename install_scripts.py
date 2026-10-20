@@ -570,6 +570,12 @@ def _fill_text(txt, mc, ext=None, paths=None):
             _v = (paths or {}).get(_key)
             if _v:
                 t = t.replace("[" + _ph + "]", _v).replace("{" + _ph + "}", _v)
+        # 2026-10-20：花括号新占位符（vault 探测态）——旧实现只有 [日记仓库]/[知识库]，
+        # 新增 {{DIARY_ROOT}}/{{KB_ROOT}} 无填充器 ⇒ 装机后原样残留（审查实锤）。
+        for _ph, _key in (("{{DIARY_ROOT}}", "DIARY_ROOT"), ("{{KB_ROOT}}", "KB_ROOT")):
+            _v = (paths or {}).get(_key)
+            if _v:
+                t = t.replace(_ph, _v)
     return t
 
 
@@ -590,6 +596,19 @@ def _read_install_paths(mc):
                     out[m.group(1)] = m.group(2).strip()
         except OSError:
             pass
+    # 占位态视为缺省
+    for _k in ("DIARY_REPO", "KNOWLEDGE_BASE"):
+        _v = (out.get(_k) or "").strip()
+        if _v.startswith("[") or _v.startswith("{{"):
+            out.pop(_k, None)
+    try:
+        _dr = detect_diary_root(mc)                      # …/1-每日计划/01-日记
+        out["DIARY_ROOT"] = _dr
+        out.setdefault("DIARY_REPO", os.path.dirname(os.path.dirname(_dr)))
+        out["KB_ROOT"] = detect_kb_root(mc)
+        out.setdefault("KNOWLEDGE_BASE", out["KB_ROOT"])
+    except Exception:
+        pass
     return out
 
 
@@ -1419,11 +1438,15 @@ def register_hooks(deployed, dry=False):
             for h in grp.get("hooks", []):
                 cmd = (h.get("command") or "") if isinstance(h, dict) else ""
                 cand = None
-                for tok in cmd.split():
-                    t = tok.strip('"\'')
-                    if t.endswith((".py", ".sh", ".ps1")):
-                        cand = t
-                        break
+                _m = re.search(r'"([^"]+\.(?:py|sh|ps1))"', cmd)
+                if _m:
+                    cand = _m.group(1)
+                else:
+                    for tok in cmd.split():
+                        t = tok.strip('"\'')
+                        if t.endswith((".py", ".sh", ".ps1")):
+                            cand = t
+                            break
                 if not cand:
                     continue
                 candp = cand if os.path.isabs(cand) else os.path.join(HOOKS_ROOT, cand)
@@ -2319,6 +2342,16 @@ def write_runtime_paths(archive_root, cap=None, cfg_root=None, dry=False):
     os.environ["BULUOTUO_RUNTIME_PATHS"] = os.path.join(
         os.path.expanduser(target_cfg), "doenglingz", "runtime_paths.json")
     data = build_runtime_paths(archive_root, cap)
+    # 2026-10-20：kb_root/diary_root 若为默认库位且不存在 → 先建再声明
+    #（不破"声明里不放不存在路径"不变量；vault 命中时本就存在，不触碰）
+    if not dry:
+        for _k in ("kb_root", "diary_root"):
+            _p = data.get(_k)
+            if _p and not os.path.isdir(_p):
+                try:
+                    os.makedirs(_p, exist_ok=True)
+                except OSError:
+                    data.pop(_k, None)
     # 声明优先：重装时保留用户已声明的 kb_root（条文47 单源真相·不重探测覆盖）
     _existing = os.path.join(os.path.expanduser(target_cfg), "doenglingz", "runtime_paths.json")
     if os.path.isfile(_existing):

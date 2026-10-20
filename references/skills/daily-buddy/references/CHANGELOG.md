@@ -4,6 +4,10 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 # CHANGELOG
 
+### v3.51.8 — 2026-10-20（版本字样收口）
+
+示例输出与 tests 双戳同步到 3.51.8（v3.51.7 内容变更未随带版本字样，本轮一并收口）。功能零变更。
+
 ### v3.51.7 — 2026-10-20（日记根占位符化·随安装器 vault 探测）
 
 `$DIARY` 由写死作者路径改为 `{{DIARY_ROOT}}`（安装时由 runtime_paths 的 diary_root 填入：自动探测笔记库，未命中回落 MC/日记）。功能零变更，仅路径可移植；同步 platform-paths.md 与 check_diary_titles.py 口径。

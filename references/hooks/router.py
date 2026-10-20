@@ -38,7 +38,13 @@ def _discover_skills():
             d for d in os.listdir(BASE)
             if os.path.isfile(os.path.join(BASE, d, "SKILL.md"))
         )
-    except OSError:
+    except OSError as _e:
+        # 2026-10-20：目录不可用不许静默——route 返回 [] 与"零命中"不可区分（审查 ℹ️8）
+        try:
+            import sys as _s
+            _s.stderr.write("⚠️ router: SKILLS 目录不可用 %s (%r)\n" % (BASE, _e))
+        except Exception:
+            pass
         return []
 
 
@@ -83,7 +89,10 @@ def _sanitize(text):
 
 
 def get_desc(skill):
-    txt = open(os.path.join(BASE, skill, "SKILL.md")).read()
+    try:
+        txt = open(os.path.join(BASE, skill, "SKILL.md")).read()
+    except OSError:
+        return ""
     m = re.search(r"^description:\s*[>|]\s*\n(.*?)^\w", txt, re.S | re.M)
     if not m:
         m = re.search(r"^description:\s*(\S.*?)(?:\n\w)", txt, re.S | re.M)

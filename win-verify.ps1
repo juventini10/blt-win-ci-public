@@ -676,12 +676,13 @@ if ($py) {
 
 # ---------- T21: 新装机路由引擎可用（SKILLS 目录派生·防硬编码缺件静默死） ----------
 info "T21: 路由引擎新装机冒烟..."
-if ($py -and (Test-Path -LiteralPath (Join-Path $MC "脚本中心/router.py"))) {
+if ($py -and (Test-Path -LiteralPath (Join-Path $PKG "references/scripts/router.py"))) {
   $probe = Join-Path $SB "t21_router_probe.py"
   $code = "import sys; sys.path.insert(0, sys.argv[1]); import router; m=router.route('loop 安装包，检查发布包'); print('N=%d' % len(router.SKILLS)); print('M=%s' % (','.join(m)))"
   [System.IO.File]::WriteAllText($probe, $code, (New-Object System.Text.UTF8Encoding($false)))
-  $env:BULUOTUO_SKILLS_DIR = (Join-Path $MC "技能配置")
-  $r21 = & $py $probe (Join-Path $MC "脚本中心") 2>&1 | Out-String
+  # 技能面用 T15 真装机产物（$E2E_MC/技能配置，含 description）；$MC 是空壳桩，⛔不能用
+  $env:BULUOTUO_SKILLS_DIR = (Join-Path $E2E_MC "技能配置")
+  $r21 = & $py $probe (Join-Path $PKG "references/scripts") 2>&1 | Out-String
   $n21 = if ($r21 -match 'N=(\d+)') { [int]$Matches[1] } else { -1 }
   $ok21 = ($r21 -match 'M=.*clock-loop')
   if ($LASTEXITCODE -eq 0 -and $n21 -gt 0 -and $ok21) {
@@ -691,7 +692,7 @@ if ($py -and (Test-Path -LiteralPath (Join-Path $MC "脚本中心/router.py"))) 
     Write-Host "    T21OUT: $r21" -ForegroundColor DarkGray
   }
   Clear-Env "BULUOTUO_SKILLS_DIR"
-} else { info "T21 跳过: 未找到 脚本中心/router.py 或无 python" }
+} else { no "T21 无法执行：包内 router.py 缺失或无 python（跳过=判据未跑，按红处理）" }
 
 # ---------- 收尾 ----------
 $env:USERPROFILE = $oldHome
