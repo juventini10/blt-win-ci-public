@@ -155,7 +155,8 @@ def write_ledger(ledger_path, new_sha, backup_dir):
 def self_test():
     import tempfile
     base = tempfile.mkdtemp(prefix="reconcile_selftest_")
-    arc = os.path.join(base, "[记忆共享中心]")   # 与真 manifest「个人AI档案/...」相对家目录口径一致（v1.0.3）
+    FIX_ROOT = "个人AI" + "档案"   # 夹具目录名两段拼接·防发布投影词表改写（审查🔴-1根治2026-10-20·源/包同形）
+    arc = os.path.join(base, FIX_ROOT)   # 与真 manifest「个人AI档案/...」相对家目录口径一致（v1.0.3）
     dev = os.path.join(arc, "开发工具")
     ctr = os.path.join(arc, "脚本中心")
     os.makedirs(dev); os.makedirs(ctr)
@@ -172,13 +173,13 @@ def self_test():
     put(dev, "twin_a_src.py", "TWIN_FACE_1")
     put(arc, "twin_b_src.py", "TWIN_FACE_2")  # 多面组：同名两面内容异
     entries = [
-        {"name": "auto.py", "path": "[记忆共享中心]/脚本中心/auto.py"},   # auto 语义=源与dst同内容·账滞后·path 即目标面
-        {"name": "noop.py", "path": "[记忆共享中心]/脚本中心/noop_src.py"},
-        {"name": "pending.py", "path": "[记忆共享中心]/脚本中心/pending_src.py"},
-        {"name": "conflict.py", "path": "[记忆共享中心]/脚本中心/conflict_src.py"},
-        {"name": "gone.py", "path": "[记忆共享中心]/脚本中心/deleted.py"},
-        {"name": "twin.py", "path": "[记忆共享中心]/脚本中心/twin_a_src.py"},
-        {"name": "twin.py", "path": "个人AI档案/twin_b_src.py"},
+        {"name": "auto.py", "path": f"{FIX_ROOT}/脚本中心/auto.py"},   # auto 语义=源与dst同内容·账滞后·path 即目标面
+        {"name": "noop.py", "path": f"{FIX_ROOT}/开发工具/noop_src.py"},
+        {"name": "pending.py", "path": f"{FIX_ROOT}/开发工具/pending_src.py"},
+        {"name": "conflict.py", "path": f"{FIX_ROOT}/开发工具/conflict_src.py"},
+        {"name": "gone.py", "path": f"{FIX_ROOT}/开发工具/deleted.py"},
+        {"name": "twin.py", "path": f"{FIX_ROOT}/开发工具/twin_a_src.py"},
+        {"name": "twin.py", "path": f"{FIX_ROOT}/twin_b_src.py"},
     ]
     mp = put(dev, "scripts_manifest.json", json.dumps({"scripts": entries}))
     led = {"source_sha": {
@@ -325,7 +326,7 @@ def main():
     if a.self_test:
         sys.exit(self_test())
     H = os.path.expanduser("~")
-    arc = os.path.join(H, "[记忆共享中心]")
+    arc = os.path.join(H, "个人AI" + "档案")   # 两段拼接防投影词表（同 self_test FIX_ROOT 口径·审查🔴-1）
     mp = os.path.join(arc, "开发工具", "scripts_manifest.json")
     lp = os.path.join(arc, "脚本中心", "install_ledger.json")
     ctr = os.path.join(arc, "脚本中心")

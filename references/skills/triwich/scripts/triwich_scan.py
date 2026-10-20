@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-try:  # Win console UTF-8 guard (V9 · 2026-10-20 Loop CI红项根治·kb_query_trail先例形)
-    import sys as _v9sys
-    for _stream in (_v9sys.stdout, _v9sys.stderr):
-        if hasattr(_stream, "reconfigure"):
-            _stream.reconfigure(encoding="utf-8", errors="replace")
-except Exception:
-    pass
 # REG: skip=triwich Skill 包内预算工具件（非脚本中心独立守卫族）·挂载与守卫S4接入随任务卡2026-10-20议题⑥条款落 SKILL.md 时统一登记
 """triwich_scan.py — 三明智 L3 盘点类检索的物理预算闸门（v1.0 · 2026-10-20）
 
@@ -25,6 +18,12 @@ TRUTH_OF: 本脚本的预算常量为唯一真源；SKILL.md 条款只引用本�
 挂账项: 守卫 S4 对账（键文件无 scan 台账却出盘点结论=签名造假）待条款落 SKILL.md 后接入
         triwich_closeout_guard；见任务卡 2026-10-20-三明智分析端补强 §议题⑥。
 """
+# Win console UTF-8 guard (auto by build chain · V9)
+try:
+    import sys as _v9sys; _v9sys.stdout.reconfigure(encoding="utf-8"); _v9sys.stderr.reconfigure(encoding="utf-8"); _v9sys.stdin.reconfigure(encoding="utf-8")
+except Exception: pass
+
+
 import argparse
 import hashlib
 import os

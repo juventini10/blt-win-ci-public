@@ -28,7 +28,7 @@ BANNER_SCRIPT="[记忆共享中心]/技能配置/system-logger/scripts/render_mo
 # ── 1. 运行健康巡检 ──────────────────────────────────────────────
 output=$("$HEALTH_CHECK" --summary 2>&1) || true
 
-# ── 1b. plist 脚本漂移重指提案（B段·plist_repoint.py·2026-10-20 你批·只提案不写入·失败放行）──
+# ── 1b. plist 脚本漂移重指提案（B段·plist_repoint.py·2026-10-20 人工批·只提案不写入·失败放行）──
 REPOINT="${SCRIPT_DIR}/plist_repoint.py"
 if [ -x "$REPOINT" ]; then
   repoint_out=$(/usr/bin/python3 "$REPOINT" 2>&1) || true
