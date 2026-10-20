@@ -126,7 +126,10 @@ ROSTER = [
 ]
 
 TEXT_EXT = (".py", ".sh", ".yaml", ".yml", ".json", ".md",
-            ".ps1", ".plist", ".template", "")  # 2026-10-11 批次6：A2/E3 根治——原白名单漏这几类，
+            ".ps1", ".plist", ".template", "",
+            ".jsonl", ".txt", ".cmd", ".swift")  # 2026-10-20 反馈：Skill 拷贝链实际含这四类文本，
+                                                 # 旧白名单外=占位符原文出包（当前 0 处·防未来静默）
+            # 2026-10-11 批次6：A2/E3 根治——原白名单漏这几类，
                                                # 其中占位符永不本地化（Win 侧必错根·真机 T16 报 12 件）
 
 # ─── R1 转义地雷根治（2026-10-11 _fill转义地雷根治卡）───────────────────
@@ -468,7 +471,10 @@ def pre_install_health_check(mc, platform_id, cap=None, cfg_root=None, dry=False
     # 正源=安装完成标记（.install/version·step7 7c 写；或 step7-done.md）——
     # 无标记=首次安装进行中（现有资产是步骤5 产物·非旧版遗留）。
     _ever_installed = (os.path.isfile(os.path.join(mc, ".install", "version"))
-                       or os.path.isfile(os.path.join(mc, ".install", "step7-done.md")))
+                       or os.path.isfile(os.path.join(mc, ".install", "step7-done.md"))
+                       # 2026-10-20 反馈#2：versions.json 是安装末尾写入的组件快照，
+                       # 其存在=装过（老用户）；旧判据漏它 → 老用户被误判"首次安装进行中"。
+                       or os.path.isfile(os.path.join(mc, ".install", "versions.json")))
     if not _ever_installed:
         user_type = "新用户（首次安装进行中·现有资产为步骤5 预生成·非旧版遗留）"
         suggestion = "完整安装（继续走完 step6-7·⛔ 不按老用户跳过问卷等前置）"
@@ -1390,6 +1396,43 @@ def register_hooks(deployed, dry=False):
             return -1, -1, -1  # P08：注册面不可用哨兵（三元组契约保持·F9）——调用侧据 [0]==-1 判非零
     hooks = data.setdefault("hooks", {})
 
+    # 2026-10-20 反馈#1：改名 fork 的重复注册去重（同一注入钩子被官方+用户重放注册两次）。
+    # 判据=**同内容副本**（用户改名只改文件名，内容不变）：候选命令脚本存在且 sha 与官方件一致
+    # ⇒ 视为同一钩子，⛔不再追加第二条。⛔ 不用后缀族判定——kb_inject/doenglingz_inject 同后缀
+    # 但不同职能，按族合并会漏注册（E2E 实锤：两件被判同族漏挂）。
+    def _sha(p):
+        try:
+            import hashlib
+            with open(p, "rb") as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except Exception:
+            return None
+
+    def _same_hook_copy(lst, subpath):
+        off = os.path.join(HOOKS_ROOT, subpath)
+        off_sha = _sha(off)
+        if not off_sha:
+            return False
+        for grp in lst:
+            if not isinstance(grp, dict):
+                continue
+            for h in grp.get("hooks", []):
+                cmd = (h.get("command") or "") if isinstance(h, dict) else ""
+                cand = None
+                for tok in cmd.split():
+                    t = tok.strip('"\'')
+                    if t.endswith((".py", ".sh", ".ps1")):
+                        cand = t
+                        break
+                if not cand:
+                    continue
+                candp = cand if os.path.isabs(cand) else os.path.join(HOOKS_ROOT, cand)
+                if os.path.basename(candp) == os.path.basename(subpath):
+                    continue
+                if _sha(candp) == off_sha:
+                    return True
+        return False
+
     def find_hook(lst, basename):
         """返回首个命令体含 basename 的 hook dict（无则 None）——存在性判定与迁移共用。"""
         for grp in lst:
@@ -1405,6 +1448,10 @@ def register_hooks(deployed, dry=False):
         arr = hooks.setdefault(ev, [])
         base = os.path.basename(sub)
         exist = find_hook(arr, base)
+        if exist is None and _same_hook_copy(arr, sub):
+            # 同族已挂（用户改名副本）：⛔不再追加第二条，保留用户原参数
+            skipped += 1
+            continue
         # 2026-10-10 十一轮修复：want 上提到公共前段——原只在 exist 分支赋值，
         #   新钩子分支引用未定义变量 ⇒ 全新机首装必崩（UnboundLocalError 实锤）。
         want = _hook_command(sub)
@@ -2180,6 +2227,8 @@ RUNTIME_PATH_DIRS = {
     "blueprint":     "记忆蓝图",
     "skills":        "技能配置",
     "knowledge":     "知识库",
+    "kb_root":       "知识库",   # 知识库根（⛔ 不假设 Obsidian：默认 MC/知识库·零 Obsidian 依赖；安装期自动探测用户 vault，命中即采用，否则回落 MC/知识库）
+    "diary_root":    ("日记", "1-每日计划", "01-日记"),   # 日记根（⛔ 不假设 Obsidian：默认 MC/日记/1-每日计划/01-日记·零 Obsidian 依赖；安装期随 vault 探测，命中即采用，否则回落 MC/日记）
     "k2_slices":     ("数字分身", "K2切片蒸馏"),
     "twin_slices":   ("数字分身", "K2切片蒸馏", "slices"),
     "twin_spec":     ("数字分身", "童灵·人格规格书.md"),
@@ -2188,6 +2237,49 @@ RUNTIME_PATH_DIRS = {
 }
 # 注意：`archive_root` 本身＝记忆中心（不进这张表·它就是根）
 
+
+def detect_kb_root(archive_root):
+    """知识库根探测（零配置优先·最便捷）：
+    - 扫描家目录含 .obsidian 标记的目录（Obsidian vault 权威信号）⇒ 命中即采用，用户无感；
+    - 否则回落 MC/知识库（装机态默认，安装器建库面）。
+    ⚠️ 仅做"位置探测"，不校验卡内容、不硬编码任何作者/用户专属目录名——引擎 _first_live
+       会按实际卡位自适应回落，故空 vault 也安全（回落 MC 默认）。探测异常静默回落默认，不阻断安装。
+    声明优先：write_runtime_paths 在重装时保留用户已声明的 kb_root（条文47 单源真相）。"""
+    root = os.path.abspath(os.path.expanduser(archive_root))
+    home = os.path.expanduser("~")
+    cands = []
+    try:
+        for d in sorted(os.listdir(home)):
+            pd = os.path.join(home, d)
+            if os.path.isdir(pd) and os.path.isdir(os.path.join(pd, ".obsidian")):
+                cands.append(pd)
+    except Exception:
+        pass
+    for c in cands:
+        if os.path.isdir(c):
+            return os.path.abspath(c)
+    return os.path.join(root, "知识库")
+
+def detect_diary_root(archive_root):
+    """日记根探测（零配置优先·最便捷）：
+    - 扫描家目录含 .obsidian 标记的目录（Obsidian vault 权威信号）⇒ 命中则日记位＝该 vault/1-每日计划/01-日记，用户无感；
+    - 否则回落 MC/日记/1-每日计划/01-日记（装机态默认，安装器建库面）。
+    ⚠️ 仅做"位置探测"，不校验内容、不硬编码任何作者/用户专属目录名。探测异常静默回落默认，不阻断安装。
+    声明优先：write_runtime_paths 在重装时保留用户已声明的 diary_root（条文47 单源真相）。"""
+    root = os.path.abspath(os.path.expanduser(archive_root))
+    home = os.path.expanduser("~")
+    vault = None
+    try:
+        for d in sorted(os.listdir(home)):
+            pd = os.path.join(home, d)
+            if os.path.isdir(pd) and os.path.isdir(os.path.join(pd, ".obsidian")):
+                vault = pd
+                break
+    except Exception:
+        pass
+    if vault:
+        return os.path.join(os.path.abspath(vault), "1-每日计划", "01-日记")
+    return os.path.join(root, "日记", "1-每日计划", "01-日记")
 
 def build_runtime_paths(archive_root, cap=None, exists_check=True):
     """由「档案根 + 目录约定」算出本机的运行路径声明。
@@ -2206,6 +2298,8 @@ def build_runtime_paths(archive_root, cap=None, exists_check=True):
         if exists_check and not os.path.exists(p):
             continue
         out[key] = p
+    out["kb_root"] = detect_kb_root(root)
+    out["diary_root"] = detect_diary_root(root)
     return out
 
 
@@ -2225,6 +2319,26 @@ def write_runtime_paths(archive_root, cap=None, cfg_root=None, dry=False):
     os.environ["BULUOTUO_RUNTIME_PATHS"] = os.path.join(
         os.path.expanduser(target_cfg), "doenglingz", "runtime_paths.json")
     data = build_runtime_paths(archive_root, cap)
+    # 声明优先：重装时保留用户已声明的 kb_root（条文47 单源真相·不重探测覆盖）
+    _existing = os.path.join(os.path.expanduser(target_cfg), "doenglingz", "runtime_paths.json")
+    if os.path.isfile(_existing):
+        try:
+            with open(_existing, encoding="utf-8") as _ef:
+                _ex = json.load(_ef).get("kb_root")
+            if _ex:
+                data["kb_root"] = os.path.expanduser(_ex)
+        except Exception:
+            pass
+
+    # 声明优先：重装时保留用户已声明的 diary_root（条文47 单源真相·不重探测覆盖）
+    if os.path.isfile(_existing):
+        try:
+            with open(_existing, encoding="utf-8") as _ef:
+                _exd = json.load(_ef).get("diary_root")
+            if _exd:
+                data["diary_root"] = os.path.expanduser(_exd)
+        except Exception:
+            pass
     if dry:
         return data, None
     written = mod.write(data)

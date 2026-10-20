@@ -22,10 +22,27 @@ try:
 except Exception: pass
 import re, os, sys, json
 
-BASE = os.path.expanduser("[记忆共享中心]/技能配置")
-SKILLS = ["awaken-memory-system","chrold","clock-loop","daily-buddy","excavator","good-good-study",
-          "growth-box","meta-aletheia","scriyore","shall-we-talk","skill-forge",
-          "sucair","system-logger","triwich","热点捕手","素然启镜","win-ps1-python-resolution"]
+# 2026-10-20 SKILLS 硬编码根治（新装机静默死路由·三轮同位复发）：
+#   旧表 17 名，但包内 references/skills 只发 10 件（chrold/excavator/scriyore/
+#   skill-forge/热点捕手/素然启镜/win-ps1 不随包）→ get_desc 首个缺件即 FileNotFoundError
+#   → 上层 except 失败放行 → 整条路由静默死（用户侧零命中，无任何报错）。
+#   修法=单一真源改为「目录扫描派生」（目录含 SKILL.md 即 Skill），与安装实发集天然同源；
+#   BULUOTUO_SKILLS_DIR 仅作测试隔离缝（真机验证传沙盒技能目录）。
+BASE = os.environ.get("BULUOTUO_SKILLS_DIR") or os.path.expanduser("[记忆共享中心]/技能配置")
+
+
+def _discover_skills():
+    """目录扫描派生 SKILLS（⛔不再手抄名单）。缺目录/异常 ⇒ 空表（route 返回 []，不崩）。"""
+    try:
+        return sorted(
+            d for d in os.listdir(BASE)
+            if os.path.isfile(os.path.join(BASE, d, "SKILL.md"))
+        )
+    except OSError:
+        return []
+
+
+SKILLS = _discover_skills()
 
 # 匹配面过滤：非用户消息前缀（防御性；Hook 层另有输入源过滤）
 _NON_USER_PREFIXES = ("[SYSTEM:", "[Subagent", "[Inter-session", "<autoclaw-terminal-recovery>", "[Attached file:", "Background subagent")

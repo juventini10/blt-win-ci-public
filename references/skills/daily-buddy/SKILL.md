@@ -11,7 +11,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/daily-buddy/
 modifiable: true
-version: "3.51.6"
+version: "3.51.7"
 license: MIT
 complies_with: 文件格式规范 v2.0.0
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
@@ -45,7 +45,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | `$ACHIEVE_SCRIPTS` | `[记忆共享中心]/成就系统/scripts/` | 成就系统脚本目录（含 `check_concept_achievement.py`）| 工作流C 封口后 |
 | `$GREATEST` | `[记忆共享中心]/最伟大的我/` | 自画像蒸馏源 | 月报工作流F |
 | `$DISTILL` | `[记忆共享中心]/记忆蒸馏/蒸馏中心.md` | 工作模式信号 PULL 总线 | 月报工作流F 第1.1步 |
-| `$DIARY` | `~/Local_Obsidian_Vault/1-每日计划/01-日记` | 日记文件根（含 `YYYY-MM/` 月层·与 `scripts/create_skeleton.py` 的 `DIARY_BASE` 同源）| 工作流A 存在性检查 |
+| `$DIARY` | `{{DIARY_ROOT}}/1-每日计划/01-日记` | 日记文件根（含 `YYYY-MM/` 月层·与 `scripts/create_skeleton.py` 的 `DIARY_BASE` 同源）| 工作流A 存在性检查 |
 | `$SYSTEM_LOG` | `[记忆共享中心]/工作日志/系统日志/` | 系统日志写入（工作流C 封口后）| 工作流C |
 | `$UNKNOWN` | `[记忆共享中心]/未知未知/` | 悬置区/断言台账（工作流C 反哺路由）| 工作流C |
 | `$SITUATION` | `[记忆共享中心]/情境层/` | 动态状态快照读写（工作流C 收尾）| 工作流C |

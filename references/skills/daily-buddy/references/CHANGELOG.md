@@ -4,6 +4,10 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 # CHANGELOG
 
+### v3.51.7 — 2026-10-20（日记根占位符化·随安装器 vault 探测）
+
+`$DIARY` 由写死作者路径改为 `{{DIARY_ROOT}}`（安装时由 runtime_paths 的 diary_root 填入：自动探测笔记库，未命中回落 MC/日记）。功能零变更，仅路径可移植；同步 platform-paths.md 与 check_diary_titles.py 口径。
+
 ### v3.51.6 — 2026-10-18 11:40（署名Skill Loop顺位5·账红清零批：H2抬头归一+双戳追主版+候选收编）
 
 clock-loop 完整Loop（串行队列 B-5·双挂号单：脱节3.50.0报告→3.51.5主体+方言病）逮出账红：①v3.51.5 条目 H2 抬头（10-13批与 system-logger 同日同型落笔）对机检隐身→语义最大误读 v3.51.4，raw_pass=❌——归一（正文零改动）②tests 双戳 3.48.2 落后追主版至 3.51.6（模式F漏改消除）③候选两处：scripts/__pycache__ 清剿（移 /tmp/trash-cleanup-20261018）+data_snapshots/ 内 2026-09 快照 .bak-20261001-prerefill 收编记忆琥珀/skill-tree-bak收编-20261018/（数据预填备份属历史过程件·留树内=机检杂物位·收编=可撤销）。判级 3.51.5→3.51.6（patch·账面归零批·六工作流功能零变更）。回滚点=记忆琥珀/技能升级备份/dailybuddy__*_preLoopDB5 四件（前缀命名·N6 自适用）。

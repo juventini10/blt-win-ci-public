@@ -37,6 +37,19 @@
      本行由发布侧在每次对外发布时上移（写发布 Loop 的封口清单·G 路径报告必核该行与 GitHub 实况一致，不一致=红）。
      消费方=INSTALL Step -0.9 第6点「本次更新了什么」抽取区间：本行版本段(不含)→顶段(含)。） -->
 
+## [2.2.7] — 2026-10-20（路由引擎新装机根治 + 升级路径三缺口 + Windows 判据对等）
+
+**变更**：
+- 路由引擎 `router.py`：`SKILLS` 由硬编码 17 名改为**目录扫描派生**（目录含 SKILL.md 即入表）。旧表含 7 个不随包的 Skill，新装机 `get_desc` 首个缺件即 FileNotFoundError，被上层失败放行吞掉 → 路由整条静默死。新增 `BULUOTUO_SKILLS_DIR` 测试隔离缝。
+- 升级路径缺口：①钩子注册增"语义后缀族"去重（改名 fork 不再双注册同一注入钩子）；②老用户身份判据补 `.install/versions.json`（此前漏它 → 已装用户被误判首次安装）。
+- Windows 判据对等：`workbuddy_skill_health_guard` 认 Junction/reparse point（此前 junction 被当实目录报 WARN）。
+- 安装器 `TEXT_EXT` 扩 .jsonl/.txt/.cmd/.swift（Skill 拷贝链未来形态的占位符本地化）。
+- `verify.sh` 增"装后自检"语义头注（未安装目录运行必报失败≠包缺件）；`version_diff` 增快照滞后注记（落后判定以实盘为准）。
+- 软链巡检补硬链抽查（nlink>1 非依赖件=违规，防"删文件重建"式升级静默断链）。
+- Win 真机 harness 增 T21：新装机路由冒烟（SKILLS>0 且 "loop 安装包" 命中 clock-loop）。
+
+**判据**：待本轮出包+真机跑验（T20/T21）。
+
 ## [2.2.6] — 2026-10-20（装后清扫 + 发版三一致门禁 + 变更日志写入口跨布局）
 
 **变更**：

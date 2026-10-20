@@ -242,7 +242,7 @@ _LAYOUT_ALT = {
     "CONCEPT_DIR": ("[日记仓库]", "2-知识库", "08-概念层"),
     "AILIB_DIR": ("[日记仓库]", "2-知识库", "09-AI学习库"),  # 2026-10-12 C''波次2迁入vault(卡内部台账·旧位软链为72h缓冲)
     "GROWTH_DIR": ("[记忆共享中心]", "成长箱", "learnings"),
-    "BLUEPRINT_INDEX_DIR": ("[日记仓库]", "2-知识库", "10 蓝图索引卡"),
+    "BLUEPRINT_INDEX_DIR": ("[日记仓库]", "2-知识库", "10-蓝图索引卡"),
     # 2026-10-06 布局第三形态落位（键20261006_171708后·皮叔令"未闭环的尝试去做"）：
     #   原 "[日记仓库]" 为未解析占位符（join 后 = ~/[日记仓库]/… 字面路径·永不存在）
     #   → POOL/NOTES/CONCEPT/BLUEPRINT 四检索源自布局机制上线起恒不可达（每跑必⚠️）。
@@ -256,6 +256,21 @@ _LAYOUT_ALT = {
 _LAYOUT_FEATURE = {
     "AILIB_DIR": "立场卡#S",  # AI学习库特征文件=立场卡#S*.md（其他目录未迁移保持非空判据）
 }
+
+
+def _kb_root_override():
+    """知识库根（⛔ 不假设 Obsidian）：优先 runtime_paths 的 kb_root 键（安装器默认指 MC/知识库，
+    Obsidian 用户可改指自己的 vault）；缺或不可读则回落既有解析链（作者态/安装期占位符填充）。"""
+    try:
+        from runtime_paths import rp
+        _r = rp("kb_root", optional=True)
+        if _r and os.path.isdir(os.path.expanduser(_r)):
+            return os.path.expanduser(_r)
+    except Exception:
+        pass
+    return None
+
+_KB_ROOT = _kb_root_override()
 _LAYOUT_DIAG = []
 for _nm, _alt in _LAYOUT_ALT.items():
     _cur = globals().get(_nm)
@@ -274,10 +289,14 @@ for _nm, _alt in _LAYOUT_ALT.items():
     #   Win 装机 _fill 未供该 token 时 join 出 ~/[日记仓库]/… 字面路径·永不存在→每跑必⚠️。
     #   改候选根链（token 位由真实根替换），全不中仍如实告警；Mac 命中同一根不受影响。
     _resolved = None
-    for _root in (os.path.join(os.path.expanduser("~"), "[日记仓库]"),
-                  os.path.join(os.path.expanduser("~"), "[记忆共享中心]"),
-                  os.path.join(os.path.expanduser("~"), "记忆共享中心"),
-                  _MC, os.path.expanduser("~")):
+    _roots = []
+    if _KB_ROOT:
+        _roots.append(_KB_ROOT)
+    _roots += (os.path.join(os.path.expanduser("~"), "[日记仓库]"),
+               os.path.join(os.path.expanduser("~"), "[记忆共享中心]"),
+               os.path.join(os.path.expanduser("~"), "记忆共享中心"),
+               _MC, os.path.expanduser("~"))
+    for _root in _roots:
         _c = os.path.join(_root, *_alt[1:])
         if os.path.isdir(_c):
             _resolved = _c
