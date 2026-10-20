@@ -569,7 +569,12 @@ def _fill_text(txt, mc, ext=None, paths=None):
                           ("DIARY_SUBDIR", "日记子目录")):
             _v = (paths or {}).get(_key)
             if _v:
-                t = t.replace("[" + _ph + "]", _v).replace("{" + _ph + "}", _v)
+                # 先处理带家目录前缀的形态（~/[日记仓库] 直接填成绝对值，否则变 ~/C:/… 双前缀）
+                t = (t.replace("~/[" + _ph + "]", _v)
+                      .replace("~/{ " + _ph + " }", _v)
+                      .replace("~/{" + _ph + "}", _v)
+                      .replace("[" + _ph + "]", _v)
+                      .replace("{" + _ph + "}", _v))
         # 2026-10-20：花括号新占位符（vault 探测态）——旧实现只有 [日记仓库]/[知识库]，
         # 新增 {{DIARY_ROOT}}/{{KB_ROOT}} 无填充器 ⇒ 装机后原样残留（审查实锤）。
         for _ph, _key in (("{{DIARY_ROOT}}", "DIARY_ROOT"), ("{{KB_ROOT}}", "KB_ROOT")):

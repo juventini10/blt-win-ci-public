@@ -90,8 +90,11 @@ def _sanitize(text):
 
 def get_desc(skill):
     try:
-        txt = open(os.path.join(BASE, skill, "SKILL.md")).read()
-    except OSError:
+        # 2026-10-20：Windows 默认 locale(cp1252) 读中文 SKILL.md 会 UnicodeDecodeError
+        #（T21 真机实锤）→ 显式 UTF-8，失败按空描述处理（该 Skill 不参与路由而非整条崩）
+        txt = open(os.path.join(BASE, skill, "SKILL.md"), encoding="utf-8",
+                   errors="replace").read()
+    except (OSError, UnicodeDecodeError):
         return ""
     m = re.search(r"^description:\s*[>|]\s*\n(.*?)^\w", txt, re.S | re.M)
     if not m:
