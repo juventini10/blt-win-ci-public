@@ -90,6 +90,7 @@ jobs:
           if (-not $line) { Write-Output 'T2-FAIL: 解释器行未出现（停窗或乱码致匹配失败）'; exit 1 }
           if ($line.Line -match 'FAKEWAPP|WindowsApps') { Write-Output 'T2-FAIL: 选中了伪造商店别名路径（跳别名分支无牙）'; exit 1 }
           Write-Output ("T2-PASS: 跳过伪造别名，选中 -> " + $line.Line.Trim())
+          exit 0   # 同 T4：断言完成即定本步，防继承链尾 native rc
 
       - name: T3 写保护MC当场停+历史标记不被毁（负例·icacls deny）
         shell: pwsh
@@ -112,6 +113,7 @@ jobs:
           if ($rc -ne 2 -or -not $blocked) { Write-Output "T3-FAIL: rc=$rc blocked=$blocked（期望 rc=2+定责文案）"; exit 1 }
           if ($marker -notmatch 'must survive') { Write-Output 'T3-FAIL: .install 历史 step 标记被探测段毁掉'; exit 1 }
           Write-Output 'T3-PASS: 写保护当场停 rc=2 + 定责文案在场 + 历史标记完好'
+          exit 0
 
       - name: 收尾快照-兜底链产物清单（留证）
         if: always()
