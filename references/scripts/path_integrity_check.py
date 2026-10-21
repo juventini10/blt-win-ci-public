@@ -11,6 +11,7 @@
      prose 注释/文档描述病形不算（行级判据 + 显式豁免标记，防自伤假阳性）。
   2) 占位符残留：装机面仍含未替换的占位符 token（安装器漏替换）
   3) 畸形前缀：波浪号斜杠紧贴占位符（包模板层病灶·--pkg-template 主判此项）
+  4) 段重复畸形：路径/常量段异常重复（REPEAT_SEG 行级·2026-10-10 十一轮补类）
 
 ⛔ 判据构造纪律（本文件源码会被安装器 _fill / mirror relocate/deident 改写）：
   - 占位符 token 用 chr() 动态构造 ⇒ _fill 替换不到本判据（防"检查器自己被治成假绿"）
@@ -120,7 +121,8 @@ def main():
     if total and not args.quiet:
         for k, label in (("double", "双拼形态产物(运行时调用形)"),
                          ("placeholder", "占位符残留(未替换)"),
-                         ("tilde_prefixed", "畸形前缀(波浪号紧贴占位符)")):
+                         ("tilde_prefixed", "畸形前缀(波浪号紧贴占位符)"),
+                         ("repeat", "段重复畸形(路径段异常重复)")):
             if hits[k]:
                 print("  [FAIL] %s: %d 件" % (label, len(hits[k])))
                 for r in hits[k][:8]:
