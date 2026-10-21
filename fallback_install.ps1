@@ -47,7 +47,7 @@ foreach ($name in @('python', 'python3', 'py')) {
 $py = $null
 foreach ($p in $cands) {
     if (-not $p -or -not (Test-Path $p)) { continue }
-    if ($p -match 'WindowsApps\python') { continue }   # 微软商店执行别名·裸调会跳商店
+    if ($p -match 'WindowsApps\\python') { continue }   # 微软商店执行别名·裸调会跳商店（T2 实测：单反斜杠=坏正则，别名无牙跳过——runner 逮到）
     & $p --version 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) { $py = $p; break }
 }
