@@ -21,7 +21,6 @@ function ok($t){ Write-Host "  [PASS] $t" -ForegroundColor Green; $script:PASS++
 function no($t){ Write-Host "  [FAIL] $t" -ForegroundColor Red; $script:FAIL++ }
 # 三态分账（2026-10-22 R9·条文70「自检报告三态分账律」）：引导段未跑段的缺失=⏳待办非🔴失败
 function pend($t){ Write-Host "  [PEND] $t" -ForegroundColor DarkYellow; $script:PEND++ }
-$script:STEP5 = Test-Path (Join-Path $MC '.install\step5-done.md')
 function miss($t){ if (-not $script:STEP5) { pend ($t + "（AI引导段未跑·答题后重跑即消）") } else { no $t } }
 
 # 解析真实 python.exe 绝对路径，跳过 Windows Store 应用执行别名，抗 Get-Command 畸形前缀
@@ -78,6 +77,9 @@ function Find-Python {
 
 $PKG_ROOT = Split-Path -Parent $MyInvocation.MyCommand.Path
 $MC = if ($env:MEMORY_CENTER) { $env:MEMORY_CENTER } else { Join-Path $HOME "记忆共享中心" }
+# STEP5 判定必须挂 $MC 赋值之后（R9 首轮 runner 逮到时序倒置：挂函数区时 $MC 未定义·Stop 模式 Join-Path 空参崩·教训=判定行跟着数据源走）
+$script:STEP5 = Test-Path (Join-Path $MC '.install\step5-done.md')
+
 # ── v2.0.1 多端配置根（与 verify.sh --platform 同语义；不传=~/.workbuddy 向后兼容）──
 if ($Platform -ne "") {
   $capYml = Join-Path $PKG_ROOT ("adapters\" + $Platform + "\capability.yaml")
