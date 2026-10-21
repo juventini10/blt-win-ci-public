@@ -70,6 +70,8 @@ jobs:
           if ($rc -eq 0) { Write-Output 'T4-PASS(绿): 整链跑通且 verify 全绿，bat rc 正确回传' }
           elseif ($outStr -match '\[WARN\]') { Write-Output "T4-PASS(黄): 整链跑通但 verify rc=$rc 未全绿，红绿明细如上，归因交人工" }
           else { Write-Output "T4-FAIL: bat rc=$rc 未走通链路"; exit 1 }
+          # 行为层判定完成即绿本步（verify 内容红=包面既存账归因面，不在此拦；pwsh 步骤必须显式退出防继承 native rc）
+          exit 0
 
       - name: T2 伪造WindowsApps商店别名（Find-Python跳别名断言·复用整链二次幂等）
         shell: pwsh

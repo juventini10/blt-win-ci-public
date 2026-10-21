@@ -67,6 +67,7 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 Write-Host '[3/3] 执行装后自检（verify.ps1）...'
+$env:MEMORY_CENTER = $mc   # 2026-10-21 runner四测逮到的真缺陷：不传则 verify 默认 ~/记忆共享中心，全新Win机整链假红
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $pkgRoot 'verify.ps1')
 $rc = $LASTEXITCODE
 if ($rc -eq 0) {
