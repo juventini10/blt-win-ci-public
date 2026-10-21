@@ -28,6 +28,10 @@ BAD_CALL = re.compile(
     "expanduser\\(" + Q + "\\s*" + chr(0x7E) + "(/[A-Za-z]:[/\\\\]|//)"
     "|" + Q + chr(0x7E) + "[A-Za-z]:[/\\\\]"
 )
+# 2026-10-21 反哺(上游反馈Bug1·李生Win)：{{X_ROOT}} 填充值已含模板后缀→装机产物 "A/B/A/B" 段重复双拼。
+#   区别于运行时双拼(BAD_CALL·expanduser/波浪号形)。限产物面判，--pkg-template 跳过(模板层无重复+prose病形示例不误报)。
+REPEAT_SEG = re.compile(r"([^/\s]+/[^/\s]+)/\1")
+REPEAT_EXT = {".py", ".sh", ".ps1", ".json", ".yaml", ".yml", ".html", ".md"}
 EXEMPT = "PATH-INTEGRITY-EXEMPT"                          # 行级显式豁免标记
 TEXT_EXT = {".md", ".py", ".sh", ".ps1", ".yaml", ".yml", ".json", ".txt", ".html"}
 SKIP_DIRS = {".git", "__pycache__", ".package-lock", "记忆琥珀", "logs", "_archive",
@@ -35,7 +39,7 @@ SKIP_DIRS = {".git", "__pycache__", ".package-lock", "记忆琥珀", "logs", "_a
 
 
 def scan(root, only_dirs=None, ph_files=None):
-    hits = {"double": [], "placeholder": [], "tilde_prefixed": []}
+    hits = {"double": [], "placeholder": [], "tilde_prefixed": [], "repeat": []}
     for dp, dn, fn in os.walk(root):
         _rel = os.path.relpath(dp, root)
         parts = set(dp.replace("\\", "/").split("/"))
@@ -76,6 +80,13 @@ def scan(root, only_dirs=None, ph_files=None):
                     if TILDE_PREFIXED in _ln and EXEMPT not in _ln:
                         hits["tilde_prefixed"].append(rel)
                         break
+            if os.path.splitext(f)[1].lower() in REPEAT_EXT:
+                for _ln in t.splitlines():
+                    if EXEMPT in _ln:
+                        continue
+                    if REPEAT_SEG.search(_ln):
+                        hits["repeat"].append(rel)
+                        break
     return hits
 
 
@@ -104,6 +115,7 @@ def main():
     if args.pkg_template:
         hits["placeholder"] = []
         hits["double"] = []
+        hits["repeat"] = []
     total = sum(len(v) for v in hits.values())
     if total and not args.quiet:
         for k, label in (("double", "双拼形态产物(运行时调用形)"),
@@ -116,7 +128,7 @@ def main():
                 if len(hits[k]) > 8:
                     print("         ... 另有 %d 件" % (len(hits[k]) - 8))
     if total == 0:
-        print("  [PASS] 路径完整性: 无双拼/无占位符残留/无畸形前缀")
+        print("  [PASS] 路径完整性: 无双拼/无占位符残留/无畸形前缀/无段重复")
         return 0
     print("  [FAIL] 路径完整性: 共 %d 件命中" % total)
     return 1

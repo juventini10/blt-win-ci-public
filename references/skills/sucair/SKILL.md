@@ -28,7 +28,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/sucair/
 modifiable: true
-version: "4.15.3"
+version: "4.15.4"
 license: MIT
 complies_with: 文件格式规范(⛔不写版本号·以源 frontmatter 为唯一真相源=#142)
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
@@ -336,7 +336,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 #### 2.1 5分钟精华
 
-保存路径按源类型分流：**书** → `{{OBSIDIAN_VAULT}}/2-知识库/05-知识池/{书名}/精华摘要.md`（书文件夹·与卡片同夹平铺；文件夹名=清洗后书名，去《》去非法字符；frontmatter `book:` 保留原书全名冗余锚）；**文章/论文/推文串** → `{{OBSIDIAN_VAULT}}/2-知识库/05-知识池/文章卡片/{源标题}-精华.md`（与文章卡片同夹平铺，与 Step 3 路径一致）
+保存路径按源类型分流：**书** → `{{OBSIDIAN_VAULT}}/2-知识库/05-知识池/{书名}/{书名}-精华摘要.md`（书文件夹·与卡片同夹平铺；文件名保留书名前缀与卡片/题库同规·自包含标识；文件夹名=清洗后书名，去《》去非法字符；frontmatter `book:` 保留原书全名冗余锚）；**文章/论文/推文串** → `{{OBSIDIAN_VAULT}}/2-知识库/05-知识池/文章卡片/{源标题}-精华.md`（与文章卡片同夹平铺，与 Step 3 路径一致）
 
 > **frontmatter 合规**：精华摘要按《笔记schema》(type: note) 填——下方模板已合规，⛔DO NOT 退回旧式 `date/author:作者/reading_status:AI已提炼`。**v4.10.0 起 builder 全覆盖（清零批#10）**：精华 frontmatter ✅DO 走 `build_note_frontmatter(title=..., source=...)` + `dump_frontmatter(...)`，⛔手写（与永久卡片同规）。
 > **⚔️主要矛盾站第一屏（v3.2.8）**：次序=⚔️→📖→🎯→⚡→🗺️。原因：精华定位=认知入口，首要使命是让你抓住主要矛盾（Adler检视阅读必做动作=找出书在回答什么问题；另有 Ausubel 先行组织者/SQ3R Survey 背书，见改造文件§12.3）。
@@ -583,7 +583,7 @@ question_count: N
 ```
 | 日期 | 源名 | 类型 | 卡片数 | 精华 | 状态 |
 |------|------|:---:|:---:|:---:|:---:|
-| YYYY-MM-DD | 《X》 | book | 12 | [精华摘要]({书名}/精华摘要.md) | AI已提炼 |
+| YYYY-MM-DD | 《X》 | book | 12 | [精华摘要]({书名}/{书名}-精华摘要.md) | AI已提炼 |
 | YYYY-MM-DD | 文章标题 | article-long | 3 | [精华](文章卡片/{源标题}-精华.md) | AI已提炼 |
 ```
 4. 标注新旧卡片之间的双向链接

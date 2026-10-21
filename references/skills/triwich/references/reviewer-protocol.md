@@ -6,7 +6,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 > **用途**：三明智L3双Agent模式中Agent B的完整审查prompt
 > **v1.3变更（2026-08-09）**：`{ts}` 格式对齐 full-flow.md v3.0.5 —— `YYYYMMDD_HHMMSS`（Bash `date "+%Y%m%d_%H%M%S"` 实取），⛔DO NOT 自造格式；路径 `%TEMP%\triwich_l3_{ts}\`（Windows）同规范。
-> **v1.2变更（2026-08-09）**：①新增「输出落盘」硬约束——Agent B 返回前必须 Write `agent_b_review.md`，补上 v3.10.1「完成判定真源锁」缺失的前提 ②输出格式补 `G2 验证计划` 段，与 full-flow.md Agent B 输出模板对齐（此前 G2 只存在于 full-flow，实际 prompt 里丢失，导致 L3 声称的 2 个检查点实际只产出 1 个） ③自爆判据「全员绿灯」明确为「评估结论全员正面」
+> **v1.2变更（2026-08-09）**：①新增「输出落盘」硬约束——Agent B 返回前必须 Write `agent_b_review.md`，补上 v3.10.1「完成判定真源锁」缺失的前提 ②输出格式补 `G2 验证计划` 段，与 flow-agent-b.md Agent B 输出模板对齐（此前 G2 只存在于 full-flow，实际 prompt 里丢失，导致 L3 声称的 2 个检查点实际只产出 1 个） ③自爆判据「全员绿灯」明确为「评估结论全员正面」
 > **v1.1变更**：从纯盲审升级为两阶段交叉验证——阶段1盲审（结论独立判断）→ 阶段2全量（推理验证）→ 交叉对比（盲审印象 vs 全量结论是否一致）
 > **设计原则**：盲审防锚定 + 全量审推理 + 交叉暴露矛盾
 > **学术参考**：学术同行评审（双盲+开放评审）、AutoGen Coder-Reviewer角色分离、Anthropic CitationAgent独立审查

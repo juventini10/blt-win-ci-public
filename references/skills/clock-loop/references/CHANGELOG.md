@@ -1,3 +1,25 @@
+### v4.19.2 — 2026-10-21 13:4x（X-AST 谓词⑤ Skill源隐身物理病接入·任务卡2026-10-21-静默隐身检测与日志变体根治·组A+B合并体）
+
+皮叔令「继续」推进编排表第3行。接入位=kb-checkup.md 五节谓词表增⑤行（只读调用，判据本体住 脚本中心/守卫/skill_source_health_check.py v1.0.3·零复制铁律）——该守卫由今日 triwich frontmatter 转义写坏隐身 3h+ 实证立项（旁路写入不经 forge 门禁，唯一检出防线曾是人眼）。判据经首日基线校正两轮：v1.0.2 消 growth-box YAML注释行假红/YAML严格错降WARN（lh 产品宽容实证）；v1.0.3 增量基准按 root 分域（变异测试实证串味）。消费端双腿=launchd com.skill.source-health（3600s·kickstart 实火回执在 jsonl）+ 本路径 X-AST ⑤行。故障注入演练：变异树 bad(\---)→FAIL/nofm→WARN/good→PASS 全中+幂等复跑不刷日志。回滚点=本条前 SKILL 4.19.1/kb-checkup 后态（git 可取）。判级 patch。A-B 共件说明：本条压他窗 v4.19.1 双条目之后，未触其改动面。
+
+### v4.19.1 (2026-10-21) — X-AST 资产体检根治
+- **references 路径修正**：kb-checkup.md/machine-acceptance.md 中「开发工具/知识联邦引擎」→「脚本中心/知识联邦引擎」(F-02)，对齐 10-17 引擎迁移实盘
+- **矛盾清单骨架**：脚本中心/知识联邦引擎/矛盾清单.md 创建空文件(F-03)，与 kb_concept_lint.py 的 graceful handle 对齐文档声明
+- **依赖版本同步**：triwich 依赖声明 4.7.1 与盘上实值一致(F-07误报撤销)
+- 扫描器精度教训：naive regex 取首个 version: 4.7.1
+
+## v4.19.1 — 2026-10-21 11:5x（G路径 Step B1.5g 孪生件形状对账·安装包哲学条文68承接批·皮叔令「做；批」）
+
+外部评估点破「verify.sh 有、verify.ps1 没有」+本窗实跑坐实：verify.ps1 缺 §3.0 三口径/§4.6 骨架非空/§4.7 三表闭环三面（Mac 10-03~10-15 逐个根治的判据 Win 端失明），且段级同构零机检（文件级配对 L1/P1 全绿看不见）=「校验器的校验器缺位」（S232 反方向实例：验收器自己成了未验收存量）。落地：pkg-checkup.md 新增 Step B1.5g（platform_compat 检查⑬调用形·三向判据·负例翻色义务·数据面 twin-sections.json 类型=数据）；判据本体 verify_pair_checks.twin_check（真源 脚本中心/守卫·mirror-manifest 4条目登记）；同批 verify.sh 三段调用壳化（行为零变更+仪器未跑分态显形）、verify.ps1 补同名三段。检查⑬对改造前包面首跑精准报三缺腿零过报=仪器有牙实证。回滚点=本条前 SKILL.md 4.19.0/pkg-checkup/CHANGELOG 三件（git 2ffa1e6e8 后态）。Z级·G路径清单增项，A-H 判定行为零变更。
+
+## v4.19.0 — 2026-10-21 09:4x（上下文资产体检 Phase X-AST 上线 + triwich 4.7.1 声明位收口并入）
+
+两项合一提交：① dependencies triwich 4.6.0→4.7.1（Z级接棒同步·08:2x批已完工未提交·皮叔确认"任务早做完"授权代收尾·固化件位随 triwich-integration 同步，本批提交被 version_truth 守卫点名故与②并批 bump）；② H路径增补资产层变体 Phase X-AST（触发词组"循环 资产体检/loop 资产体检/上下文体检/指令审计"+路由行+H节标题扩双域+kb-checkup.md 新增第五节四维度谓词表：指令互斥/触发面过宽/依赖死工具/陈旧事实）。来源=2026-10-21 K007 三源闭环评估轮四步案·你「认可，按建议推进」；变更稿与实盘对账后施工（共件冲突预检见任务卡）。回滚点=记忆琥珀/技能升级备份/clockloop_assetcheck-bak-20261021_0945/ 三件。
+
+### v4.18.8 — 2026-10-21 07:0x（triwich 4.6.0 下游声明位级联收口·双盲第18次揪漏修）
+
+双盲第18次盲审独立揪出：本端 dependencies 声明位 triwich 仍锁 4.5.4，与 triwich 本体 4.6.0、与自家固化件 references/triwich-integration.md 4.6.0 三处不一致——违反本端 v4.18.7 新立铁律「升版级联收口（升版方同批追下游声明位）」，前轮 triwich 4.5.4→4.6.0 时漏追本位。修复=照 v4.18.6 先例（triwich 归一轮同款「dependencies + 固化件链首同步」）补 dependencies triwich 4.5.4→4.6.0，固化件位（triwich-integration）已随上一提交对齐 4.6.0。frontmatter 随内容变 bump 4.18.7→4.18.8。patch 记账条·功能零变更。回滚点=本条前两版 SKILL.md/CHANGELOG（git 0c48a38d5 后态）。
+
 ### v4.18.7 — 2026-10-18 13:35（署名队列收口批·提案落地P1/P2/P4/P5：条款两条+评估器判据两处）
 
 皮叔令「按符合愿景最优解处理」落地队列遗留提案四件：**P1** 禁止行为#11 备份模板加 `{Skill名}_` 前缀（B-5 扁平撞名事故条款化）；**P5** 新增铁律「升版级联收口」（升版方同批追下游声明位·B-5 实证入条）；**P2** eval_backup_gate 子串匹配改归属两级判据（strong=前缀显式归属/weak=首段在被评树实存·form字段显数·N7"他人件顶备份拿满分"盲区封堵）；**P4** eval_version_grading_advisory 否定语境豁免（12字窗口否定形不计·治"六工作流功能零变更"误报狼来了）。改评估器流程合规：snapshot 冻结前置（记忆琥珀 clockloop__*_preP2P4_261018_1327.bak ×3）+改后自举回归不降分（读数见下条注）。判级 patch（条款+advisory+门禁判据·评分维度权重考题定义未动·gate属检查实现层）。回滚点=同 snapshot。

@@ -171,6 +171,11 @@ def _self_test():
     ok.append(("负例·非Skill工具不升", nrows() == n1))
     fire({"toolName": "Skill", "input": {"skill": "growth-box"}})
     ok.append(("负例·无会话号不猜", nrows() == n1))
+    # 2026-10-21 Trae CN 实盘载荷回归：tool_name/tool_input 为 snake_case，Skill 入参是 name（非 skill）
+    n2 = nrows()
+    fire({"session_id": "selftest-sid", "tool_name": "Skill",
+          "tool_input": {"name": "growth-box", "args": ""}})
+    ok.append(("正例·TraeCN载荷(snake_case+name)", nrows() == n2 + 1))
     if env_dir:
         os.environ["DOENGLINGZ_CONFIG_DIR"] = env_dir
     else:
@@ -185,12 +190,14 @@ def _self_test():
 def _run(obj):
     """主逻辑（与 stdin 解耦，供自测直调）。"""
     tool = _get(obj, "toolName", "tool_name")
-    if tool != "Skill":
+    if str(tool).lower() != "skill":
         return 0
     inp = obj.get("input") or obj.get("tool_input") or {}
     if not isinstance(inp, dict):
         return 0
-    skill = inp.get("skill") or ""
+    # 2026-10-21 Trae CN 实盘适配：Skill 工具入参是 {name, args}（WB 是 {skill}）——
+    # 只认 "skill" 会让本端事件腿静默空转（载荷能进、名字取不到 ⇒ declared=False）。
+    skill = inp.get("skill") or inp.get("name") or ""
     sid = _get(obj, "sessionId", "session_id")
     declared = _frontmatter_flag(skill)
     _log("%s | skill=%s | declared=%s | sid=%s" % (

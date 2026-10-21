@@ -5,7 +5,7 @@
 检测：.sh/.ps1 双平台配对、编码(UTF-8无BOM)、换行符(\r\n残留)、
       shebang 正确、路径分隔符（反斜杠残留）、
       单平台路径假设（检查⑩·1.6）、发布者工具泄漏（检查⑪·1.6）、
-      共享中心目录名硬编码（检查⑫·1.6）。
+      共享中心目录名硬编码（检查⑫·1.6）、孪生件形状对账（检查⑬·条文68·2026-10-21）。
 退出码：0=通过  1=有缺陷  2=参数错误
 """
 import ast
@@ -813,6 +813,23 @@ def check_venv_platform_form(pkg: Path) -> list:
     return issues
 
 
+def check_twin_section_parity(pkg: Path) -> list:
+    """检查⑬（2026-10-21·verify双端同构缺腿反哺·安装包哲学条文68孪生同构律）：
+    .sh↔.ps1 孪生文件「文件在位但检查段内容单侧演化」的盲区补腿。
+    病根实证：verify.sh 有 §3.0 双口径/§4.6 骨架非空/§4.7 三表闭环三段（10-03~10-15 逐段长出），
+    verify.ps1 零覆盖——文件级配对（L1派生式）与资产对称（P1）全绿，段级失明全绿。
+    判据=同树 verify_pair_checks.twin_check（⛔此处不手搓第二份判据·单一真源），
+    数据面=包内 references/twin-sections.json（脚本哲学§二·四十「类型=数据」：新孪生对=加一条登记）。
+    仪器未跑（件缺/台账缺/解析失败）一律显形为 issue——⛔把仪器故障当判据绿。
+    """
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import verify_pair_checks as vpc
+    except ImportError:
+        return ["检查⑬仪器未跑: 同树 verify_pair_checks.py 缺失（仪器故障≠判据通过）"]
+    return vpc.twin_check(pkg)
+
+
 def main():
     only_author = "--only-author-path" in sys.argv
     _p0 = [x for x in sys.argv[1:] if not x.startswith("--")]
@@ -848,6 +865,7 @@ def main():
         ("stdin编码对等(L2)", check_stdin_encoding(pkg)),
         ("占位符路径形态卫生(L3)", check_placeholder_shape_hygiene(pkg)),
         ("venv解释器形态平台派生(L4·Win反馈A族反哺)", check_venv_platform_form(pkg)),
+        ("孪生件形状对账(检查⑬·条文68)", check_twin_section_parity(pkg)),
     ]
 
     if only_author:

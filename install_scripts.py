@@ -168,6 +168,9 @@ DT_SUITE = {
                 # 2026-10-19 Q3路线C装机周期守护两件（声明见 digital-twin/guardians.json·Q6门禁②对账）
                 "com.doenglingz.slice-watch.plist.template",
                 "slice-watch-install-task.ps1",
+                # 2026-10-21 G2装机对等·蒸馏调度月拍守护两件（声明见 guardians.json·哥令「必须让win和MAC用户都正常使用」）
+                "com.buluotuo.distill-scheduler.plist.template",
+                "distill-scheduler-install-task.ps1",
                 # K2 造芯链路引用（立场卡 triggers 机械核验 / H4 冲突样本采集）
                 "blank_claim_guard.py", "h4_sample_log.py"),
     # 童灵治理套件（守护/闸门运行器/TSL 报告器）
@@ -345,6 +348,45 @@ def _first_review_skeleton():
     )
 
 
+def _distillation_center_skeleton():
+    """装机态蒸馏中心初始账（G1·2026-10-21 K007评估·哥「月初蒸馏带上资产体检」提案收口）。
+    入账四类型=装机态执行Skill在场的（system-logger/daily-buddy/growth-box/clock-loop X-AST）；
+    ⛔统一蒸馏管道/切片管道复检不入账——装机态无执行实体，入账=假待办（实事求是红线）。
+    日期口径：蒸馏三件预期下次=次月28日（产品使用契约节奏）；🔍资产体检=非日期文本「用户自定」→classify自动跳过=默认不提醒不替用户决定节奏（哥2026-10-21令），用户改列为日期即自行订阅。
+    幂等：走 bootstrap_runtime_state 缺才建通道，存量机已有账⛔绝不覆盖。
+    """
+    today = datetime.date.today()
+    month_tag = "%04d-%02d" % (today.year, today.month)
+    ny, nm = (today.year + (today.month == 12), today.month % 12 + 1)
+    nxt = "%04d-%02d-28" % (ny, nm)
+    ts = today.isoformat()
+    rows = [
+        ("📊 系统日志蒸馏", "装机首配·首次月度蒸馏按账执行"),
+        ("📓 日记月报", "装机首配·首次月报按账执行"),
+        ("🧠 成长箱蒸馏", "装机首配·首次月度蒸馏按账执行"),
+        ("🔍 资产体检", "clock-loop Phase X-AST·想查时说「loop 资产体检」即可；节奏由你定，系统不替你排"),
+    ]
+    body = "\n".join(
+        "| %s | %s | 🟡 基线建立 | %s | %s |"
+        % (ts, k, note, ("用户自定（默认不提醒）" if k == "🔍 资产体检" else nxt))
+        for k, note in rows)
+    return (
+        "# 蒸馏中心（新装初始态·安装器缺才建·有则不覆盖）\n\n"
+        "> 账行=完成账一条；唤醒巡检（蒸馏待办三级检测）与蒸馏调度器读本账出到期提醒。\n"
+        "> 下方标记区内容由调度脚本机械生成，⛔禁止手改标记之间内容。\n\n"
+        "## %s\n"
+        "| 执行日期 | 蒸馏类型 | 状态 | 执行摘要 | 预期下次 |\n"
+        "|:-------:|---------|:---:|---------|:-------:|\n"
+        "%s\n\n"
+        "<!-- DISTILLATION-TODO:START -->\n\n"
+        "<!-- DISTILLATION-TODO:END -->\n\n"
+        "## 维护规则\n"
+        "1. 每完成一次蒸馏/体检，在本月段追加一条账（格式同上表，预期下次=完成后推一个月）\n"
+        "2. 想手动触发，直接说触发词（如「loop 资产体检」「启动系统日志月度蒸馏」）\n"
+        "3. 体检行右列默认非日期=不提醒；想要定期提醒，把该列改成日期（如 2026-12-28）即订阅，改回文字即退订（调度器对非日期自动跳过）\n"
+    ) % (month_tag, body)
+
+
 def bootstrap_runtime_state(mc, dry=False):
     """缺才建、有则绝不覆盖（存量机用户数据保护）。返回逐项落点清单供打印。"""
     dt_root = os.path.join(mc, "数字分身")
@@ -353,6 +395,8 @@ def bootstrap_runtime_state(mc, dry=False):
          lambda: json.dumps(_ledger_skeleton(mc), ensure_ascii=False, indent=2) + "\n"),
         (os.path.join(dt_root, "steps", "step3-first-review-log.md"),
          _first_review_skeleton),
+        (os.path.join(mc, "记忆蒸馏", "蒸馏中心.md"),
+         _distillation_center_skeleton),
     )
     report = []
     for path, gen in targets:
@@ -413,8 +457,10 @@ def pre_install_health_check(mc, platform_id, cap=None, cfg_root=None, dry=False
     assets["脚本中心"] = os.path.isdir(sc) and any(
         os.path.isfile(os.path.join(sc, f)) for f in os.listdir(sc)
     ) if os.path.isdir(sc) else False
-    # 知识联邦引擎
-    kb = os.path.join(mc, "知识联邦引擎")
+    # 知识联邦引擎（2026-10-21：脚本面归拢后实盘在 脚本中心/知识联邦引擎/；旧顶层落点兼容）
+    kb = os.path.join(mc, "脚本中心", "知识联邦引擎")
+    if not os.path.isdir(kb):
+        kb = os.path.join(mc, "知识联邦引擎")
     assets["知识联邦引擎"] = os.path.isdir(kb)
     # 数字分身（运营套件在位）
     dt = os.path.join(mc, "数字分身")
@@ -1011,7 +1057,7 @@ def deploy_script_center(mc, dry=False):
     #      **功能判据**(search_kb L88 靠"目录含 route_table.json"选根·缺则语义层降级 BM25)，
     #      V2.2.4 审计#1 判定为分发漏件已补入包·勿再按旧口径当"运营数据"删掉。
     #    vectors/INDEX 属派生产物(用户机 build_kb_vectors/regen 自建)·仍 ⛔ 不入包(隐私+无用)。
-    kb_dst = os.path.join(mc, "知识联邦引擎")
+    kb_dst = os.path.join(mc, "脚本中心", "知识联邦引擎")
     min_src = os.path.join(PKG, "references", "知识联邦引擎-min")
     if os.path.isdir(min_src):
         for root, dirs, files in os.walk(min_src):
@@ -1684,7 +1730,11 @@ def verify_deployed(mc=None, hooks_root=None, settings_path=None):
                 except Exception:
                     pass
             if mc:
-                for _rel in (os.path.join("开发工具", "Skill路由引擎", "scripts", "route_traework_patrol.sh"),
+                # 🔴 2026-10-21 补：脚本面归拢后 patrol 实体在 `脚本中心/Skill路由引擎/scripts/`；
+                #    旧两条路径（开发工具/… 、脚本中心/平铺）均已不存在 ⇒ reg_text 只剩 plist
+                #    （plist 只写主脚本名，不含名册件）⇒ 7 件全判「未注册」＝假红。
+                for _rel in (os.path.join("脚本中心", "Skill路由引擎", "scripts", "route_traework_patrol.sh"),
+                             os.path.join("开发工具", "Skill路由引擎", "scripts", "route_traework_patrol.sh"),
                              os.path.join("脚本中心", "route_traework_patrol.sh")):
                     _p = os.path.join(mc, _rel)
                     if os.path.isfile(_p):
@@ -1693,6 +1743,17 @@ def verify_deployed(mc=None, hooks_root=None, settings_path=None):
                         except Exception:
                             pass
                         break
+            # 🔴 2026-10-21 补：Trae CN（2026-10-09 并入单端）的真实注册面是
+            #    `<配置根>/hooks.json`（PreToolUse/Stop 等事件直挂）。traework 适配器
+            #    声明的是「安装包交付面」（hooks_event=false 指无 settings.json 注册），
+            #    与端侧自建 hooks.json 不矛盾——核注册时必须两读，否则实挂判未挂。
+            _cn_cfg = _CFG_ROOT_ABS or os.path.expanduser(cap.get("config_root", "~/.trae-cn"))
+            _cn_hooks = os.path.join(_cn_cfg, "hooks.json")
+            if os.path.isfile(_cn_hooks):
+                try:
+                    _parts.append(open(_cn_hooks, encoding="utf-8", errors="ignore").read())
+                except Exception:
+                    pass
             reg_text = "\n".join(_parts)
         else:
             cfg_root = _CFG_ROOT_ABS or os.path.expanduser(cap.get("config_root", "~/.zcode"))
@@ -1711,6 +1772,24 @@ def verify_deployed(mc=None, hooks_root=None, settings_path=None):
         if not entries:
             entries = [(main_f, "references/scripts") for _ev, _loc, _sd, main_f, _deps in ROSTER]
         n_files = 0
+
+        def _delivered_ok(_mc, _base, _fname):
+            """落盘核（2026-10-21·脚本面归拢子目录后根治假红）。
+            判定顺序：①平铺原址 ②递归 脚本中心 任意子目录 ③实际交付面回落
+            自定义层/待完成工作/路由家族/scripts（route_guard_audit 的真身所在）。
+            ⛔ 只回答「这端有没有这件」，不回答「该不该在某个目录」——布局归拢属安装器域。"""
+            if _base and os.path.isfile(os.path.join(_base, _fname)):
+                return True
+            if _base and os.path.isdir(_base):
+                for _dp, _dn, _fs in os.walk(_base):
+                    if _fname in _fs:
+                        return True
+            if _mc:
+                for _rel in (("自定义层", "待完成工作", "路由家族", "scripts"), ("脚本中心",)):
+                    if os.path.isfile(os.path.join(_mc, *_rel, _fname)):
+                        return True
+            return False
+
         for fname, src_rel in entries:
             n_files += 1
             # 落盘核按 src 分派（判据从变换规则推导·[5/8][5b/8][5c/8] 各归各位）
@@ -1720,7 +1799,7 @@ def verify_deployed(mc=None, hooks_root=None, settings_path=None):
                 base = os.path.join(_CFG_ROOT_ABS or "", "hooks") if _CFG_ROOT_ABS else None
             else:
                 base = sc
-            if mc is not None and not (base and os.path.isfile(os.path.join(base, fname))):
+            if mc is not None and not _delivered_ok(mc, base, fname):
                 miss_file.append("%s (%s)" % (fname, src_rel))
             if fname not in reg_text:
                 miss_reg.append(fname)
@@ -2252,7 +2331,12 @@ RUNTIME_PATH_DIRS = {
     #    ⛔ 而作者机上该目录存在 ⇒ 本机三关闸门 100% 测不出来（假绿）。
     #    ⇒ 键名表达**职责**、落点由安装器事实决定，二者解耦。
     "devtools":      "脚本中心",
-    "kb_engine":     "知识联邦引擎",
+    # 🔴 2026-10-21 根治（Trae CN 端复检实证）：脚本面归拢后 知识联邦引擎 实盘在
+    #    `脚本中心/知识联邦引擎/`，顶层并无此目录。原值 "知识联邦引擎" 会产出一个
+    #    **存在于声明、不存在于磁盘**的死键（build_runtime_paths 的存在性过滤只挡
+    #    安装期；已安装端不会自动重算）⇒ 消费方 rp("kb_engine") 静默取空。
+    #    与本文件上方注释「知识联邦引擎装在其下」对齐为子目录元组。
+    "kb_engine":     ("脚本中心", "知识联邦引擎"),
     "script_center": "脚本中心",
     "worklog":       "工作日志",
     "twin":          "数字分身",
@@ -2264,7 +2348,7 @@ RUNTIME_PATH_DIRS = {
     "k2_slices":     ("数字分身", "K2切片蒸馏"),
     "twin_slices":   ("数字分身", "K2切片蒸馏", "slices"),
     "twin_spec":     ("数字分身", "童灵·人格规格书.md"),
-    "custom_route":  ("自定义层", "路由家族"),
+    "custom_route":  ("自定义层", "待完成工作", "路由家族"),
     "memory_amber":  "记忆琥珀",
 }
 # 注意：`archive_root` 本身＝记忆中心（不进这张表·它就是根）
@@ -2718,6 +2802,33 @@ def print_install_summary(cfg_root, platform, health=None):
     print()
 
 
+def _mc_write_probe(mc):
+    """写前探测硬闸（2026-10-21 ·Win E盘安全策略拦截案根治（用户实测报障））：
+    批量落件前对目标 MC 做 mkdir+试写+试删——Defender 受控文件夹/杀软勒索防护
+    拦程序写盘的现场在这里暴露，⛔不留「289件崩中间=半安装态」给端用户。
+    机制不靠 AI 自觉：脚本级硬闸，文档条款忘了也会被这里拦住并给出指路。
+    返回 0=可写放行；1=被拦，指路文案已打印。"""
+    probe_dir = os.path.join(mc, ".install", ".probe-tmp")
+    probe_file = os.path.join(probe_dir, "p.tmp")
+    try:
+        os.makedirs(probe_dir, exist_ok=True)
+        with open(probe_file, "w") as f:
+            f.write("probe")
+        os.remove(probe_file)
+        os.rmdir(probe_dir)
+    except (PermissionError, OSError) as e:
+        print("❌ 写前探测被拦：你的安全策略阻止程序写入 %s（%r）" % (mc, e))
+        print("   最常见来源：Windows Defender「受控文件夹访问」或杀软勒索防护对")
+        print("   批量脚本写入的误拦（本安装要落 289+ 件）——不是安装包代码出错。")
+        print("   放行指引：Defender → 病毒和威胁防护 → 管理受控文件夹访问 →")
+        print("   添加允许应用（python.exe），或把该目录移出保护文件夹；第三方杀软找「信任/白名单」。")
+        print("   替代路径：先装默认位 %s 跑通全链再迁移；E/D 盘安装须过本探测。" % os.path.join(os.path.expanduser("~"), "个人AI档案"))
+        print("   半安装态安抚：之前装到一半失败过不用返工——重跑安装，Step 0 分流会自动")
+        print("   判「半安装态」走修复模式接着修（rollback 兜底件也在包里）。")
+        return 1
+    return 0
+
+
 def main():
     # ─── v2.0 多平台分发：--platform 参数 ───
     _plat_ap = argparse.ArgumentParser(add_help=False)
@@ -2730,6 +2841,10 @@ def main():
     #   ⇒ 覆盖参数 + 显形声明，隔离装从此**不碰真机配置根**。
     _plat_ap.add_argument("--cfg-root", default=None,
                           help="覆盖端配置根（隔离装/夹具用·⛔ 不传则读 capability.yaml）")
+    # 2026-10-21：早期解析也带上位置参数 mc——setup 委派在完整 argparse 之前执行，
+    #   旧写法取 sys.argv[-1] 会在「MC 在前/带 flag」时取到参数名 ⇒ setup.sh rc=2。
+    _plat_ap.add_argument("mc", nargs="?", default="",
+                          help="记忆共享中心（位置参数·供 setup 委派早期读取）")
     _platform_explicit = any(a == "--platform" for a in sys.argv)  # G2-2·显式/缺省分轨（while 清除前判定）
     # F3/F21（2026-10-17）：查询模式（--list/--verify）不需要端上下文——ROSTER 是全局数据。
     _QUERY_MODE = ("--list" in sys.argv) or ("--verify" in sys.argv) or ("--sweep-ghost" in sys.argv)
@@ -2822,7 +2937,10 @@ def main():
             elif os.path.isfile(alt_setup):
                 import subprocess as _sp
                 mech = cap.get("hooks_mechanism", "extensions/patrol")
-                mc_arg = sys.argv[-1] if sys.argv[-1] and not sys.argv[-1].startswith("-") else ""
+                # 🔴 2026-10-21 修：旧写法取 sys.argv[-1]，MC 在前/带 flag 时取到的是参数名
+                #    ⇒ mc_arg 为空 ⇒ setup.sh 报「未给记忆共享中心路径」rc=2（本端实测）。
+                #    以 argparse 解析结果为准（位置参数 mc），⛔ 不猜末尾 token。
+                mc_arg = _plat_args.mc or ""
                 _sp_cmd = ["bash", alt_setup]
                 _env = dict(os.environ)
                 # 🔴 2026-10-11 沙箱实测逮到的真污染：本委派从不传 cfg_root ⇒ setup.sh 回落
@@ -2837,13 +2955,15 @@ def main():
                 # （INSTALL 主命令场景：新手先建空文件夹再跑）。端 setup 见此标志把空/未成型 MC
                 # 判 ⏳ 中途态继续落端件；⛔ 非空且无指纹仍硬拒（人直跑 setup.sh 无此标志=原守卫完整）。
                 _env["BLT_INSTALL_CHAIN"] = "1"
+                # 参数顺序：MC 必须作第一个位置参数（setup.sh 用法 `bash setup.sh "<MC>"`），
+                # --dry-run 其后；本端实测旧顺序（--dry-run 在前）会被 setup 当 "没给 MC" 拒。
+                if mc_arg:
+                    _sp_cmd.append(mc_arg)
                 if "--dry-run" in sys.argv:
                     # dry-run 双通道穿透：DRY=1 环境变量（traework/qodercn 等读环境变量）+
                     # --dry-run 位置参数（doubaowork/hermes 读参数）——⛔不许"看着像演练、实际写盘"
                     _sp_cmd.append("--dry-run")
                     _env["DRY"] = "1"
-                if mc_arg:
-                    _sp_cmd.append(mc_arg)
                 print(f"ℹ️ 委派端部署入口 {entry}（install_entry 单一真源·条文13·所有非占位端统一委派）")
                 rc = _sp.run(_sp_cmd, env=_env).returncode
                 if rc == 3:
@@ -2953,6 +3073,14 @@ def main():
         print("!! 记忆共享中心必须是绝对路径：%s" % MC_PATH)
         return 2
 
+    # 写前探测硬闸（2026-10-21·Win安全策略拦截案·详见 _mc_write_probe 文档串）
+    #   查询面(--verify/--list/--gate)已在上方提前 return，到此处=安装/升级模式；
+    #   dry-run 不写盘故跳过探测（保持「只报告不写」语义零污染）。
+    if not a.dry_run:
+        _prc = _mc_write_probe(MC_PATH)
+        if _prc:
+            return _prc
+
     tag = "[dry-run] " if a.dry_run else ""
     print("%s记忆共享中心 = %s" % (tag, MC_PATH))
 
@@ -2978,7 +3106,7 @@ def main():
     n_center = deploy_script_center(MC_PATH, a.dry_run)
     _sc_dst = os.path.join(MC_PATH, "脚本中心")
     _sc_landed = sum(len(fs) for _r, _d, fs in os.walk(_sc_dst)) if os.path.isdir(_sc_dst) else 0
-    print("%s① 脚本中心：清单 %d 条·落盘 %d 件 → %s/脚本中心/（知识联邦引擎独立部署 → %s/知识联邦引擎/）"
+    print("%s① 脚本中心：清单 %d 条·落盘 %d 件 → %s/脚本中心/（知识联邦引擎独立部署 → %s/脚本中心/知识联邦引擎/）"
           % (tag, n_center, _sc_landed, MC_PATH, MC_PATH))
     # 2026-10-07 冲突显形化收口：deploy_script_center 检测到同名异内容时写 _PKG_CONFLICTS，
     #   此处决定是否中止安装。

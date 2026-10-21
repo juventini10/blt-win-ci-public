@@ -1,0 +1,123 @@
+# win-fallback-4tests.yml — 安装兜底链 Windows runner 行为层四测（2026-10-21 · 任务卡 §六之附）
+# 判据：四测全过=行为层绿；任一崩=记录原行回任务卡进度账。体感层（真机双击观感/MOTW）不在本 workflow。
+# zip 形态模拟：.gitattributes 把 *.ps1 checkout 成 CRLF，但用户网盘 zip 解出=包面原始字节（本包 ps1/bat 均存 LF）。
+# 故预处理把被测件还原为 zip 解压态字节再测；bat 的 LF 形态能否被 cmd 正确执行本身就是 T1 观察对象。
+name: win-fallback-4tests
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  four-tests:
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 预处理-还原zip形态字节+断言编码铁律+落前置
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($p in @('fallback_install.ps1', '安装兜底.bat')) {
+            $b = [IO.File]::ReadAllBytes($p)
+            $bom = ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF)
+            $crlf = 0; for ($i=1; $i -lt $b.Length; $i++) { if ($b[$i] -eq 0x0A -and $b[$i-1] -eq 0x0D) { $crlf++ } }
+            Write-Output ("{0}: CRLF={1} BOM={2}" -f $p, $crlf, $bom)
+          }
+          $fb = [IO.File]::ReadAllBytes('fallback_install.ps1')
+          $ms = New-Object IO.MemoryStream
+          for ($i=0; $i -lt $fb.Length; $i++) { if ($fb[$i] -eq 0x0D -and $i+1 -lt $fb.Length -and $fb[$i+1] -eq 0x0A) { continue }; $ms.WriteByte($fb[$i]) }
+          [IO.File]::WriteAllBytes('fallback_install.ps1', $ms.ToArray())
+          $bb = [IO.File]::ReadAllBytes('安装兜底.bat')
+          $nonascii = @($bb | Where-Object { $_ -gt 0x7F })
+          Write-Output ("bat pure-ASCII = " + ($nonascii.Count -eq 0) + " | bat bytes = " + $bb.Length)
+          if ($nonascii.Count -ne 0) { Write-Output 'PRE-FAIL: bat 含非 ASCII 字节'; exit 1 }
+          $fb2 = [IO.File]::ReadAllBytes('fallback_install.ps1')
+          if (-not ($fb2[0] -eq 0xEF -and $fb2[1] -eq 0xBB -and $fb2[2] -eq 0xBF)) { Write-Output 'PRE-FAIL: ps1 BOM 丢失'; exit 1 }
+          New-Item -ItemType Directory -Path (Join-Path $env:USERPROFILE '.workbuddy') -Force | Out-Null
+          $mc = Join-Path $env:USERPROFILE '个人AI档案'
+          New-Item -ItemType Directory -Path (Join-Path $mc '.install') -Force | Out-Null
+          Set-Content -LiteralPath (Join-Path $mc '.install\step9-done.md') -Value 'PRE-EXISTING step marker (must survive)'
+          Write-Output 'PRE-PASS: zip 形态还原 + 编码铁律断言 + 前置落位'
+
+      - name: T1+T4 bat双击等效整链（ASCII壳/BOM中文不乱码/完整机械安装/verify rc回传）
+        shell: pwsh
+        run: |
+          $OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8
+          $in = Join-Path $env:RUNNER_TEMP 'in-t4.txt'
+          @('', '') | Out-File -FilePath $in -Encoding ascii
+          $t0 = Get-Date
+          $out = cmd /c """安装兜底.bat"" < ""$in""" 2>&1
+          $rc = $LASTEXITCODE
+          $outStr = ($out -join "`n")
+          Write-Output $outStr
+          Write-Output ("---- bat rc=$rc duration=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))s ----")
+          if ($outStr.Contains([char]0xFFFD)) { Write-Output 'T1-FAIL: 输出含 U+FFFD，中文乱码（BOM/chcp 链失效）'; exit 1 }
+          foreach ($k in @('写前探测通过', '使用解释器', '执行机械安装', '执行装后自检')) {
+            if ($outStr -notmatch [regex]::Escape($k)) { Write-Output "T1-FAIL: 输出缺关键段 [$k]（bat LF 行尾坑或链路中断）"; exit 1 }
+          }
+          $m = Get-Content (Join-Path $env:USERPROFILE '个人AI档案\.install\step9-done.md') -Raw -ErrorAction SilentlyContinue
+          if ($m -notmatch 'must survive') { Write-Output 'T4-FAIL: 默认 MC 历史 step 标记没了（探测段清理越权）'; exit 1 }
+          $probe = Join-Path $env:USERPROFILE '个人AI档案\.install\.probe-tmp'
+          if (Test-Path $probe) { Write-Output 'T4-FAIL: 探针临时目录残留'; exit 1 }
+          if ($rc -eq 0) { Write-Output 'T4-PASS(绿): 整链跑通且 verify 全绿，bat rc 正确回传' }
+          elseif ($outStr -match '\[WARN\]') { Write-Output "T4-PASS(黄): 整链跑通但 verify rc=$rc 未全绿，红绿明细如上，归因交人工" }
+          else { Write-Output "T4-FAIL: bat rc=$rc 未走通链路"; exit 1 }
+
+      - name: T2 伪造WindowsApps商店别名（Find-Python跳别名断言·复用整链二次幂等）
+        shell: pwsh
+        run: |
+          $OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8
+          $fake = Join-Path $env:RUNNER_TEMP 'FAKEWAPP\WindowsApps'
+          New-Item -ItemType Directory -Path $fake -Force | Out-Null
+          Set-Content -LiteralPath (Join-Path $fake 'python.exe') -Value 'stub-must-be-skipped'
+          $env:PATH = "$fake;$env:PATH"
+          $in = Join-Path $env:RUNNER_TEMP 'in-t2.txt'
+          @('', '') | Out-File -FilePath $in -Encoding ascii
+          $out = cmd /c "powershell -NoProfile -ExecutionPolicy Bypass -File fallback_install.ps1 < ""$in""" 2>&1
+          $outStr = ($out -join "`n")
+          Write-Output $outStr
+          $line = ($out | Select-String -Pattern '使用解释器' | Select-Object -First 1)
+          if (-not $line) { Write-Output 'T2-FAIL: 解释器行未出现（停窗或乱码致匹配失败）'; exit 1 }
+          if ($line.Line -match 'FAKEWAPP|WindowsApps') { Write-Output 'T2-FAIL: 选中了伪造商店别名路径（跳别名分支无牙）'; exit 1 }
+          Write-Output ("T2-PASS: 跳过伪造别名，选中 -> " + $line.Line.Trim())
+
+      - name: T3 写保护MC当场停+历史标记不被毁（负例·icacls deny）
+        shell: pwsh
+        run: |
+          $OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8
+          $mc3 = Join-Path $env:RUNNER_TEMP 'mc-t3'
+          New-Item -ItemType Directory -Path (Join-Path $mc3 '.install') -Force | Out-Null
+          Set-Content -LiteralPath (Join-Path $mc3 '.install\step2-done.md') -Value 'T3 marker (must survive deny-write)'
+          icacls $mc3 /deny "*S-1-1-0:(OI)(CI)W" | Out-Null
+          $in = Join-Path $env:RUNNER_TEMP 'in-t3.txt'
+          @($mc3, '') | Out-File -FilePath $in -Encoding ascii
+          $out = cmd /c "powershell -NoProfile -ExecutionPolicy Bypass -File fallback_install.ps1 < ""$in""" 2>&1
+          $rc = $LASTEXITCODE
+          $outStr = ($out -join "`n")
+          Write-Output $outStr
+          icacls $mc3 /reset | Out-Null
+          $marker = Get-Content (Join-Path $mc3 '.install\step2-done.md') -Raw -ErrorAction SilentlyContinue
+          $blocked = ($outStr -match '写前探测被拦')
+          if ($rc -eq 0 -and -not $blocked) { Write-Output 'T3-ENV: deny-write 没拦住 runner admin 写入→runner 无法复现拦截，本项转真机验证项（如实记录，不判包缺陷）'; exit 1 }
+          if ($rc -ne 2 -or -not $blocked) { Write-Output "T3-FAIL: rc=$rc blocked=$blocked（期望 rc=2+定责文案）"; exit 1 }
+          if ($marker -notmatch 'must survive') { Write-Output 'T3-FAIL: .install 历史 step 标记被探测段毁掉'; exit 1 }
+          Write-Output 'T3-PASS: 写保护当场停 rc=2 + 定责文案在场 + 历史标记完好'
+
+      - name: 收尾快照-兜底链产物清单（留证）
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Output '=== RUNNER_TEMP ==='
+          Get-ChildItem $env:RUNNER_TEMP -Name | Select-Object -First 20
+          Write-Output '=== 默认MC 顶层 ==='
+          Get-ChildItem (Join-Path $env:USERPROFILE '个人AI档案') -Name -ErrorAction SilentlyContinue | Select-Object -First 25
+          Write-Output '=== .install 目录 ==='
+          Get-ChildItem (Join-Path $env:USERPROFILE '个人AI档案\.install') -Recurse -Name -ErrorAction SilentlyContinue | Select-Object -First 15

@@ -4,6 +4,10 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 # CHANGELOG
 
+### v3.51.12 — 2026-10-21 11:3x（上游反馈Bug1：{{DIARY_ROOT}} 双拼根治）
+
+装机后 $DIARY 渲染出 `…/1-每日计划/01-日记/1-每日计划/01-日记` 双段（李生 Win 实证）。根因=契约错位：安装器 detect_diary_root 返回**含子目录全路径**填 DIARY_ROOT，模板 SKILL.md/platform-paths.md 又各拼 `/1-每日计划/01-日记`。修=模板改纯 `{{DIARY_ROOT}}`（DIARY_ROOT 语义=日记全路径根·与 check_diary_titles.py 直读 runtime diary_root 同源）；L26 语义说明原模糊处一并澄清。判级 patch（路径口径修正·功能零变更）。
+
 ### v3.51.11 — 2026-10-20 22:1x（批E拆链联动·引擎路径直址化）
 
 工作流C/工具与参考/周月报sop/SKILL 路径表等 15 处引擎引用 `~/个人AI档案/知识联邦引擎/`→`[记忆共享中心]/脚本中心/知识联邦引擎/`（批E 拆顶层过渡软链后话术面断点根治·作者侧口径；包镜像侧同步改 [记忆共享中心] 占位形另见发布库）。行为零变更。回滚点=记忆琥珀/sc-E2/E3-fullfix-bak-20261020/。

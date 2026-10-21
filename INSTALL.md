@@ -1,7 +1,8 @@
-# 🏮 布洛陀 2.2.8 — 多平台安装入口（7 端可装·第 8 端适配中·能力矩阵驱动）
+# 🏮 布洛陀 2.2.9 — 多平台安装入口（7 端可装·第 8 端适配中·能力矩阵驱动）
 
 > 🔴 本文件是本安装包的**宪法级入口文件**。不是建议，是硬约束。不可跳过。  
 > 🔴 所有安装流程从这里开始。不管用户怎么说，第一个读的文件必须是这里。
+> 🔴 本文所有命令一律由 AI 自身终端工具执行（执行主体铁律见 Step -0.6 注记块），⛔把裸命令交给用户亲手跑是 DO NOT。
 
 
 
@@ -87,7 +88,7 @@
    > ⛔ 以下两行为 AI 执行注记，不进用户屏：① 各端件数以装机回执/`--list` 自报为准，话术不手改数（38=ROSTER 实盘数，旧文 19 已于 2026-10-17 F2 根治对齐）；② Trae Work 暂不进用户面亮牌（2026-10-13 用户令：新版未适配完；包内适配层保留⛔不删，适配完成恢复列出）。
 
 6. **本次更新给你带来了什么（新老用户同播 · 2.2.4 → 2.2.8）**：老用户读作"更新了什么"，新用户读作"要装上的新东西"。
-   · 知识联邦引擎：知识检索更好用了。检索强度三档自选（小模型／大模型压缩版／两个都用），装不上自动回滚，什么都不装也照常能用；新增概念碰撞自查，知识卡里互相打架的观点，系统自己发现并提示你合并；检索的随包件补齐了，那个更聪明的检索法在 Windows 上不再悄悄失灵
+   · 知识联邦引擎：知识检索更好用了。检索强度三档自选（小模型／大模型压缩版／两个都用），装不上自动回滚，什么都不装也能记录和文字检索；新增概念碰撞自查，知识卡里互相打架的观点，系统自己发现并提示你合并（碰撞要装 Base 模型才开得动，不装则碰撞停产、新立场卡不再增加）；检索的随包件补齐了，那个更聪明的检索法在 Windows 上不再悄悄失灵
    · 读书助手：扫描版的书多了一条读法。Mac 上用系统自带的文字识别直接转写，不用另装识别库；转写后照样过人名、地名、数字抽检才入库
    · 每日伙伴：日记位置不用再手动改。安装时自动找你的笔记库，日记和成就记录跟着库走；晚上复盘抽卡照旧跟其他端互通，不重复、不漏抽
    · 好好学习：大版本升级，每张学习卡要过质量、关联、去重三道闸才见你
@@ -185,6 +186,15 @@ done
    端配置根：[读 adapters/<端ID>/capability.yaml 的 config_root，如 Qoder CN=~/.qoder-cn；占位端默认 ~/.workbuddy]（供步骤3 3c-2 写入 step3-done·v2.0.1）
    （占位端→明示"v2.0 未覆盖，走 WorkBuddy 兼容分支需你确认"，⛔不静默降级）
 ```
+
+> 🔴 **执行主体铁律（2026-10-21 立·Windows 用户 PowerShell 抱怨实证）**：本文档所有代码块（bash / powershell / pwsh）一律由 **AI 用自身终端工具执行**，⛔DO NOT 把命令贴给用户让其去 PowerShell/终端亲手跑。唯一例外仍是 WorkBuddy 自定义指令设置页粘贴（F20 注）：那是平台机制给不了设置框，不是命令。
+> 命令跑不动时按此顺序自救（逐级降级，全部用完仍红才可告知用户）：
+> ① `.ps1` 被执行策略拦 → 改 `powershell -NoProfile -ExecutionPolicy Bypass -File <脚本>`（或 `pwsh -ExecutionPolicy Bypass`）
+> ② `python`/`python3` 裸调失败 → 探测解释器绝对路径（WB 端 `$env:USERPROFILE\.workbuddy\binaries\python\versions\*\python.exe`；其余端 `where.exe python` 后跳过路径含 `WindowsApps\python` 的微软商店执行别名），⛔不裸调
+> ③ bash 语义在 PowerShell 跑不动（heredoc / `2>/dev/null` / `find ~/ -maxdepth` 等）→ 拆独立 .py 文件调用，或改用本条登记的 PowerShell 等价命令
+> ④ 解释器找不到 / 权限反复失败 → 用包根 `安装兜底.bat`（双击完成机械安装+自检，WorkBuddy 端专用）
+> **Step 0 检测实证律**：分流检测必须把工具原始输出行原样贴进播报，贴不出输出=没执行=⛔DO NOT 凭已知路径进分流决策表（防"知道路径"冒充"读过路径"）。PowerShell 等价检测：`Test-Path "$env:USERPROFILE\.workbuddy\IDENTITY.md"` / `Test-Path "<MC>\.install\step7-done.md"` / `Get-ChildItem "$env:USERPROFILE" -Depth 4 -Filter 问卷答案汇总.md -ErrorAction SilentlyContinue | Select-Object -First 3`
+> 告知用户时的话术底线：说"我来跑，卡在 X，需要你允许终端权限/或双击安装兜底.bat"，⛔不说"你打开 PowerShell 输入以下命令"。
 
 > 🔌 **配置根统一注记（v2.0.1·多端）**：本文档后续手工流程段落中出现的 `~/.workbuddy/`（含 Windows `$env:USERPROFILE\.workbuddy\`）均为 **WorkBuddy 端示例落点**——非 WB 端按上方"端配置根"替换（Qoder CN=`~/.qoder-cn/`；Windows 同理换目录名）。机械安装路径（`install_scripts.py --platform <端ID>`）已自动适配，无需人工替换；⛔只有走手工分支时才按本注记替换。`$env:USERPROFILE\.workbuddy\binaries\python` 为 WB 自带解释器专属——非 WB 端直接用 PATH 上的 `python3`/`python`。
 
@@ -360,6 +370,8 @@ ls ~/AI记忆库/.install/step7-done.md 2>/dev/null && echo "FOUND_INSTALL_MARKE
 find ~/ -maxdepth 4 -name "问卷答案汇总.md" 2>/dev/null | head -3
 ```
 
+> 🛡️ **Step 0.7 写前探测硬闸（定 MC 后·落任何文件前·2026-10-21 立·Win E盘安全策略拦截案）**：安装/升级模式动工前必须完成目标 MC 的 mkdir+试写+试删探测——`install_scripts.py` 内置机械硬闸（⛔不依赖 AI 记得执行文档条款，忘了也会被脚本拦住并打印指路），`fallback_install.ps1` 同语义；AI 代跑安装时同样先跑探测再进机械段。探测被拦时的定责与指路（读给用户）：①最常见来源=Windows Defender「受控文件夹访问」或第三方杀软勒索防护对批量脚本写入（本安装落 289+ 件）的误拦，**不是安装包代码出错** ②放行指引：Defender→病毒和威胁防护→管理受控文件夹访问→添加允许应用（python.exe），或把目标目录移出保护文件夹；第三方杀软找「信任/白名单」类入口 ③替代路径：先装默认位（`%USERPROFILE%\个人AI档案`）跑通全链再迁移；E/D 等非系统盘安装必须先过探测 ④半安装态安抚：之前装到一半失败**不用返工**——放行后重跑安装，Step 0 分流自动判「半安装态」走修复模式接着修，rollback 兜底件在包。
+
 **分流结果播报（固定稿·检测完成后必须输出·E）**：
 > ✅ 环境检测完成：你的情况是**[全新安装／老用户升级／半安装修复]**，接下来走[对应路线一句话]。
 > （AI 注记·⛔不照读：按分流决策表读取对应文件，不停顿不提问；下方决策表面向 AI 不面向用户）
@@ -427,7 +439,7 @@ find ~/ -maxdepth 4 -name "问卷答案汇总.md" 2>/dev/null | head -3
 ### 检测完成输出模板
 
 ```
-🏮 布洛陀 2.2.8 安装检测
+🏮 布洛陀 2.2.9 安装检测
 ├─ 用户类型：[全新 / 升级]
 ├─ 检测依据：[列出3项检测结果]
 │
@@ -922,7 +934,7 @@ Mac / Windows / Linux **三端通用，一样都不缺**。那 5 个 `.sh` 只�
 >
 > 首跑提示"state 未初始化"属正常——完成首轮人格盲评后，让 AI 会话写 `scripts/drift_check_state.json`（`{"last_check": "YYYY-MM-DD"}`）即进入月度循环。
 >
-> **分身同步周期守护 slice-watch（推荐注册·双端·声明见 `references/digital-twin/guardians.json`）**：装机端默认无人刷 `state_bus.json`，tsl_verify L6 会显示 ⚪本机未启用；注册本守护后 L6 显示真状态（✅全最新/🔴M个旧版/🟡账本超龄/⚪未启用）。
+> **分身同步周期守护 slice-watch（推荐注册·双端·声明见 `references/digital-twin/guardians.json`）**：不注册本守护时无人刷 `state_bus.json`，tsl_verify L6 显示 ⚪「本机未启用自动同步」——这是正常降级提示（分身本体不受影响，改完分身说一句「更新分身切片」即可手动刷新）。注册后：首轮自动按**本机安装事实**种子初始化端账本（⛔不需要你提供作者侧端清单文件·v2.2.0 起装机态端清单真源=部署注册表派生），首轮即显示真状态（✅全最新/🔴M个旧版/🟡账本超龄/⚪未启用）；此后新装/卸载工具每轮自动增量入账，Mac 与 Win 同机制（执行体同一份平台中性 python）。
 >
 > ```bash
 > # macOS：$MC=你的记忆共享中心绝对路径
@@ -939,6 +951,41 @@ Mac / Windows / Linux **三端通用，一样都不缺**。那 5 个 `.sh` 只�
 > # 验证：Get-ScheduledTask -TaskName DoenglingzSliceWatch ；state_bus.json mtime < 25h
 > ```
 >
+> **蒸馏调度月拍守护 distill-scheduler（推荐注册·双端·声明见 `references/digital-twin/guardians.json`）**：蒸馏/体检的"该做了"提醒靠调度器按时跑（每日幂等检查·无到期静默·月首自然带出待做清单）。不注册时提醒只在开对话的巡检里带出；注册后低频用户也不断"越用越好用"的承诺。
+>
+> ```bash
+> # macOS：$MC=你的记忆共享中心绝对路径
+> cp references/digital-twin/scripts/com.buluotuo.distill-scheduler.plist.template \
+>    ~/Library/LaunchAgents/com.buluotuo.distill-scheduler.plist
+> perl -i -pe 's|\[记忆共享中心\]|'"$MC"'|g' ~/Library/LaunchAgents/com.buluotuo.distill-scheduler.plist
+> launchctl load ~/Library/LaunchAgents/com.buluotuo.distill-scheduler.plist
+> launchctl kickstart -k gui/$(id -u)/com.buluotuo.distill-scheduler   # 首跑验证：蒸馏中心标记区 mtime 应被刷新
+> ```
+>
+> ```powershell
+> # Windows：注册同名计划任务（含卸载对称 -Uninstall）
+> pwsh -ExecutionPolicy Bypass -File "$MC\数字分身\scripts\distill-scheduler-install-task.ps1"
+> # 验证：Get-ScheduledTask -TaskName BuluotuoDistillScheduler ；蒸馏中心.md 标记区 mtime < 25h
+> ```
+>
+> **记忆健康自动巡检（推荐注册·双端·规格单真源 `awaken-memory-system/references/patrol.md` §3）**：每 6 小时巡检快照滞后+蒸馏待办；不注册时仪表盘「巡检趋势」显示「本机未注册自动巡检+本指引」（降级不阻塞·双模式会话内巡检照常可用）。
+>
+> ```bash
+> # macOS：$MC=你的记忆共享中心绝对路径
+> cp references/skills/awaken-memory-system/scripts/com.buluotuo.awaken-patrol.plist.template \
+>    ~/Library/LaunchAgents/com.buluotuo.awaken-patrol.plist
+> perl -i -pe 's|\[记忆共享中心\]|'"$MC"'|g' ~/Library/LaunchAgents/com.buluotuo.awaken-patrol.plist
+> launchctl load ~/Library/LaunchAgents/com.buluotuo.awaken-patrol.plist
+> launchctl kickstart -k gui/$(id -u)/com.buluotuo.awaken-patrol   # 首跑验证：~/buluotuo_bin/log/awaken_patrol.log 应现四段留痕
+> ```
+>
+> ```powershell
+> # Windows：注册同名计划任务（含卸载对称 -Uninstall）
+> pwsh -ExecutionPolicy Bypass -File "$MC\技能配置\awaken-memory-system\scripts\awaken-patrol-install-task.ps1"
+> # 验证：Get-ScheduledTask -TaskName BuluotuoAwakenPatrol ；$env:USERPROFILE\buluotuo_bin\log\awaken_patrol.log 现四段留痕
+> # 触达说明：Win 端告警=pending 落盘（$env:USERPROFILE\buluotuo_bin\log\awaken_patrol_alerts.pending），说「小美」会话内转述后自动清除
+> ```
+>
 > ⚠️ **`skill_write_gate_guard` 留痕机制**：它硬拦"未启动对应 Skill 就直接写管辖目录（技能配置／成长箱／数字分身／发布库／`~/.workbuddy/`）"。被拦时先启动对应 Skill，或显式留痕 `mkdir -p ~/.cache/skill_gate && touch ~/.cache/skill_gate/{域}.active`（4 小时有效）后重试。**纯读命令（ls/find/grep/cat…）已放行**，不误拦。
 
 
@@ -946,7 +993,7 @@ Mac / Windows / Linux **三端通用，一样都不缺**。那 5 个 `.sh` 只�
    - `ls <记忆中心>/脚本中心/rule_fragment_inject.py` 存在 ✅（脚本中心已生成）
    - `python3 <记忆中心>/知识联邦引擎/scripts/extract_concepts.py status` → 显示概念库进度 ✅（卡引擎已装）
 
-> **🧬 卡生产引擎（随脚本体系自动装配）**：**独立部署**到 `<记忆共享中心>/知识联邦引擎/`（2026-10-03 从脚本中心下独立，⛔ 不在脚本中心内）——支撑每日伙伴晚间复盘的**概念抽卡**（5.5 管道）与好好学习的**落卡/碰撞**。全部路径自适应记忆共享中心，无需配置；语义增强（bge 模型·可选）未装时自动降级为文本相似，功能不受阻。
+> **🧬 卡生产引擎（随脚本体系自动装配）**：**独立部署**到 `<记忆共享中心>/知识联邦引擎/`（2026-10-03 从脚本中心下独立，⛔ 不在脚本中心内）——支撑每日伙伴晚间复盘的**概念抽卡**（5.5 管道）与好好学习的**落卡/碰撞**。全部路径自适应记忆共享中心，无需配置；语义增强（bge 模型·可选）未装时，概念抽卡照常，碰撞扫描明确退出（不静默），检索降级为纯文字匹配。
 >
 > 💡 **完整的数字分身（含可选语义增强 / bge 模型·知情同意后自选）**见 §**数字分身完整版单装**——用户说「装数字分身」时走那条路。
    - `python3 install_scripts.py --list` → 38 个钩子，事件分布 9 / 23 / 5 / 1 ✅（F2：旧文 19·6/8/4/1 与实盘脱钩）
@@ -1020,12 +1067,13 @@ Phase C 语义增强（可选·知情同意后自选·默认跳过）
 
 > 展示纪律：向用户按本节原文完整呈现（渲染时 30 秒框在最前）；⛔现场改写数字、增删选项。
 
-### ⚡ 30 秒版（赶时间的话，带走这四行）
+### ⚡ 30 秒版（赶时间的话，带走这几行）
 
-* 拿不定主意 → **路线二：双模型**（多等几分钟，两个岗满配）
-* 想最省事 / 机器较老 → **路线一：只装 Base**（功能完整）
-* 一个都不装 → 系统以文字检索照常跑，随时可回来补装
-* **四个选项没有一个会选坏，怎么选都不塌。**
+* 我要系统继续长出新立场卡 → **必须装 Base**：路线一 Base，或路线二双模型
+* 我只想搜得准，不要系统产新观点 → **路线一：只装 Large 压缩版**（碰撞停产，新立场卡不再增加）
+* 拿不定主意 / 想要满配 → **路线二：双模型**（多等几分钟，两个岗都满）
+* 一个都不装 → 只剩记录加文字检索：语义检索、概念碰撞都不可用，随时可补装
+* **四个选项都不会把系统装坏，但它们不是同一个产品：装了 Base 是会产卡的完整版，只装 Large 是最强检索版，都不装是记录加文字检索版。**
 
 ---
 
@@ -1059,6 +1107,12 @@ Phase C 语义增强（可选·知情同意后自选·默认跳过）
 
 > 一句话：不装模型也有检索，模型点亮的是"换个说法也找得到"。
 
+**但要说清另一件事：模型不只管检索，它还管碰撞。**
+
+好好学习要把两张概念卡配对，靠的就是 Base 模型算出来的语义相似度。不装 Base，自动配对不工作，碰撞型立场卡产不出来。概念卡照样每天抽、照样入库，只是撞不了。现有立场卡九成以上来自碰撞。
+
+概念卡是原料，碰撞是产线。不装 Base，原料照样入库，产线停转。
+
 ### 第 4 步 · 为什么是"两个模型"而不是一个
 
 这套配置是被实测推着走的。早期全线用 Base，几百张卡的规模够用；后来卡片涨上去，我们做了系列检索测试，结论是：**库越大，"用你的问法找到卡里另一种说法"越吃力，这是 12 层小模型最先撑不住的活。** 回头上 large 原版？2.4GB 体积、常驻内存 1.2GB 以上，日常办公机直接否决。于是把它量化压小：检索能力接近大模型，开销回到小模型水平。
@@ -1076,7 +1130,7 @@ Phase C 语义增强（可选·知情同意后自选·默认跳过）
 **路线一：单模型安装（二选一）**
 
 * **只装 Base**：冷启动到几千张卡的最优解，轻、快、实测够用；检索和碰撞两个岗都由它兼着，功能完整。卡片上万后想升级，随时重跑这一步补装。
-* **只装 Large 压缩版**：检索拿到最强配置。一个诚实的提醒：碰撞扫描器目前只认 Base 的格式，读不了量化件，**只装它时碰撞扫描会停摆**（系统会明确提示，不是悄悄失灵），检索照常最强。适合：只要"搜得准"、暂时不用概念碰撞的你。
+* **只装 Large 压缩版**：检索拿到最强配置。一个诚实的提醒：碰撞扫描器目前只认 Base 的格式，读不了量化件，**只装它时碰撞扫描会停摆**（系统会明确提示，不是悄悄失灵），检索照常最强。这不是系统坏了，是这条路线本来就不含碰撞岗。适合：只要"搜得准"、不要系统产新观点的你。
 
 **路线二：双模型安装（系统最优形态，推荐）**
 
@@ -1101,14 +1155,15 @@ Phase C 语义增强（可选·知情同意后自选·默认跳过）
 
     你的情况                       →  选择
     ──────────────────────────────────────────
-    拿不定主意                      →  路线二 双模型（推荐）
+    我要系统继续长出新立场卡        →  必须含 Base：路线一 Base 或路线二 双模型
+    拿不定主意 / 想要满配           →  路线二 双模型（推荐）
     机器较老(无AVX2) / 想最省事     →  路线一 只装 Base
-    只要搜得准，不用概念碰撞        →  路线一 只装 Large 压缩版
-                                   （碰撞扫描停摆会被明说）
-    暂作观望                        →  不装：纯 BM25 照常跑
-                                   随时重跑这一步补装
+    只要搜得准，不要系统产新观点    →  路线一 只装 Large 压缩版
+                                   （碰撞停产，新立场卡不再增加）
+    暂作观望                        →  不装：记录加文字检索照常跑
+                                   语义检索与概念碰撞不可用，随时可补装
 
-四个选项没有一个会选坏：装了有装的准，不装有不装的底，卡住了系统会明说，改主意随时重跑。**怎么选都不塌，只是强弱之别。**
+四个选项没有一个会让系统坏掉：装了有装的准，不装有不装的底，卡住了系统会明说，改主意随时重跑。但要分清两种差别：检索是强弱之别，碰撞是有无之别。**想要系统继续长观点，Base 不能省。**
 
 装好之后，接着就是那 100 道题：分身的眼睛配好了，接下来让它认识你。
 
@@ -1251,6 +1306,7 @@ Phase C 语义增强（可选·知情同意后自选·默认跳过）
 | **CHANGELOG.md** | 📋 版本记录 | 想了解每个版本改了什么时翻看，不影响安装流程 |
 | **verify.sh / verify.ps1** | ✅ 安装后自检门禁 | 安装完成后跑 `bash verify.sh`（macOS/Linux）或 `powershell -ExecutionPolicy Bypass -File verify.ps1`（Windows）——只读检查数据污染/系统文件/规则三层/记忆Skill/包干净度，退出码 0=全过；`MEMORY_CENTER=/path` 可指定自定义记忆中心；**非 WorkBuddy 端必须带端参数** `bash verify.sh --platform <端ID>` / `verify.ps1 -Platform <端ID>`（v2.0.1·落点检查按端 capability.yaml 的 config_root，缺省回落 WB 端会误报） |
 | **rollback.sh / rollback.ps1** | ⏪ 回滚脚本 | 升级后需要回到旧版时用：macOS/Linux 用 `rollback.sh`，Windows 用 `rollback.ps1`。⚠️ `rollback.sh` 为 UTF-8 无 BOM（bash 脚本要求），Windows 记事本/GBK 环境打开显示乱码属正常现象，不是文件损坏，无需修复 |
+| **安装兜底.bat + fallback_install.ps1** | 🆘 Win 双点击兜底入口 | WorkBuddy 端 AI 终端跑不动、或用户不让 AI 碰终端时用：双击 bat 完成机械安装+自检（只装机械件不含答题；收尾原样播报 verify 红绿明细，⛔只报"安装完成"） |
 | `references/steps/step1-identity-check.md`（逐段读取 step1→step7） | ⚙️ 执行引擎 | 分流完成后，按步骤逐段读取 |
 
 > **🪝 关于钩子安装**：执行引擎在「步骤6（Skill 安装）」之后、「步骤6.5（记忆琥珀）」之前，自动执行一个**不独立计步序**的「步骤6·钩子安装」子步骤——把未知未知路由兜底钩子 `route_unknown_unknown.py` 挂到 `~/.workbuddy/settings.json` 的 `hooks.Stop`，并挂载铁律硬墙五件套（`~/.workbuddy/hooks/rule/` → UserPromptSubmit 挂 `rule_fragment_inject.py`、Stop 挂 `rule_three_layer_guard.py` ⑥覆盖守卫），同时在用户机器生成**脚本中心文件夹** `[记忆共享中心]/脚本中心/`（全新/升级用户都跑）。不在此处改分流逻辑，随执行引擎自动发生。

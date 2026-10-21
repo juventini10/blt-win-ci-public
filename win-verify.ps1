@@ -694,6 +694,48 @@ if ($py -and (Test-Path -LiteralPath (Join-Path $PKG "references/scripts/router.
   Clear-Env "BULUOTUO_SKILLS_DIR"
 } else { no "T21 无法执行：包内 router.py 缺失或无 python（跳过=判据未跑，按红处理）" }
 
+# ---------- T22: 自动巡检 Win 对等件真机腿（2026-10-21 唤醒巡检Win对等件根治·DoD=注册→触发→日志实证→趋势行→卸载）----------
+# 判据同 T19 纪律：⛔不停在"任务注册+exit 0"——须实证巡检真完成（[完成]行现身）且仪表盘出 ready 态趋势。
+# 执行体=平台中性 awaken_patrol.py（T15 deploy_skills 落盘）；install-task.ps1 只做载体注册（单一真源⛔ps1逻辑副本）。
+# 日志路径注意：任务进程 Path.home()=真实用户 profile（不随 runner 沙盒 HOME 重定向）；dashboard 在 runner 里跑须临时指回 $oldHome 才同路径对账。
+info "T22: awaken 巡检 Win 真机（注册+触发+日志实证+卸载）..."
+$AP_SCRIPTS = Join-Path $E2E_MC "技能配置\awaken-memory-system\scripts"
+$AP_INSTALL = Join-Path $AP_SCRIPTS "awaken-patrol-install-task.ps1"
+$AP_TASK    = 'BuluotuoAwakenPatrol'
+$AP_LOG     = Join-Path $oldHome 'buluotuo_bin\log\awaken_patrol.log'
+if (-not (Test-Path $AP_INSTALL)) {
+  no "T22 deploy_skills 未落盘 awaken 巡检 Win 件（缺 $AP_INSTALL）"
+} elseif (-not $PSH) { info "T22 跳过: 无 pwsh/powershell" } else {
+  & $PSH -NoProfile -ExecutionPolicy Bypass -Command "& '$AP_INSTALL'" *> (Join-Path $SB "t22_install.log")
+  $t22rc = $LASTEXITCODE
+  $task22 = Get-ScheduledTask -TaskName $AP_TASK -ErrorAction SilentlyContinue
+  if ($t22rc -ne 0 -or -not $task22) {
+    no "T22 注册失败 rc=$t22rc task=$(if ($task22) {'在位'} else {'缺席'})"
+    Get-Content -Encoding UTF8 (Join-Path $SB "t22_install.log") -ErrorAction SilentlyContinue | Select-Object -First 20 | ForEach-Object { Write-Host "    T22LOG: $_" }
+  } else {
+    ok "T22 $AP_TASK 已注册（state=$($task22.State)·schtasks 实读）"
+    $deadline22 = (Get-Date).AddSeconds(90); $t22done = $false
+    while ((Get-Date) -lt $deadline22) {
+      Start-Sleep -Seconds 5
+      $tl22 = Get-Content -Encoding UTF8 $AP_LOG -ErrorAction SilentlyContinue
+      if ($tl22 -and (@($tl22 | Where-Object { $_ -match '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \[完成\]' }).Count -gt 0)) { $t22done = $true; break }
+    }
+    if (-not $t22done) { no "T22 90s 未现[完成]行——任务已注册但巡检未真完成（⛔不把"注册成功"当"巡检成功"）" }
+    else {
+      ok "T22 巡检日志四段留痕实证（[完成]行在·执行体=平台中性 py）"
+      $origH22 = $env:HOME; $origP22 = $env:USERPROFILE
+      $env:HOME = $oldHome; $env:USERPROFILE = $oldHome   # dashboard 与任务日志同路径对账（临时指回真实 profile）
+      $dash22 = & $py (Join-Path $AP_SCRIPTS "awaken_health_dashboard.py") --weeks 1 2>&1 | Out-String
+      $env:HOME = $origH22; $env:USERPROFILE = $origP22
+      if ($dash22 -match '巡检趋势（') { ok "T22 仪表盘巡检趋势出真实数字（ready 态·非降级文案）" }
+      else { no "T22 趋势行未到 ready——核 dashboard 三态判定与日志路径"; ($dash22 -split "`n") | Where-Object { $_ -match '巡检趋势' } | ForEach-Object { Write-Host "    T22DASH: $_" } }
+    }
+    & $PSH -NoProfile -ExecutionPolicy Bypass -Command "& '$AP_INSTALL' -Uninstall" *> (Join-Path $SB "t22_uninstall.log")
+    if (-not (Get-ScheduledTask -TaskName $AP_TASK -ErrorAction SilentlyContinue)) { ok "T22 -Uninstall 卸载干净" }
+    else { no "T22 卸载失败（$AP_TASK 仍在）——手动清: Unregister-ScheduledTask -TaskName $AP_TASK -Confirm:0" }
+  }
+}
+
 # ---------- 收尾 ----------
 $env:USERPROFILE = $oldHome
 $env:HOME = $oldHome

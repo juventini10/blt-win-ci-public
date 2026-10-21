@@ -9,6 +9,14 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 > 本文件记录版本变更历史（最新条目=当前版本，与 SKILL.md frontmatter 对齐·v8.1.3修正自述与实盘矛盾）。历史叙述以本文件为准。
 
+### v8.4.0 — 2026-10-21（Win 对等件根治·自动巡检双端化·Y 级·任务卡 2026-10-21-唤醒巡检Win对等件根治）
+
+- **驱动**：Win 用户报障「巡检趋势：日志不可用（巡检未运行或日志被清理）」不可用。实查根因=自动巡检载体三重 macOS 专属（launchd plist + bash 脚本 + osascript），Win 装机注册的三个计划任务（SystemLogWatch/DoenglingzSliceWatch/记忆琥珀）无 patrol 对等件——**机制在 Win 从未存在，文案却把结构性缺失说成运行时故障**；附加发现：plist 模板文件连包内都没有（仅文档引用），Mac 新用户同样从未有自动巡检。
+- **落地（P1-P6）**：①新增 `scripts/awaken_patrol.py` 平台中立执行体（先例判据=slice-watch「执行体同一份平台中性 python·单一真源⛔sh/ps1逻辑副本」；四段留痕格式逐字不变，dashboard 解析零改动兼容）；②`awaken_patrol.sh` 降薄壳转发 py（兼容作者机旧 plist）；③新增 `scripts/awaken-patrol-install-task.ps1`（Task Scheduler `BuluotuoAwakenPatrol`·Daily+Repetition PT6H·StartWhenAvailable 补跑·S4U 加固三连·`-Uninstall` 对称·镜像 slice-watch 先例）；④新增 `scripts/com.buluotuo.awaken-patrol.plist.template`（入包·[记忆共享中心] 渲染惯例）；⑤dashboard `patrol_trend()` 三态化：missing=「本机未注册自动巡检+注册指引」/ empty=「已注册但无记录」/ ready=出趋势——根治误导文案；⑥触达层分端：mac=osascript 弹窗，Win=pending 告警文件（`~/buluotuo_bin/log/awaken_patrol_alerts.pending`）由唤醒轻量 §4 会话内转述后删除（设计决策a·S4U 非交互会话弹不出 toast·形态b待你拍板可升级）；⑦patrol.md 跨端声明/§3/§4/§5 与 dual-mode.md 3.5.2 同步改写，INSTALL.md 增「自动巡检注册」双端指引（包面），win-verify.ps1 挂 T20（包面）。
+- **同批自洽修复**：`build_advice` 的 `trend == "↑"` 为 dict↔str 比较恒假（趋势上升注记从未显示过的潜伏 bug），随三态改造修正为 `trend.get("trend")`；dashboard notify 统计接受 Win 标记「告警已记录」（语义=告警到达用户侧）。
+- **验证（Mac 实盘）**：薄壳→py 全链路实跑 rc=0·四段留痕完整（[快照]uptodate/[蒸馏]NONE静默/[触达]无事不打扰/[完成]）；dashboard 三态实测全中（ready=运行68次真实趋势/missing/empty 用假 home 反证）；Win 分支用 sys.platform=win32+假 home 模拟实跑：告警落 pending ✓ 日志行格式 ✓ 失败显形（快照fail+巡检异常双告警）✓；py_compile 双件过。**Win 真机腿未跑**（本端无 Win 环境），由 win-verify T20 + Win 端用户复验收口——发版链跨平台真机项纪律（Mac 绿≠可发布·本条如实挂账）。
+- **版本判定**：8.3.3→**8.4.0**（Y 级·新增独立功能面=Win 载体对等件+三态文案，判定行为对 mac 端向后兼容）。
+
 ### v8.3.3 — 2026-10-03（clock-loop E路径Loop修复批·E5声明↔实物断链收口·Z 级）
 
 - **驱动**：本轮 Loop（2026-10-03）实核逮出 v8.3.1 声明「负例证据 5/5（`test_distill_core.py`）」**实物全档案不存在**（find+grep 双通道零命中，仅 CHANGELOG 提及）=E5 声明-实物断链（09-30 独立审查同族病新实例：负例当时大概率真跑过，但考据锚未落盘）。⚠️ 纠正记录(2026-10-03)：v8.3.1 原条目不改（append-only），由本条补实物收口。

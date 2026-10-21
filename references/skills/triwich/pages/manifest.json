@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-10-21 22:11:21",
+  "algorithm": "sha256(body-after-frontmatter)[:8] (真源=make_manifest.py)",
+  "pages": [
+    {
+      "path": "pages/p-mechanism.md",
+      "fingerprint": "912a7fa2",
+      "bytes": 18078
+    },
+    {
+      "path": "pages/p0-step0.md",
+      "fingerprint": "6afac769",
+      "bytes": 6377
+    },
+    {
+      "path": "pages/p05-assumption-gates.md",
+      "fingerprint": "d6cf7b06",
+      "bytes": 10286
+    },
+    {
+      "path": "pages/pr-reference/deps-manifest.md",
+      "fingerprint": "e2a1fbd3",
+      "bytes": 9833
+    }
+  ]
+}

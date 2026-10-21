@@ -47,14 +47,21 @@ def _walk_up_dirs(start, levels=4):
             break
         out.append(cur)
     return out
-_CANDIDATES = [os.path.normpath(os.path.join(_SCRIPT_DIR, os.pardir, "变更日志.md"))]
+# 账本根候选（顺序保持：脚本旁优先→env→上溯→作者兜底）
+_ROOTS = [os.path.normpath(os.path.join(_SCRIPT_DIR, os.pardir))]
 # 显式 MC 环境变量优先于目录上溯（2026-10-20 审查吸收：上溯可能先命中父目录里别人的账本）
 _mc_env = os.environ.get("MEMORY_CENTER") or os.environ.get("MC_PATH")
 if _mc_env:
-    _CANDIDATES.append(os.path.join(os.path.expanduser(_mc_env), "变更日志.md"))
+    _ROOTS.append(os.path.expanduser(_mc_env))
 for _d in _walk_up_dirs(_SCRIPT_DIR, 4):
-    _CANDIDATES.append(os.path.join(_d, "变更日志.md"))
-_CANDIDATES.append(os.path.expanduser("[记忆共享中心]/变更日志.md"))
+    _ROOTS.append(_d)
+_ROOTS.append(os.path.expanduser("[记忆共享中心]"))
+# 每个根补两种布局：<root>/变更日志.md 与 <root>/记忆规则/变更日志.md
+#   （2.2.8 上游反馈Bug2：安装包规则层账本落 <MC>/记忆规则/，旧候选只认根→fail(3)；作者本机账本在MC根故未暴露）
+_CANDIDATES = []
+for _r in _ROOTS:
+    _CANDIDATES.append(os.path.join(_r, "变更日志.md"))
+    _CANDIDATES.append(os.path.join(_r, "记忆规则", "变更日志.md"))
 # 候选全空=不猜落点（write 段对不存在目标会 fail(3) 大声报错）
 DEFAULT_TARGET = next((p for p in _CANDIDATES if os.path.exists(p)), "")
 LOCK_MODE = 0o444
