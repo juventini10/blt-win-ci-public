@@ -1,0 +1,31 @@
+# win-diag-pathintegrity.yml — 一次性诊断（R7挂账销账：runner 装后产物"路径完整性1件命中"定位具体文件）
+# 不属四测本体，判完即撤。手动触发或推本文件即跑。
+name: win-diag-pathintegrity
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  diag:
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 装后 MC 上跑 path_integrity_check 全量明细
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          New-Item -ItemType Directory -Path (Join-Path $env:USERPROFILE '.workbuddy') -Force | Out-Null
+          $in = Join-Path $env:RUNNER_TEMP 'in.txt'
+          @('','') | Out-File -FilePath $in -Encoding ascii
+          $null = cmd /c """安装兜底.bat"" < ""$in""" 2>&1
+          $mc = Join-Path $env:USERPROFILE '个人AI档案'
+          $py = (Get-Command python).Source
+          Write-Output '=== path_integrity_check.py 全量输出 ==='
+          & $py references\scripts\path_integrity_check.py --root $mc
+          Write-Output ('=== checker rc=' + $LASTEXITCODE + ' ===')
+          exit 0
