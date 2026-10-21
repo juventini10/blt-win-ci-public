@@ -29,9 +29,9 @@ BAD_CALL = re.compile(
     "expanduser\\(" + Q + "\\s*" + chr(0x7E) + "(/[A-Za-z]:[/\\\\]|//)"
     "|" + Q + chr(0x7E) + "[A-Za-z]:[/\\\\]"
 )
-# 2026-10-21 反哺(上游反馈Bug1·李生Win)：{{X_ROOT}} 填充值已含模板后缀→装机产物 "A/B/A/B" 段重复双拼。
+# 2026-10-21 反哺(上游反馈Bug1·李生Win)：{{X_ROOT}} 填充值已含模板后缀→装机产物 "A/B/A/B" 段重复双拼。   # PATH-INTEGRITY-EXEMPT 判据自形/病形引用行，非装机产物
 #   区别于运行时双拼(BAD_CALL·expanduser/波浪号形)。限产物面判，--pkg-template 跳过(模板层无重复+prose病形示例不误报)。
-REPEAT_SEG = re.compile(r"([^/\s]+/[^/\s]+)/\1")
+REPEAT_SEG = re.compile(r"([^/\s]+/[^/\s]+)/\1")   # PATH-INTEGRITY-EXEMPT 判据自形/病形引用行，非装机产物
 REPEAT_EXT = {".py", ".sh", ".ps1", ".json", ".yaml", ".yml", ".html", ".md"}
 EXEMPT = "PATH-INTEGRITY-EXEMPT"                          # 行级显式豁免标记
 TEXT_EXT = {".md", ".py", ".sh", ".ps1", ".yaml", ".yml", ".json", ".txt", ".html"}
