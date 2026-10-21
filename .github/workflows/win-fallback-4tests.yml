@@ -60,7 +60,7 @@ jobs:
           Write-Output $outStr
           Write-Output ("---- bat rc=$rc duration=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))s ----")
           if ($outStr.Contains([char]0xFFFD)) { Write-Output 'T1-FAIL: 输出含 U+FFFD，中文乱码（BOM/chcp 链失效）'; exit 1 }
-          foreach ($k in @('写前探测通过', '使用解释器', '执行机械安装', '执行装后自检')) {
+          foreach ($k in @('写前探测通过', '使用解释器', '执行机械安装', 'Skill 面落位', '执行装后自检')) {
             if ($outStr -notmatch [regex]::Escape($k)) { Write-Output "T1-FAIL: 输出缺关键段 [$k]（bat LF 行尾坑或链路中断）"; exit 1 }
           }
           $m = Get-Content (Join-Path $env:USERPROFILE '个人AI档案\.install\step9-done.md') -Raw -ErrorAction SilentlyContinue
@@ -70,6 +70,11 @@ jobs:
           if ($rc -eq 0) { Write-Output 'T4-PASS(绿): 整链跑通且 verify 全绿，bat rc 正确回传' }
           elseif ($outStr -match '\[WARN\]') { Write-Output "T4-PASS(黄): 整链跑通但 verify rc=$rc 未全绿，红绿明细如上，归因交人工" }
           else { Write-Output "T4-FAIL: bat rc=$rc 未走通链路"; exit 1 }
+          # R9 断言（三态分账+Skill补腿生效判据）
+          if ($outStr -match '记忆Skill仅 0/10') { Write-Output 'R9-FAIL: Skill 0/10 仍现形（[2.5]落位腿未生效？）'; exit 1 }
+          if (($outStr -notmatch '待办') -and ($outStr -notmatch '自检通过')) { Write-Output 'R9-FAIL: 汇总行既无三态待办也无全绿声明'; exit 1 }
+          if ($outStr -match '运行时状态点文件|运行期缓存') { Write-Output 'R9-FAIL: exclude-runtime 未生效（装机出生物仍报卫生缺陷）'; exit 1 }
+          Write-Output 'R9-ASSERT-PASS: Skill落位腿在场·0/10已消·三态汇总在位·运行期出生物已豁免'
           # 行为层判定完成即绿本步（verify 内容红=包面既存账归因面，不在此拦；pwsh 步骤必须显式退出防继承 native rc）
           exit 0
 

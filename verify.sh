@@ -20,9 +20,11 @@
 # ============================================================
 set -uo pipefail
 G='\033[0;32m'; R='\033[0;31m'; Y='\033[1;33m'; C='\033[0;36m'; N='\033[0m'
-PASS=0; FAIL=0
+PASS=0; FAIL=0; PEND=0
 ok(){ echo -e "${G}  [PASS] $1${N}"; PASS=$((PASS+1)); }
 no(){ echo -e "${R}  [FAIL] $1${N}"; FAIL=$((FAIL+1)); }
+# 三态分账（2026-10-22 R9·条文70·与 verify.ps1 同口径镜像·条文68）
+pend(){ echo -e "${C}  [PEND] $1${N}"; PEND=$((PEND+1)); }
 
 PKG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ── v2.0.1 多端配置根（2026-09-30 L3审计根治：验收门禁不覆盖非WB端）────────
@@ -96,6 +98,8 @@ PY=""
 # 试跑校验（2026-09-20 回灌群友 Windows 实测）：Git Bash 下 python3 可能命中
 # MS Store stub（command -v 可见·实际执行 exit 49）——仅探测不试跑会把坏解释器当可用。
 py_ok(){ "$1" -c "pass" >/dev/null 2>&1; }
+STEP5_DONE=0; [ -f "$MC/.install/step5-done.md" ] && STEP5_DONE=1
+miss(){ if [ "$STEP5_DONE" = 0 ]; then pend "$1（AI引导段未跑·答题后重跑即消）"; else no "$1"; fi; }
 for cand in "$HOME/.workbuddy/binaries/python/versions/"*/bin/python3 "$HOME/.workbuddy/binaries/python/versions/"*/bin/python; do
   if [ -x "$cand" ] && py_ok "$cand"; then PY="$cand"; break; fi
 done
@@ -135,7 +139,7 @@ for e in "references/templates/SOUL.md|人格模板" "references/templates/IDENT
   rel="${e%%|*}"; lb="${e#*|}"
   if [ -s "$PKG_ROOT/$rel" ]; then ok "发布模板 $lb: $rel"; else no "发布模板 $lb: $rel (缺失)"; fi
 done
-if [ -s "$MC/核心层/CORE.md" ]; then ok "记忆中心 核心层: CORE.md"; else no "记忆中心 核心层: CORE.md (缺失/为空)"; fi
+if [ -s "$MC/核心层/CORE.md" ]; then ok "记忆中心 核心层: CORE.md"; else miss "记忆中心 核心层: CORE.md (缺失/为空)"; fi
 
 # 1.5) 平台系统文件（落点 SSOT = adapters/<端>/capability.yaml 的 system_file_paths）
 #
@@ -253,7 +257,7 @@ PYEOF
     case "$st" in
       OK)     ok  "平台系统文件: $nm → $CONFIG_ROOT/$rel" ;;
       MERGED) ok  "平台系统文件: $nm → $rel" ;;
-      MISS)   if [ "$nm" = "自定义指令" ]; then no "平台系统文件: $nm → $CONFIG_ROOT/$rel (缺失·F20 预期态注：设置框字段由用户手动粘贴·安装输出有指引·粘后重跑即消·⛔非装失败)"; else no "平台系统文件: $nm → $CONFIG_ROOT/$rel (缺失)"; fi ;;
+      MISS)   if [ "$nm" = "自定义指令" ]; then no "平台系统文件: $nm → $CONFIG_ROOT/$rel (缺失·F20 预期态注：设置框字段由用户手动粘贴·安装输出有指引·粘后重跑即消·⛔非装失败)"; else miss "平台系统文件: $nm → $CONFIG_ROOT/$rel (缺失)"; fi ;;
          BADF)   no  "平台系统文件: $nm — $rel (字段路径取不到·声明有误)" ;;
          EMPTY)  echo -e "${C}  [i] 平台系统文件: $nm → $rel (载体在位·内容待用户填·非缺陷)${N}" ;;
       FAIL)   no  "平台系统文件: $nm" ;;
@@ -805,7 +809,7 @@ if [ -n "$PY" ] && [ -f "$PKG_ROOT/references/scripts/pkg_cleanliness_check.py" 
   #    并提供了 --fix-cache；但本节从未传 ⇒ 设计者给的解法一直没接上。
   #    ⛔ 其余 7 类（私人称呼/用户名/.bak/tmp/runtime/log/author_side）照报——只清 pycache，
   #      ⛔ 不许"清了一半就说干净"（真源 L301-302 的纪律）。
-  if ! py_run "$PKG_ROOT/references/scripts/pkg_cleanliness_check.py" --pkg-root "$PKG_ROOT" --fix-cache; then
+  if ! py_run "$PKG_ROOT/references/scripts/pkg_cleanliness_check.py" --pkg-root "$PKG_ROOT" --fix-cache --exclude-runtime; then  # 2026-10-22 R9 加 exclude-runtime·与 verify.ps1 同口径（条文68）
     # 2026-09-20 B6（群友计数口径）：原实现只置 DIRT 不调 no() → FAIL 计数不增 →
     #   检查器报多条 [FAIL] 而汇总"全过"=假绿。修法：检查器级计 1 项 + 明细口径声明。
     DIRT=1; no "安装包干净度: 检查器报污染（上方 [FAIL] 行=分类明细·__pycache__ 已自动清理·本汇总按检查器级计 1 项）"
@@ -839,7 +843,7 @@ fi
 #      病形与判据细节住 py 头注（存在∧非空·断言≥1⛔硬编码件数）；2026-10-21 下沉（条文68）
 if [ -n "$PY" ] && [ -f "$PKG_ROOT/references/scripts/verify_pair_checks.py" ]; then
   _skl=$("$PY" "$PKG_ROOT/references/scripts/verify_pair_checks.py" skeleton "$MC" 2>&1)
-  if [ $? -eq 0 ]; then ok "目录型骨架在位且非空: $_skl"; else no "目录型骨架: $_skl"; fi
+  if [ $? -eq 0 ]; then ok "目录型骨架在位且非空: $_skl"; else miss "目录型骨架: $_skl"; fi
 else no "目录型骨架: 仪器未跑（python/verify_pair_checks 不可用·⛔失明期间不得判无）"; fi
 
 # 4.7) 摘要版三表占位符闭环（C08·判据=verify_pair_checks.summary_tables 双端单源·本段为调用壳）
@@ -861,7 +865,7 @@ if [ -n "$PY" ] && [ -f "$PKG_ROOT/references/scripts/verify_pair_checks.py" ] &
     fi
     if [ -f "$_INST_SUM" ] && [ -n "${_left:-}" ] && [ "$_left" != "NA" ]; then
       if [ "${_left:-0}" -gt 0 ] 2>/dev/null; then
-        no "摘要版答案未注入: 残留占位符 ${_left} 处（step5 三表逐格替换未完成·用户画像不完整）"
+        miss "摘要版答案未注入: 残留占位符 ${_left} 处（step5 三表逐格替换未完成·用户画像不完整）"
       else
         ok "摘要版答案已注入: 无残留占位符"
       fi
@@ -876,8 +880,10 @@ BV=$(cat "$MC/.install/version" 2>/dev/null || echo "未知(未完成安装或�
 echo -e "${C}  [i] 布洛陀版本: $BV${N}"
 
 echo ""
-if [ "$FAIL" = 0 ]; then
+if [ "$FAIL" = 0 ] && [ "$PEND" = 0 ]; then
   echo -e "${G}=== 自检通过: $PASS 项全过 ===${N}"; exit 0
+elif [ "$FAIL" = 0 ]; then
+  echo -e "${C}=== 机械段全绿: $PASS 项 · 待办 $PEND 项（AI 引导段未完成·答完题回来重跑 verify 即清零·待办不是故障）===${N}"; exit 0
 else
   echo -e "${R}=== 自检未过: $FAIL 项失败(见上) ===${N}"; exit 1
 fi

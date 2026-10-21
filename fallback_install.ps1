@@ -66,12 +66,21 @@ if ($LASTEXITCODE -ne 0) {
     Read-Host '按回车关闭窗口'
     exit $LASTEXITCODE
 }
+# [2.5] Skill 面程序化部署（2026-10-22 R9 补腿：此腿=INSTALL 步骤6 的机械动作·不依赖答题·
+#       漏调则兜底用户恒缺 10 Skill——凡不依赖用户输入的机械步骤必须纳入兜底范围）
+Write-Host '[2.5] Skill 面落位（install_scripts.py --deploy-skills）...'
+& $py (Join-Path $pkgRoot 'install_scripts.py') --platform workbuddy --deploy-skills $mc
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ('[FAIL] Skill 落位失败 rc=' + $LASTEXITCODE + '，请保留本行截图反馈，先别关窗')
+    Read-Host '按回车关闭窗口'
+    exit $LASTEXITCODE
+}
 Write-Host '[3/3] 执行装后自检（verify.ps1）...'
 $env:MEMORY_CENTER = $mc   # 2026-10-21 runner四测逮到的真缺陷：不传则 verify 默认 ~/记忆共享中心，全新Win机整链假红
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $pkgRoot 'verify.ps1')
 $rc = $LASTEXITCODE
 if ($rc -eq 0) {
-    Write-Host '[OK] 自检全绿。机械安装段完成，请回 AI 对话窗继续引导流程（33题等）。'
+    Write-Host '[OK] 机械安装段完成（若上方出现待办行=答题段未跑非故障，回 AI 对话窗继续引导流程后重跑即消）。'
 } else {
     Write-Host ('[WARN] 自检未全绿 rc=' + $rc + '，上方红绿明细是结果的一部分，请先拍照反馈再关窗')
 }
