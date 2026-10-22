@@ -35,8 +35,11 @@ REPEAT_SEG = re.compile(r"([^/\s]+/[^/\s]+)/\1")   # PATH-INTEGRITY-EXEMPT 判�
 REPEAT_EXT = {".py", ".sh", ".ps1", ".json", ".yaml", ".yml", ".html", ".md"}
 EXEMPT = "PATH-INTEGRITY-EXEMPT"                          # 行级显式豁免标记
 TEXT_EXT = {".md", ".py", ".sh", ".ps1", ".yaml", ".yml", ".json", ".txt", ".html"}
+# .venv/venv/node_modules=第三方依赖（site-packages 自带病形引用·非装机产物）；
+# _wip=端用户暂存区（2026-10-23 V2.2.9 Win 反馈 P2-5：实测 _wip 单项 844 件噪声掩盖真命中）
 SKIP_DIRS = {".git", "__pycache__", ".package-lock", "记忆琥珀", "logs", "_archive",
-             ".snapshots", ".guard", ".patrol"}
+             ".snapshots", ".guard", ".patrol",
+             ".venv", "venv", "_wip", "node_modules"}
 
 
 def scan(root, only_dirs=None, ph_files=None):

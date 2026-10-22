@@ -180,12 +180,23 @@ def main():
                      f"要么显式声明理由重跑——⛔静默等待=今晚案1重演\n")
     sys.stdout.write("".join(lines))
 
+    # F6（v1.1）：成功态默认落副本文件（免疫终端吞 stdout）；路径进台账行
+    out_path = "-"
+    if status == "ok" or status.startswith("no_hit"):
+        try:
+            out_dir = os.path.join(os.path.expanduser("~"), ".cache", "triwich_scan", "out")  # ⛔不进 Skill 包（防 file_clutter）
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, "%s_%s.txt" % (args.ts, fp))
+            with open(out_path, "w", encoding="utf-8") as f:
+                f.write("".join(lines))
+        except Exception:
+            out_path = "-"
     append_ledger(args.ledger,
                   f"scan|ts={args.ts}|t={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                   f"|mode={args.mode}|fp={fp}|pattern={args.pattern}|roots={len(args.roots)}"
                   f"|status={status}|elapsed={elapsed:.1f}s|lines={len(lines)}"
                   f"|truncated={trunc}|excludes={'off' if args.include_excluded else 'on'}"
-                  f"|reason={args.reason}")
+                  f"|reason={args.reason}|out={out_path}")
     if oversize:
         print(f"🔴 原始命中体量超硬顶 {size}B——转储已丢弃不回显（物理防案1式污染）。"
               f"该域命中密度异常，须收窄 pattern/root 重查；结论只可按抽样声明，⛔按全量断言")

@@ -101,6 +101,23 @@ _ACH_LEAK_MARKER_DIR = os.path.expanduser("~/个人AI档案/发布库/布洛陀-
 def _ach_h(t):
     return hashlib.sha256(chr(10).join(ln.rstrip() for ln in t.splitlines() if ln.strip()).encode(chr(117)+chr(116)+chr(102)+chr(45)+chr(56))).hexdigest()
 
+def _ach_scrub_line(ln):
+    """命中作者泄露行 → 结构行脱敏保留 / 内容行删除（2026-10-23 V2.2.9 Win 反馈 P1-2）。
+
+    原实现一律删行，与模板 `references/成就系统/月亮之子成就.md` 的「脱敏替换」口径
+    冲突：模板把书名替换为《待填写》并保留结构行，删行会让用户成就表缺行。
+    判据：表格行/引用块=结构行 → 书名+日期脱敏；其余=个人内容行 → 删除。
+    返回替换后的行；None=删除。
+    """
+    s = ln.strip()
+    if not (s.startswith("|") or s.startswith(">")):
+        return None
+    out = re.sub(r"《[^》]*》", "《待填写》", ln)
+    out = re.sub(r"\b20\d{2}-\d{2}-\d{2}\b", "{日期}", out)
+    out = re.sub(r"\b20\d{2}-\d{2}\b", "{日期}", out)
+    return out if out.endswith("\n") else out + "\n"
+
+
 def scrub_achievement_legacy(memory_root, apply, force_producer=False):
     ad = Path(memory_root) / "成就系统"
     if not ad.is_dir():
@@ -114,11 +131,23 @@ def scrub_achievement_legacy(memory_root, apply, force_producer=False):
             lines = p.read_text(encoding="utf-8").splitlines(keepends=True)
         except OSError:
             continue
-        kept = [ln for ln in lines if not (ln.strip() and _ach_h(ln) in ACHIEVE_LEGACY_HASHES)]
-        removed = len(lines) - len(kept)
-        if removed:
-            total += removed
-            print("   %s: 命中作者泄露行 %d 条 %s" % (p.name, removed, "(已删.bak)" if apply else "(dry-run)"))
+        kept = []
+        removed = scrubbed = 0
+        for ln in lines:
+            if ln.strip() and _ach_h(ln) in ACHIEVE_LEGACY_HASHES:
+                rep = _ach_scrub_line(ln)
+                if rep is None:
+                    removed += 1
+                    continue
+                kept.append(rep)
+                scrubbed += 1
+                continue
+            kept.append(ln)
+        if removed or scrubbed:
+            total += removed + scrubbed
+            print("   %s: 命中作者泄露行 %d 条（删除 %d / 脱敏 %d）%s"
+                  % (p.name, removed + scrubbed, removed, scrubbed,
+                     "(已改.bak)" if apply else "(dry-run)"))
             if apply:
                 if not os.access(p, os.W_OK):
                     continue

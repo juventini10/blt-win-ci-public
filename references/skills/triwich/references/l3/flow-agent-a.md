@@ -77,7 +77,7 @@ Agent A执行链：Step0 → Step1 → Step2 → G1 → 写入文件
 
 ⛔DO NOT 在返回前跳过落盘，理由是：Agent B 的文件通道是唯一输入源，主agent 的完整性锁以磁盘文件为真源——**推导质量再高，产物缺失 = L3 结构不成立**（2026-08-09 实跑：Agent A 初次返回两个必写文件均缺失，被完整性锁拦回补全）。与 Agent B 的落盘约束（reviewer-protocol.md v1.3）对称：**A 是推导源头，源头不锁，B 再严也是无米之炊**。
 
-Agent A完成 Step0→Step0.5（细则见 SKILL.md §Step0.5·隐含假设扫描+子目标拆解）→Step1→Step2→G1 后，写入以下文件：
+Agent A完成 Step0→Step0.5（细则见 SKILL.md §Step0 路由 + `pages/p05-assumption-gates.md`（隐含假设扫描））→Step1→Step2→G1 后，写入以下文件：
 
 > 🔀 跨平台声明：`/tmp/` 为 macOS/Linux 口径；Windows 端用 `$env:TEMP\triwich_l3_{ts}\`（即 `%TEMP%`）等价替换，目录结构与文件名不变，全流程同。
 

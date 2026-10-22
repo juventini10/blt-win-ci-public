@@ -28,7 +28,22 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_ROOT = os.path.dirname(HERE)
-GUARD_SRC = os.path.join(os.path.expanduser("~"), "[记忆共享中心]/脚本中心/triwich_closeout_guard.py")
+def _find_guard():
+    """2026-10-23 P10：守卫双环境探测——包内 references/hooks（装机态/未安装态均有）> 开发端 脚本中心/守卫。
+    根因：原写死 expanduser("[记忆共享中心]/...")，包内脱敏成 [记忆共享中心] 后必然找不到（P10）。"""
+    cands = [
+        # 包内布局：<包>/references/skills/triwich/tests → 上三级到 references/，hooks 与 skills 同级
+        os.path.join(HERE, "..", "..", "..", "hooks", "triwich_closeout_guard.py"),
+        os.path.join(HERE, "..", "references", "hooks", "triwich_closeout_guard.py"),
+        os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "守卫", "triwich_closeout_guard.py"),
+    ]
+    for c in cands:
+        c = os.path.abspath(c)
+        if os.path.isfile(c):
+            return c
+    return None
+
+GUARD_SRC = _find_guard()  # 2026-10-23 P10：双环境探测（包内 references/hooks > 开发端）
 
 PASS, FAIL = [], []
 
@@ -75,7 +90,8 @@ def test_source_no_hardcoded_path():
         # 探测候选常量（MC_CANDIDATES_HOME）是唯一合法出现点
         if "MC_CANDIDATES_HOME" in line:
             continue
-        if re.search(r'["\'][^"\']*个人AI档案[^"\']*["\']', code):
+        # 2026-10-23 P10：包内脱敏后字面量变 [记忆共享中心]，判据须同时认两形态（否则检查器被脱敏静默失效）
+        if re.search(r'["\'][^"\']*(?:个人AI档案|\[记忆共享中心\])[^"\']*["\']', code):
             offenders.append((i, line.strip()[:90]))
         if re.search(r'["\']/Users/[^"\']*["\']', code):
             offenders.append((i, line.strip()[:90]))
@@ -177,9 +193,9 @@ if __name__ == "__main__":
     print("=" * 54)
     print("closeout_guard 路径可移植性回归")
     print("=" * 54)
-    if not os.path.isfile(GUARD_SRC):
-        print("  ⚠️ 守卫源不存在，跳过：%s" % GUARD_SRC)
-        sys.exit(0)
+    if not GUARD_SRC or not os.path.isfile(GUARD_SRC):
+        print("  ❌ 守卫不可达（包内 references/hooks 与开发端均未找到）——判定面缺失，不得按绿交付")
+        sys.exit(1)
     test_source_no_hardcoded_path()
     test_negative_injection_no_mc()
     test_env_overrides_autodetect()

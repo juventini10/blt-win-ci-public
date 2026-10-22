@@ -179,19 +179,22 @@ def find_recent_changes_table(snapshot_content):
     lines = snapshot_content.split("\n")
     table_start = None
 
-    for i, line in enumerate(lines):
-        if "### 📝 最近变更摘要" in line:
-            table_start = i
-            break
-
-    if table_start is None:
-        return None, None, None
-
-    # 找到表格头（| 日期 | 工具 | 文件 | 说明 |）
+    # 标题层级族匹配（B1 同型根治·2026-10-23）：模板 `references/templates/情境层-动态状态快照.md`
+    # 产的是 `## 📝 最近变更摘要`（二级），原判据写死三级 ⇒ 包自己的合成链保证每个新装用户
+    # 本脚本恒 exit 1（与 awaken_health_dashboard.py 2026-10-10 B1 修复同一病形·当时只修了 dashboard 一腿）。
+    # 判据：级别 2~6 + 📝 可选 + 名字命中；命中后 10 行内找表头，找不到继续找下一个候选标题。
+    head_re = re.compile(r"^#{2,6}\s*(?:📝\s*)?最近变更摘要")
+    table_start = None
     header_idx = None
-    for i in range(table_start, min(table_start + 10, len(lines))):
-        if lines[i].strip().startswith("| 日期 |"):
-            header_idx = i
+    for i, line in enumerate(lines):
+        if not head_re.match(line.strip()):
+            continue
+        # 找到表格头（| 日期 | 工具 | 文件 | 说明 |）
+        for j in range(i, min(i + 10, len(lines))):
+            if lines[j].strip().startswith("| 日期 |"):
+                table_start, header_idx = i, j
+                break
+        if header_idx is not None:
             break
 
     if header_idx is None:

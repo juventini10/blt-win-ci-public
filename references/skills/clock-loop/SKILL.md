@@ -7,7 +7,7 @@ compatibility: workbuddy, qclaw, trae, trae-work, wukong, qoderwork, qoder-cn
 allowed-tools: [Read, Write, Edit, Bash, Grep, Glob, Agent, TaskCreate, TaskUpdate, TaskList, TaskOutput, WebFetch, WebSearch]
 dependencies:
   - name: triwich
-    version: "4.7.1"
+    version: "4.10.7"
     path: [记忆共享中心]/技能配置/triwich/
     mode: reference
   - name: meta-aletheia
@@ -15,7 +15,7 @@ dependencies:
     path: [记忆共享中心]/技能配置/meta-aletheia/
     mode: reference
   - name: skill-arch-standard
-    version: "5.41"
+    version: "5.43"
     path: references/skill-arch-standard.md
     mode: reference
     note: "固化副本·自包含--源在记忆蓝图/03_开发规范/Skill架构规范/,改源后须重新固化到此并升version"
@@ -29,7 +29,7 @@ source: self-built
 upstream: self(主源·本目录)
 modifiable: true
 requires_twin_on_duty: true
-version: "4.19.2"
+version: "4.19.10"
 license: MIT
 complies_with: 文件格式规范(⛔本处不写版本号·以源 frontmatter 为唯一真相源=#142·2026-09-05批5清零#2148滞后:曾写v2.0.0而源实盘v2.4.0)
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"

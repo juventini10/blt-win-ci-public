@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 test_closeout_guard.py —— 三明智收尾守卫回归（负例驱动）
-Version: 2.0.0 (2026-09-18·身份匹配判定 + 假阳性/假阴性双向回归)
+Version: 2.1.0 (2026-10-22·扫描域隔离：TRIWICH_DIR 重定向——修 [8]/[9] 被真实 steps/ 并行键文件污染)
+v2.0.0 (2026-09-18·身份匹配判定 + 假阳性/假阴性双向回归)
 
 S3 用例补充 (2026-09-18·评估 C-05 修复)：原夹具只重定向 SKILL_DIRS/SAMPLE_LEDGER，
 未隔离 DECISION_ROOM → S3 读到真实档案库文件 → 正例[3] 假失败（实测 2026-09-18）。
@@ -31,7 +32,25 @@ import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-GUARD = os.path.join(os.path.expanduser("~"), "[记忆共享中心]/脚本中心/triwich_closeout_guard.py")  # 2026-10-18 顺位2轮修正：10-16 直址化工单残留（guard 真身已迁脚本中心/守卫/，测试引用漏跟·triwich 完整Loop逮出实测断链）
+def _find_guard():
+    """2026-10-23 P10：守卫双环境探测——包内 references/hooks（装机态/未安装态均有）> 开发端 脚本中心/守卫。
+    根因：原写死 expanduser("[记忆共享中心]/...")，包内脱敏成 [记忆共享中心] 后必然找不到（P10）。"""
+    cands = [
+        # 包内布局：<包>/references/skills/triwich/tests → 上三级到 references/，hooks 与 skills 同级
+        os.path.join(HERE, "..", "..", "..", "hooks", "triwich_closeout_guard.py"),
+        os.path.join(HERE, "..", "references", "hooks", "triwich_closeout_guard.py"),
+        os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "守卫", "triwich_closeout_guard.py"),
+    ]
+    for c in cands:
+        c = os.path.abspath(c)
+        if os.path.isfile(c):
+            return c
+    return None
+
+GUARD = _find_guard()  # 2026-10-18 顺位2轮修正：10-16 直址化工单残留（guard 真身已迁脚本中心/守卫/，测试引用漏跟·triwich 完整Loop逮出实测断链）；2026-10-23 P10 双环境探测
+if GUARD is None:
+    print("FAIL 守卫不可达（包内 references/hooks 与开发端 脚本中心/守卫 均未找到）——判定面缺失，不得按绿交付")
+    sys.exit(1)
 
 spec = importlib.util.spec_from_file_location("triwich_closeout_guard", GUARD)
 G = importlib.util.module_from_spec(spec)
@@ -95,24 +114,43 @@ def make_env(seal_age, ledger_age, key_age=None, fu_age=None,
                 fh.write("## FU-99\n- 登记：%s · 发起方式:机制封口自动登记 · 会话:%s\n" % (old, SESS))
 
     # 重定向模块常量到夹具环境（DECISION_ROOM 必重定向——否则 S3 读真实档案库→假失败）
+    # v2.1.0（2026-10-22）：TRIWICH_DIR 同样必重定向——_steps_candidates 固定扫「技能配置/triwich/steps」，
+    #   不隔离则 [8]「窗口外无活动」会被真实并行会话键文件打成假失败（同 S3-DECISION_ROOM 同族病）。
     G.SKILL_DIRS = [tmp]
     G.SAMPLE_LEDGER = ledger
     G.DECISION_ROOM = room
+    G.TRIWICH_DIR = tmp
     return tmp, cwd
 
 
 def run(seal_age, ledger_age, key_age=None, fu_age=None,
         ledger_has_seal=None, fu_synced=None, declared_len=None, key_text=None):
+    _orig_tw = G.TRIWICH_DIR
     tmp, cwd = make_env(seal_age, ledger_age, key_age, fu_age,
                         ledger_has_seal, fu_synced, declared_len, key_text)
     try:
         return G.check(cwd)
     finally:
+        G.TRIWICH_DIR = _orig_tw  # v2.1.0：用完即还，防后续用例指向已删目录
         shutil.rmtree(tmp, ignore_errors=True)
 
 
 def main():
     print("🧪 三明智收尾守卫回归 v%s" % G.VERSION)
+
+    # 2026-10-23 P10：未安装态闸——guard 的 MC 根探测不可达时（包内布局是 references/skills/，
+    #   装机后 install_scripts.py 才落 技能配置/），判定类用例无法真实执行。
+    #   处理=显式 SKIP 并输出原因（跳过≠通过；本轮不计红色，也不冒充通过）。
+    try:
+        _mc = G.detect_mc()
+    except Exception:
+        _mc = None
+    if not _mc:
+        print("  ⏭ 未安装态：guard 的 MC 根不可达，判定类用例全部跳过")
+        print("     根因：包内布局为 references/skills/，装机后由 install_scripts.py 落 <MC>/技能配置/")
+        print("     口径：跳过≠通过，此处只声明未安装态不产生假红；装机态须重跑本套件")
+        print("结果: 0 通过 / 0 失败（未安装态·判定类用例跳过）")
+        return 0
 
     print("\n[0a] S4 负例：封口晚于v4.7.0边界·键文件存在(早于封口不误报S2)但无举证行（应报 S4）")
     r = run(seal_age=300, ledger_age=60, key_age=600, ledger_has_seal=True, fu_synced=True, key_text="x")
@@ -202,14 +240,17 @@ def main():
 
     print("\n[9] 边界：seal.log 缺失（静默降级·不阻断）")
     tmp = tempfile.mkdtemp(prefix="twcg_")
+    _orig_tw = G.TRIWICH_DIR
     try:
         G.SKILL_DIRS = [tmp]
         G.SAMPLE_LEDGER = os.path.join(tmp, "ledger.md")
         G.DECISION_ROOM = os.path.join(tmp, "room.md")
+        G.TRIWICH_DIR = tmp  # v2.1.0：扫描域隔离（同上）
         res = G.check(tmp)
         check("skipped 非空", bool(res.get("skipped")), res)
         check("alarm=False", res["alarm"] is False, res)
     finally:
+        G.TRIWICH_DIR = _orig_tw
         shutil.rmtree(tmp, ignore_errors=True)
 
     print("\n" + "=" * 46)

@@ -2,7 +2,7 @@
 title: 防跳步机制详解页（十锁全文）
 type: page
 version: v1.0
-page_fingerprint: 912a7fa2
+page_fingerprint: de9a193a
 author: 皮叔
 license: Proprietary
 source: 技能配置/triwich/pages/p-mechanism.md
@@ -26,7 +26,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 - ✅ **完成判定真源锁(v3.10.1新增)**-- Agent B 完成判定以磁盘文件为真相源(当前会话 {ts} 精确路径存在且非空),回传通道仅作通知;空回传≠失败,⛔DO NOT重发/降级,先查文件(细则见 full-flow.md 失败处理表)
 - ✅ **步骤产出物锁**(每个Step有📦)-- ☑SHOULD 缺任何📦产出物则退回补全
 - ✅ **结论块门禁锁**(签名前强制输出结论块+自检3问)-- ⛔DO NOT在结论块为空时输出签名
-- ✅ **封口哈希链锁(triwich_seal v1.6.0·物理锁+回访挂载+decision-room/seal.log 双并发锁·全端覆盖·键-链强互锁 record --key-file 键ts+键hash入链·一键一封拒绝顶包·linkcheck 三态对账·老行祖父化不追红·v4.4.11 版本戳随行更新 R3-N5)**-- 三明智结论块+签名写入会话后,✅DO用 `scripts/triwich_seal.py record --tool {本端名} --text-file {本轮结论块文本文件}` 把结论块全文指纹(sha256+盐)追加到 `scripts/seal.log` 哈希链(record/verify/followup/list/resolve 五子命令)。**`--text-file` 为全端通用主路径**:三明智收尾时✅DO把本轮结论块(含签名行)写入临时文件(如 `/tmp/triwich_block_{ts}.txt`)再传给 record--任何端都无需"读本端异构会话存储"即可封口(一次覆盖全端+未来新端·根治"未适配端静默放行不记录");省略 `--text-file` 时回退旧探测(WB/ZCode JSONL 直读·老端 chat-history),**读不到则 FAIL 退出(Fail-Loud·不再静默跳过)**。本轮有可预测结论时✅DO同轮带 `--followup "任务简述" --predict "预测" --falsify "判假方式" --deadline "YYYY-MM-DD" --default "no-op：维持现状" --window "回访窗口" --depth L{层}` 完成决策卡登记(登记绑定封口·任务简述为空=FAIL 退回补填)。✅DO 经 closeout 收尾时 --key-file 必传（v4.8.3 键-链强互锁：链行载键身份，一轮一键物理化；裸 seal 不带键=老式行合法但 audit 可见缺口）。多端并行时 `--tool` 为**必填定向**(mtime 最新≠当前端·跨会话错位封口实锤于 2026-09-14 v1.4.0 实测:封了他会话旧签名)。审查时 `verify --tool {本端名} --text-file {同一文本文件}` 对账链完整+链尾=当前会话(口径与 record 一致·否则新路径封的口对不上账)。⛔DO NOT在结论块后修改已封口的结论--改内容/改日志/删链尾均会被 verify 拦截(v1.1.1 对抗实测三场景全拦截)。见 `tests/test_triwich_seal_adversarial.py` + `tests/test_triwich_decision_room.py`。锁残留人工恢复：超时消息含 `rm -rf <锁路径>` 指引（v4.4.12·R4-TW-05）
+- ✅ **封口哈希链锁(triwich_seal v1.6.1·物理锁+回访挂载+decision-room/seal.log 双并发锁·全端覆盖·键-链强互锁 record --key-file 键ts+键hash入链·一键一封拒绝顶包·linkcheck 三态对账·老行祖父化不追红·v4.4.11 版本戳随行更新 R3-N5)**-- 三明智结论块+签名写入会话后,✅DO用 `scripts/triwich_seal.py record --tool {本端名} --text-file {本轮结论块文本文件}` 把结论块全文指纹(sha256+盐)追加到 `scripts/seal.log` 哈希链(record/verify/followup/list/resolve 五子命令)。**`--text-file` 为全端通用主路径**:三明智收尾时✅DO把本轮结论块(含签名行)写入临时文件(如 `/tmp/triwich_block_{ts}.txt`)再传给 record--任何端都无需"读本端异构会话存储"即可封口(一次覆盖全端+未来新端·根治"未适配端静默放行不记录");省略 `--text-file` 时回退旧探测(WB/ZCode JSONL 直读·老端 chat-history),**读不到则 FAIL 退出(Fail-Loud·不再静默跳过)**。本轮有可预测结论时✅DO同轮带 `--followup "任务简述" --predict "预测" --falsify "判假方式" --deadline "YYYY-MM-DD" --default "no-op：维持现状" --window "回访窗口" --depth L{层}` 完成决策卡登记(登记绑定封口·任务简述为空=FAIL 退回补填)。✅DO 经 closeout 收尾时 --key-file 必传（v4.8.3 键-链强互锁：链行载键身份，一轮一键物理化；裸 seal 不带键=老式行合法但 audit 可见缺口）。多端并行时 `--tool` 为**必填定向**(mtime 最新≠当前端·跨会话错位封口实锤于 2026-09-14 v1.4.0 实测:封了他会话旧签名)。审查时 `verify --tool {本端名} --text-file {同一文本文件}` 对账链完整+链尾=当前会话(口径与 record 一致·否则新路径封的口对不上账)。⛔DO NOT在结论块后修改已封口的结论--改内容/改日志/删链尾均会被 verify 拦截(v1.1.1 对抗实测三场景全拦截)。见 `tests/test_triwich_seal_adversarial.py` + `tests/test_triwich_decision_room.py`。锁残留人工恢复：超时消息含 `rm -rf <锁路径>` 指引（v4.4.12·R4-TW-05）
 - ✅ **收尾三登记锁(2026-09-15 建立双登记·2026-09-17 扩为三登记·你质询「三明治相关的技术应该可以自动化吧?不应该每次都让我来问」根治)**-- 三明智收尾有**三个**登记动作,缺一=流程未完成:
   - 1 **封口登记**:`triwich_seal.py record --tool {端名} --text-file {本轮结论块文本}`(同轮带 `--followup/--predict/--window/--depth` 完成决策卡登记)
   - 2 **决策卡登记**:`--followup` 同轮挂载的产出物--`references/decision-room.md` 条目区新增一条 FU(任务/深度/预测/回访窗口/登记)。**漏掉=「seal 了但没计数」**(实锤 2026-09-17 06:23 轮·seal 12ad95e1287a88a4 封口后漏登记·并行端手工补登 FU-22 才补上)。**到期日/到期默认为配套机制门禁（v4.4.6·C-096 落地）**：等你裁定的卡✅DO带 `--deadline` + `--default`，默认分支**只允许 no-op（维持现状）**——⛔不得在默认分支里发版/晋升/回滚/写规则文件（那是价值层）；缺字段自动标 ⚠️黑洞候选，`followup` 对过期卡标 🔴超期未裁、无默认卡标 ⚪。
@@ -53,7 +53,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
   - ⛔DO NOT 新建第二个产出物文件(⛔防双本账·与 Step0 一轮一键同源)。
   - ⚠️ **诚实边界(对齐 `Skill架构规范` §1.1 L106 防误层边界)**:纯 AI 环境**不存在绝对物理杜绝**,本条把「跳过且无痕」降为「跳过留痕」,⛔不宣称根治跳过。⚠️ 落盘补的是**动作证据**(通用规范 #14),⛔不能证明**判断正确**(`物理约束与防伪.md` §一 B 类·四层锁不覆盖)。
   - 依据:通用规范 宪法级原则 11 产出物锁「⛔DO NOT 只有'数量下限+检查点+AI自判'」+ 原则 9 物理约束优先「⛔DO NOT 把防伪写成 prose 提醒」。
-- 📏 **守卫覆盖边界(2026-08-12 评估 C-14 落地·已知边界)**-- **🔴 l3_conclusion_guard 已于 2026-09-12 全端永久关闭**(2026-09-05 你令·Stop 正则误判污染回复),`scripts/l3_conclusion_guard.py` 现为 exit 0 退役桩、`scripts/run.sh` 守卫用例已归档迁出（v4.4.10·仅存 seal 自检）。故结论块段头(`## L{层} {路径} 结果`)+签名位**当前无任何机械守卫**,结论块 3 列自证/E3 验证行前置同为呈现要素(旧"E4 加粗"要求已随 v3.14.0 呈现改造退役为结论块表格行——v4.4.9 R1-P2-04 悬空引用清除)--**全部回归靠 eval-set 人眼断言**(含判断行为层 #47-50),⛔修改呈现格式时须同步更新 eval-set 对应断言;⛔DO NOT 把本段读作"守卫在岗"。
+- 📏 **守卫覆盖边界(2026-08-12 评估 C-14 落地·已知边界)**-- **🔴 l3_conclusion_guard 已于 2026-09-12 全端永久关闭**(2026-09-05 你令·Stop 正则误判污染回复),`scripts/l3_conclusion_guard.py` 现为 exit 0 退役桩、`scripts/run.sh` 守卫用例已归档迁出（v4.4.10），v2.x 起扩为九段常驻仪器（页表/锚点/seal/套件/落盘/简报/否证/parity/漂移·以 run.sh 头注为唯一源）。故结论块段头(`## L{层} {路径} 结果`)+签名位**当前无任何机械守卫**,结论块 3 列自证/E3 验证行前置同为呈现要素(旧"E4 加粗"要求已随 v3.14.0 呈现改造退役为结论块表格行——v4.4.9 R1-P2-04 悬空引用清除)--**全部回归靠 eval-set 人眼断言**(含判断行为层 #47-50),⛔修改呈现格式时须同步更新 eval-set 对应断言;⛔DO NOT 把本段读作"守卫在岗"。
 
 ---
 

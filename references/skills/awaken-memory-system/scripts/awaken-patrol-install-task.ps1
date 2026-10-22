@@ -1,4 +1,4 @@
-# awaken-patrol-install-task.ps1 — 注册 Windows Task Scheduler 记忆健康自动巡检（8.4.0 Win对等件·2026-10-21）
+﻿# awaken-patrol-install-task.ps1 — 注册 Windows Task Scheduler 记忆健康自动巡检（8.4.0 Win对等件·2026-10-21）
 # 等价 macOS 侧 com.buluotuo.awaken-patrol.plist（执行体同一份平台中性 python awaken_patrol.py·单一真源⛔ps1逻辑副本）
 # ─────────────────────────────────────────────────────────────
 # 加固模式镜像 slice-watch-install-task.ps1（0xC000013A 对症三连：python 全路径/S4U/防重入）。
@@ -70,12 +70,17 @@ Write-Host "执行体:   $PatrolPy"
 
 $action = New-ScheduledTaskAction -Execute $PyExe -Argument "`"$PatrolPy`""
 
-# 触发：开机+登录 + 每日 3:00 起每 6h 重复（等价 mac StartInterval 21600·凌晨低干扰时段起算）
-# Repetition 是 trigger 的 CIM 属性·文档正解直接赋 ISO8601 字符串（⛔ New-ScheduledTaskRepetitionTrigger 不存在）
-$daily = New-ScheduledTaskTrigger -Daily -At 3:00am
-$daily.Repetition.Interval = 'PT6H'
-$daily.Repetition.Duration = 'P3650D'
-$triggers = @((New-ScheduledTaskTrigger -AtLogOn), (New-ScheduledTaskTrigger -AtStartup), $daily)
+# 触发：-Once 起算 + 原生 Repetition 参数构造（每 6h·等价 mac StartInterval 21600）。
+# ⛔ 不给 -Daily trigger 赋 Repetition：PS 5.1/7 实测该属性不可写
+#    （"The property 'Interval' cannot be found on this object"·2026-10-22 Win 真机反馈）；
+#    重复必须走 -Once 的 -RepetitionInterval/-RepetitionDuration
+#    （真机实跑 State=Ready / LastTaskResult=0x0）。
+# ⛔ 不用 AtLogOn/AtStartup：机级触发器在非提权账户注册返回"拒绝访问"（同日真机实证）；
+#    开机补贴由 -StartWhenAvailable 承载。
+$once = New-ScheduledTaskTrigger -Once -At 3:00am `
+    -RepetitionInterval (New-TimeSpan -Hours 6) `
+    -RepetitionDuration (New-TimeSpan -Days 3650)
+$triggers = @($once)
 
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `

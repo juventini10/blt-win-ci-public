@@ -31,11 +31,22 @@ except Exception: pass
 import sys, os, re, json, glob, subprocess, datetime, tempfile, argparse
 
 HOME = os.path.expanduser("~")
-SKILL = os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置", "triwich")
+_SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SKILL = _SKILL_ROOT  # 2026-10-23 P10 根治：自我定位改 __file__ 推导；原拼 HOME/个人AI档案，包内脱敏成 [记忆共享中心] 后必失效
 SEAL = os.path.join(SKILL, "scripts", "triwich_seal.py")
 RECEIPT_GUARD = os.path.join(SKILL, "scripts", "page_receipt_guard.py")
 SAMPLING_DEFAULT = os.path.join(os.path.expanduser("[记忆共享中心]"), "自定义层", "待完成工作", "阶段A采样清单-三明智4.0.md")
-APPEND_LOG = os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置", "system-logger", "scripts", "append_log_entry.py")
+def _find_append_log():
+    """2026-10-23 P10：system-logger 宿主件候选探测——未安装态（包内无此件）返回 None，由调用处降级直写。"""
+    for c in (
+        os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置", "system-logger", "scripts", "append_log_entry.py"),
+        os.path.join(os.path.expanduser("[记忆共享中心]"), "脚本中心", "system-logger", "scripts", "append_log_entry.py"),
+    ):
+        if os.path.isfile(c):
+            return c
+    return None
+
+APPEND_LOG = _find_append_log()
 
 def fail(step, done, msg):
     print("CLOSEOUT:FAIL @%s —— 已完成面: %s ｜%s" % (step, "→".join(done) or "无", msg), file=sys.stderr)
@@ -139,19 +150,46 @@ def main():
         a.block_file, a.log_summary)
     if depth:
         body = "### 三明智 %s 收尾轮\n" % depth.group(1) + body
-    cmd3 = [sys.executable, APPEND_LOG, "--tool", a.tool]
-    if a.logdir:
-        cmd3 += ["--logdir", a.logdir]
-    r3 = subprocess.run(cmd3, input=body, capture_output=True, text=True)  # v1.0.2 修 text 模式 input 类型冲突（夹具 T1 逮出）
     # v1.0.3 判定改结果导向（夹具逮出：子脚本回执行不在其 stdout/stderr 任一流，读流判定必假红/假绿）
     lg_dir = a.logdir or os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "工作日志", "系统日志")
     lg_file = os.path.join(lg_dir, "系统日志_%s.md" % datetime.date.today().strftime("%Y-%m-%d"))
     mark = a.log_summary[:12]
+    tail = ""
+    if APPEND_LOG:
+        cmd3 = [sys.executable, APPEND_LOG, "--tool", a.tool]
+        if a.logdir:
+            cmd3 += ["--logdir", a.logdir]
+        r3 = subprocess.run(cmd3, input=body, capture_output=True, text=True)  # v1.0.2 修 text 模式 input 类型冲突（夹具 T1 逮出）
+        tail = (r3.stdout + r3.stderr)[-120:]
+    else:
+        # 2026-10-23 P10：未安装态降级直写——system-logger 宿主件未随包，装机后自动走正式通道
+        try:
+            os.makedirs(lg_dir, exist_ok=True)
+            prev = open(lg_file, encoding="utf-8").read() if os.path.isfile(lg_file) else ""
+            with open(lg_file, "a", encoding="utf-8") as f:
+                f.write(("\n" if prev and not prev.endswith("\n") else "") + body)
+            tail = "（降级直写·system-logger 未就位）"
+        except Exception as e:
+            tail = "降级直写异常: %s" % e
     if not (os.path.isfile(lg_file) and mark in open(lg_file, encoding="utf-8").read()):
-        fail("系统日志", done, "回读未见结论标记@%s ｜子进程尾:%s" % (lg_file, (r3.stdout + r3.stderr)[-120:]))
+        fail("系统日志", done, "回读未见结论标记@%s ｜子进程尾:%s" % (lg_file, tail))
     done.append("系统日志(回读证实)")
 
-    print("CLOSEOUT:OK %s" % " → ".join(done))
+    # F7-a（v4.10.0）：L3 耗时自动读数（阶段戳落键文件；⛔人工 mtime 重建）
+    dur_note = ""
+    if _kf_for_seal:
+        _m = re.search(r"(\d{8})_(\d{6})", os.path.basename(_kf_for_seal))
+        if _m:
+            _st = datetime.datetime.strptime(_m.group(1) + _m.group(2), "%Y%m%d%H%M%S")
+            _mins = int((datetime.datetime.now() - _st).total_seconds() // 60)
+            try:
+                with open(_kf_for_seal, "a", encoding="utf-8") as _f:
+                    _f.write("\n### 阶段戳\ncloseout_at=%s 用时=%dmin（F7a 自动读数）\n" % (
+                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), _mins))
+            except Exception:
+                pass
+            dur_note = " ｜用时=%dmin（F7a 自动读数）" % _mins
+    print("CLOSEOUT:OK %s%s" % (" → ".join(done), dur_note))
     for l in seal_line: print("  ", l)
     return 0
 

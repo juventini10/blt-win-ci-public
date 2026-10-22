@@ -56,6 +56,10 @@ SIG_RE = re.compile(r"^-\s+`([^`]+)`")
 def parse_signatures():
     """从规则文件的 STRIP 段解析特征名清单（真相唯一住所·脚本不持有）"""
     if not os.path.exists(RULE_FILE):
+        # 缺失显形（⛔不静默·2026-10-23 V2.2.9 Win 反馈 P2-2）：
+        # 原实现静默返回 []，main() 见空即 exit 0 ⇒ 守护装了等于没装。
+        print("[crossend_guard] ⚠️ 规则源缺失，跨端检测未启用：%s" % RULE_FILE,
+              file=sys.stderr)
         return []
     try:
         with open(RULE_FILE, "r", encoding="utf-8") as f:
@@ -89,7 +93,9 @@ def main():
     try:
         sigs = parse_signatures()
         if not sigs:
-            # 真相源缺失或 STRIP 段损坏 → 放行（不报"检测通过"，只静默）
+            # 真相源缺失或 STRIP 段损坏 → 放行，但显形（⛔静默=假绿）
+            print("[crossend_guard] ⚠️ 特征名清单为空（规则缺失/STRIP 段损坏），本轮未检测：%s"
+                  % RULE_FILE, file=sys.stderr)
             sys.exit(0)
 
         hits = scan(sigs)

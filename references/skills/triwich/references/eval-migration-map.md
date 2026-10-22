@@ -2,9 +2,9 @@
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 ---
 
-# eval 56 断言 × 微内核分家 迁移对账表（M3·v4.8.1）
+# eval 68 断言（M3首批56·随版增补） × 微内核分家 迁移对账表（M3·v4.8.1）
 
-> 用途：分家（v4.8.0 M1）后逐条确认 eval-set 56 断言的锚点住位与在场性，⛔不留"表说了没验"的第二本账。
+> 用途：分家（v4.8.0 M1）后逐条确认 eval-set 68 断言（M3首批56·随版增补）的锚点住位与在场性，⛔不留"表说了没验"的第二本账。
 > 机械校验：`python3 scripts/eval_anchor_check.py`（run.sh 常驻）——现位每文件必含校验 token。
 > 状态口径：**未变**=断言对象本就在内核/既有 reference，分家未触碰；**双锚**=内核一行索引+页全文同 token 在场；**页移行**=全文已在外置页、内核只留异措辞索引（token 只在页在场）。
 > 现位多文件用 `+` 连接（token 须在每个所列文件均在场）；`-`=判断层人眼自锚（无外部物理件，对齐 eval-set 头部 C-14 声明）。
@@ -75,5 +75,9 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | 62 | 证据档总档最弱 | 十点包⑧ | SKILL.md+references/l1/first-principles.md | 最弱承重柱 | 新增v4.9.0 |
 | 63 | 地图机检 | 十点包⑨ | references/四象限地图.md | 四象限地图 | 新增v4.9.0 |
 | 64 | 旧形态回流否证族 | 弱锚升级 | scripts/run.sh+scripts/negative_tokens.txt | negative_tokens | 新增v4.9.2 |
+| 65 | 盲审复测封顶 | F1 | references/reviewer-protocol.md | 未复测清单 | 新增v4.10.0 |
+| 66 | 负担闸判据 | F5 | SKILL.md | 负担闸 | 新增v4.10.0 |
+| 67 | 呈现边界+单签名 | F8 | SKILL.md+references/shared/signature.md | 单签名行 | 新增v4.10.0 |
+| 68 | 模板同构位齐闸 | 你令统一 | scripts/run.sh+scripts/template_parity_check.py | template_parity_check | 新增v4.10.1 |
 
-> 对账结论（v4.8.1 首跑）：56/56 无断锚；分家触碰面=页移 6 行（#26/27/42/43/51/55/56 系）+双锚 7 行，内核留守红线（结论块模板/分层定句/对照表/四层契约/禁止行为/自检清单）与既有 references 全部未变——与 M1 判耦清单一致。
+> 对账结论（v4.8.1 首跑）：56/56 无断锚（v4.8.1首跑口径）·现 68/68 EVALMAP 常驻；分家触碰面=页移 6 行（#26/27/42/43/51/55/56 系）+双锚 7 行，内核留守红线（结论块模板/分层定句/对照表/四层契约/禁止行为/自检清单）与既有 references 全部未变——与 M1 判耦清单一致。

@@ -126,6 +126,15 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
     （承 B1.5f「未翻色的绿灯=未验证的绿灯」）。
   - 判据本体住 `verify_pair_checks.twin_check`（platform_compat 检查⑬同树 import·⛔两处手搓）。
   - 来源：`[来源: 外部评估点破+本窗实跑坐实 | 日期: 2026-10-21 | 反哺标题: 孪生脚本的段级同构从未被校验——检测侧同源缺口·任务卡2026-10-21-verify双端同构缺腿与孪生对账规则]`
+
+- Step B1.5l：Windows 行为层证据链对账（2026-10-22·Win安装体验根治 R7-R9 批反哺·安装包哲学条文69实证二·皮叔问「可以加到Loop安装包规则么」拍板入尺）
+  - 缘起：R7-R9 五枚真雷（MEMORY_CENTER 未下传/跳别名单反斜杠坏正则/Skill 落位腿漏调/checker 自伤/STEP5 时序倒置）**全部**由 windows-latest runner 逮出，**零枚**出自 Mac 静态自验——「Mac 绿≠可发布」挂文档面多年，本条给它装机械动作：Loop 每轮自动核对，不再依赖谁记得。
+  - ✅DO **触发面**：上次发布以来装机链有改动（包面 CHANGELOG 新版本段涉及 install_scripts.py／verify.sh／verify.ps1／adapters/*／fallback_install.ps1／安装兜底.bat 等装机可执行件）。无改动→显式输出「⚪ 本期无装机链改动面」免检——⛔静默跳过不算过（豁免也要留一行账）。
+  - ✅DO **证据判据**：每条装机链改动须有 windows-latest run conclusion=success 背书。核对姿势：①改动条目文本含 `run <数字>` 字串 → `gh run view <id> --repo 用户名/blt-win-ci-public --json conclusion --jq .conclusion` **回实盘验真**（⛔信文本不信回执——run 号可能是编的，条文69 判据②的同源应用）；②无 run 号 → `gh run list --repo 用户名/blt-win-ci-public --workflow win-fallback-4tests --limit 5` 日期对账：改动时刻之后无 success run → 🔴。
+  - 🔴 **红处置**：漂移报告输出「建议发起 runner」+可抄命令（`gh workflow run win-fallback-4tests.yml --repo 用户名/blt-win-ci-public`），Loop 本体⛔不自动踢 CI——对账证据自动化，烧机时归人定（承本文件验证层级栏「真机档由用户定」口径）。
+  - ⛔DO NOT 以「Mac 侧 bash -n／pwsh Parser／py_compile 已绿」替代行为层证据——五雷皆语法合法态，真机才现形（条文69 判据③「机制⛔靠自觉」的证据面延伸）。
+  - 🔌 熔断器（gh 不可达/仓不可读）：记 ⚠️「行为层证据未核（gh 不可达）」判黄不判绿——⛔把仪器失明当本项绿（承 B1.5g 取证腿四自证精神）。
+  - 来源：`[来源: 2026-10-21-Win安装体验根治-任务卡 R7-R9 批 | 日期: 2026-10-22 | 反哺标题: 装机链改动必须有 runner success 背书·Loop每轮自动对账]`
 - Step B2：衍生加强包巡检（防静默死守卫·2026-08-11 反哺）
   - ✅DO 遍历 `[记忆共享中心]/发布库/五层记忆系统/` 下所有 `*加强包*` 目录（如 千问办公加强包 / Qoder系加强包(Desktop+QoderWork)），对每个衍生包执行：
     - `bash "<衍生包>/_sync-check.sh" --check`（资产漂移自检：手动副本 vs 权威源指纹比对，`0 FAIL` = 同步健康）
@@ -172,6 +181,32 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 **独立审查强制(v3.38.0·对齐 E/F 路径)**:⛔DO NOT 在子Agent 独立审查未执行的情况下交付 G 路径报告——原因是发布包检查同样面临"自己改自己查=循环断链"(2026-08-13 实证：AutoClaw 包审查 17 候选全真，13 采纳修复——审查发现的全是自评盲区)。✅DO 审查按 review-protocol.md 执行信息隔离(finding 系可传·结论系禁传)——原因是审查者见自评结论=锚定效应=独立性失效。
 
 **报告封口(v3.38.0·对齐 E/F finalize 机制)**:G 路径报告 Write 后 ✅DO 必调 `python3 scripts/pkg_report_check.py <报告> [--pkg-version <包版本>]`——校验 ①报告存在+frontmatter ②专项分析段 ③子Agent审查结果段 ④候选处置台账段 ⑤发布判定三态行 ⑥版本一致，exit 非零=拒绝交付。⛔DO NOT 手写"已封口"——原因是 E/F 路径文本层门禁被整段跳过的教训同构，机械校验才留痕。
+
+**真机反馈闭环门禁（v4.18.0 新增 · 2026-10-23 · 驱动=V2.2.9 Win 真机反馈 13 条）**
+
+> 本节的由来：一次端侧反馈里 13 条有 1 条证伪、2 条证据错。若照单全收，会白改三分之一。
+> 反哺目标不是「多查几项」，而是把「端侧说的问题」变成「有回源证据的裁定」。
+> 每条都可机械判定，判据不满足 = G 路径红。
+
+| # | 门禁项 | 机械判据（不满足=红） |
+|:-:|:--|:--|
+| F1 | 反馈三态裁定 | 每条反馈必落「采纳/修正证据后采纳/证伪」<br>证伪项必须写进 CHANGELOG 证伪段 |
+| F2 | 包内件四态归属 | 每件必属 镜像/包自有/INSTALLER_SIDE/MISSING<br>「包内有+白名单无+无声明」=红 |
+| F3 | 双载体同判据 | 同判据多载体（模板/脚本/sh/ps1）形状须一致<br>⛔不许逐腿修（孪生同构律·条文68） |
+| F4 | 守卫不静默降级 | 守卫依赖缺失/清单为空须显形输出<br>裸 `return []` → `exit 0` = 红 |
+| F5 | 检查器域声明 | 扫描器调用必须带 `--only-dirs` 等域参数<br>未带=全树扫=把用户数据算成产物 |
+| F6 | Win 真机四项 | 计划任务注册实跑 + L6 账本存在<br>ps1 守卫落地 + 软链件判 PASS |
+| F7 | 改包前查归属面 | manifest 内投影件必改源再同步<br>直改包内 = 秒级被冲回 |
+
+**F1 实证**：断言台账判据被指「与 schema 不符」，回源发现「悬置(未闭合)」是**另一个容器**（悬置区）的 schema，台账实为「活跃/废弃」，脚本与台账一致 → 证伪。若照改，会把对的改成错的。
+**F2 实证**：`registry_guards.ps1` 在包内但 `DT_SUITE["guards"]` 只列 3 个 `.sh` → Win 端 `run_registry_guards.ps1` 回退 bash（Win 无 bash）→ **整个守卫族空转**，比「入口件缺失」重一级。
+**F3 实证**：模板产 `## 📝 最近变更摘要`，`update_snapshot_from_diary.py` 认 `###`；`awaken_health_dashboard.py` 2026-10-10 已按层级族修过，本脚本**漏修一腿** → 每个新装用户每 6h 报「快照缺口」。同型第二例：`verify.sh` 有 `--only-dirs`，`verify.ps1` 没有。
+**F4 实证**：`crossend_guard.py` 读 `<配置根>/rules/cross-end-guard.md`，规则不在部署链 → `parse_signatures()` 返回 `[]` → `sys.exit(0)`。**守卫装上了，一分钟都没检测过**。
+**F5 实证**：`verify.ps1` 调 `path_integrity_check.py` 未带 `--only-dirs`，把用户历史日志/成长箱/洞察报告算成装机产物（实测全库 867 件）；`SKIP_DIRS` 缺 `.venv/_wip`，`_wip` 单项 844 件噪声。
+**F7 实证**：`references/component-versions.json` 直改包内后，`com.qclaw.mirror-sync`（fswatch 常驻）3 秒内用母本冲回原值，`stat` mtime 不变、报告仍显示旧号；`references/scripts/smoke_test.py` 同理。判据：**改包前先查 mirror-manifest 归属面**，投影件一律 改源 → mirror-sync，否则白改且难查（表面看「改了」，实盘没变）。
+**F6 实证**：同一份包 Mac 侧全绿，Win 侧四项全红（计划任务装不上、L6 恒 ⚪、守卫族空转、软链恒判缺失）。**Mac 绿 ≠ 可发布**（S862 立场卡：安装包首版可糙，真机门禁不可省）。
+
+> ⚠️ F6 的「Win 真机」若本轮无可用真机，✅DO 在报告里显式标 `Win 真机未验`，⛔DO NOT 用「Mac 全绿」代替；未验项计入发布风险清单。
 
 **元层归因强制（v4.12.10 新增·2026-09-21·防逐案打地鼠）**
 

@@ -29,6 +29,7 @@
 """
 
 import argparse
+import io
 import glob
 import json
 import re
@@ -168,7 +169,7 @@ DT_SUITE = {
                 # 2026-10-19 Q3路线C装机周期守护两件（声明见 digital-twin/guardians.json·Q6门禁②对账）
                 "com.doenglingz.slice-watch.plist.template",
                 "slice-watch-install-task.ps1",
-                # 2026-10-21 G2装机对等·蒸馏调度月拍守护两件（声明见 guardians.json·哥令「必须让win和MAC用户都正常使用」）
+                # 2026-10-21 G2装机对等·蒸馏调度月拍守护两件（声明见 guardians.json·维护方令「必须让win和MAC用户都正常使用」）
                 "com.buluotuo.distill-scheduler.plist.template",
                 "distill-scheduler-install-task.ps1",
                 # K2 造芯链路引用（立场卡 triggers 机械核验 / H4 冲突样本采集）
@@ -195,7 +196,11 @@ DT_SUITE = {
     # ⛔ 端中立：两件内 ⛔ 无作者侧路径（GUARD_DIR/DOC_CHECK 均走环境变量+同目录缺省）
     #   skill_version_guard.sh ＝ Skill 版本 ↔ 其 CHANGELOG 顶版对账（⛔ 不带 changelog_guard：
     #     它检查记忆规则三层的 CHANGELOG，而该文件不在包内 ⇒ 端用户机无对象可守）
-    "guards": ("registry_guards.sh", "kb_index_guard.sh", "skill_version_guard.sh"),
+    #   registry_guards.ps1 ＝ Windows 等价实现（run_registry_guards.ps1:17 直指此件；
+    #     原白名单只有 .sh ⇒ Win 端 Guards 目录无 ps1 ⇒ 入口回退 bash（Win 无 bash）
+    #     ⇒ 整个守卫族静默空转。2026-10-23 V2.2.9 Win 反馈 P2-1 根治）
+    "guards": ("registry_guards.sh", "registry_guards.ps1",
+               "kb_index_guard.sh", "skill_version_guard.sh"),
     # 闸门声明（G1-G4 + health_probes）＝ Phase A2 骨架明载项
     "gates": None,          # None = 整目录
     # K2 造芯管线（2026-09-30 补·闭合 Phase A3「造芯管线可跑」承诺）
@@ -349,10 +354,10 @@ def _first_review_skeleton():
 
 
 def _distillation_center_skeleton():
-    """装机态蒸馏中心初始账（G1·2026-10-21 K007评估·哥「月初蒸馏带上资产体检」提案收口）。
+    """装机态蒸馏中心初始账（G1·2026-10-21 K007评估·维护方「月初蒸馏带上资产体检」提案收口）。
     入账四类型=装机态执行Skill在场的（system-logger/daily-buddy/growth-box/clock-loop X-AST）；
     ⛔统一蒸馏管道/切片管道复检不入账——装机态无执行实体，入账=假待办（实事求是红线）。
-    日期口径：蒸馏三件预期下次=次月28日（产品使用契约节奏）；🔍资产体检=非日期文本「用户自定」→classify自动跳过=默认不提醒不替用户决定节奏（哥2026-10-21令），用户改列为日期即自行订阅。
+    日期口径：蒸馏三件预期下次=次月28日（产品使用契约节奏）；🔍资产体检=非日期文本「用户自定」→classify自动跳过=默认不提醒不替用户决定节奏（维护方2026-10-21令），用户改列为日期即自行订阅。
     幂等：走 bootstrap_runtime_state 缺才建通道，存量机已有账⛔绝不覆盖。
     """
     today = datetime.date.today()
@@ -409,8 +414,70 @@ def bootstrap_runtime_state(mc, dry=False):
             with open(path, "w", encoding="utf-8") as f:
                 f.write(gen())
         report.append("created %s" % rel)
+
+    # ④ L6 分身同步账本种子（P0-3 根治·2026-10-23 V2.2.9 Win 反馈）
+    #    原实现只部署 state_bus_sync.py 不调用 ⇒ 装完 数字分身/state_bus.json 不存在
+    #    ⇒ tsl_verify.py L6 恒显 ⚪「本机未启用自动同步」，端用户看到的是「功能没做」，
+    #    实际是账本对象从未被创建。缺才建：存量机/升级机已有账本一律不碰。
+    bus = os.path.join(dt_root, "state_bus.json")
+    if os.path.exists(bus):
+        report.append("skipped·存量保留 数字分身/state_bus.json")
+    else:
+        _sync = os.path.join(dt_root, "scripts", "state_bus_sync.py")
+        if dry or not os.path.isfile(_sync):
+            report.append("pending 数字分身/state_bus.json（dry-run 或脚本缺失）")
+        else:
+            import subprocess as _sp
+            # ⚠️ 账本落点由 DIGITALTWIN_HOME 决定（state_bus_sync 默认 ~/个人AI档案/数字分身）；
+            # 端用户记忆中心可能在 D:\SLcenter ⇒ 必须显式传入，否则种到作者路径=端上仍然没有账本。
+            _env = dict(os.environ)
+            _env["DIGITALTWIN_HOME"] = dt_root
+            try:
+                r1 = _sp.run([sys.executable, _sync], capture_output=True, text=True,
+                             timeout=180, env=_env)
+                # 成功判据＝账本真的落盘（⛔不看 rc）：state_bus_sync 在装机态先种子、后检查，
+                # 判据源 watcher 缺失时检查段 rc=4，但账本已建 = 本步目标已达成。
+                if not os.path.isfile(bus):
+                    report.append("⚠️ state_bus 种子未生成（rc=%d·不阻断安装）" % r1.returncode)
+                else:
+                    r2 = _sp.run([sys.executable, _sync, "--update"],
+                                 capture_output=True, text=True, timeout=180, env=_env)
+                    report.append("created 数字分身/state_bus.json（种子%s）"
+                                  % ("+--update" if r2.returncode == 0
+                                     else "+--update rc=%d" % r2.returncode))
+            except Exception as exc:
+                report.append("⚠️ state_bus 自举异常: %s（不阻断安装）" % exc)
     return report
 
+
+
+def install_end_rules(dry=False):
+    """端配置根规则投影（cross-end-guard·P2-2 根治·2026-10-23 V2.2.9 Win 反馈）。
+
+    背景：crossend_guard.py 随包部署并挂 SessionStart，但它读
+    <config_root>/rules/cross-end-guard.md 的 STRIP 段作特征名清单源；
+    规则不部署 ⇒ parse_signatures() 返回 [] ⇒ 守卫 sys.exit(0) 静默放行
+    （装上了，一分钟都没检测过）。本函数把包内规则投影到端配置根。
+
+    幂等：已存在且非空则跳过（⛔不覆盖用户改过的规则）。
+    """
+    src = os.path.join(PKG, "references", "rules", "cross-end-guard.md")
+    if not os.path.isfile(src):
+        return "MISSING 包内 references/rules/cross-end-guard.md"
+    dst_dir = os.path.join(_CFG_ROOT_ABS, "rules")
+    dst = os.path.join(dst_dir, "cross-end-guard.md")
+    if os.path.isfile(dst) and os.path.getsize(dst) > 0:
+        return "skipped·存量保留 %s" % dst
+    if dry:
+        return "pending %s（dry-run）" % dst
+    os.makedirs(dst_dir, exist_ok=True)
+    with open(src, encoding="utf-8") as f:
+        body = f.read()
+    # 端路径校正：包内规则默认写 ~/.workbuddy（WB 版），投影到其他端时换成实际配置根
+    body = body.replace("~/.workbuddy", _CFG_ROOT_ABS).replace("[配置根]", _CFG_ROOT_ABS)
+    with open(dst, "w", encoding="utf-8") as f:
+        f.write(body)
+    return "created %s" % dst
 
 
 def _detect_existing_twin(mc):
@@ -1097,8 +1164,23 @@ def install_rule_data(mc, dry=False):
     冲成包内编译产物（实证：40 条→30 条，032-040 触发规格全丢＝预注入硬墙缺位）。
     新语义：覆盖前查目标文件头（前 8 行）的外部维护声明——命中「本机不引入 / 手工维护+⛔」
     任一标记 ⇒ [SKIP] 保留用户版并显形告警，⛔不静默覆盖；未命中 ⇒ 维持幂等覆盖（标准流）。
-    （配套：rule_triggers.yaml / rule_conflict_signals.yaml 已入 conffiles 三路比较册。）"""
+    （配套：rule_triggers.yaml / rule_conflict_signals.yaml 已入 conffiles 三路比较册。）
+
+    ⚠️ SD-1 根治（2026-10-22 上游反馈单V2·方案A 判据跳过）：
+    文件头关键词闸只护"知道往头里写声明"的机器——实证=Win 用户机 2.2.4/2.2.8 两连覆盖
+    （43→38/50→38·客户脱敏红线013 触发失效·全程无报错）。本腿加**物理判据**：
+    每次装机把写入件的 sha256 指纹存 <MC>/.install/rule_data_snapshot.json；
+    下次装机本机件 hash≠基线 ⇒ 装后被手改 ⇒ SKIP+差异摘要+冲突回执，⛔不静默覆盖；
+    hash==基线 ⇒ 未动 ⇒ 维持幂等覆盖（标准流）。判据对 RULE_DATA 全件生效，
+    一次投入覆盖整类问题（Skill 面 deploy_skills md5 比对先例的规则层同构，消防线强度分裂）。
+    老版装机无快照：首见件只写基线不拦截（无从判定过去，第二次装机起保护）。"""
     done = []
+    _snap_path = os.path.join(mc, ".install", "rule_data_snapshot.json")
+    try:
+        _snap = json.load(io.open(_snap_path, encoding="utf-8")) if os.path.isfile(_snap_path) else {}
+    except Exception:
+        _snap = {}
+    _sd1_conflicts = []
     for name in RULE_DATA:
         src = os.path.join(PKG, "references/scripts", name)
         if not os.path.isfile(src):
@@ -1120,10 +1202,51 @@ def install_rule_data(mc, dry=False):
             print("     └ [SKIP] %s：目标文件头声明外部/手工维护——保留你的版本，不覆盖（缺陷②根治·本机=主源）" % name)
             done.append(name + "(SKIP·保留本机版)")
             continue
+        # SD-1 物理判据（2026-10-22）：声明闸之后、覆盖之前——hash 对比上次装机写入基线
+        if os.path.isfile(dst):
+            _cur8 = _sha8(dst)
+            _base8 = _snap.get(name)
+            if _base8 and _cur8 != "-" and _base8 != "-":
+                if _cur8 != _base8:
+                    _sd1_conflicts.append((name, dst, src, _cur8, _base8))
+                    print("     └ [SKIP] %s：本机件与上次装机基线不一致（%s≠%s）——装后被手改，保留你的版本；"
+                          "差异摘要见 .install/rule-data-conflicts.md（SD-1 根治·判据跳过）" % (name, _cur8, _base8))
+                    done.append(name + "(SKIP·检出本机改动·保留)")
+                    continue
+            elif not _base8:
+                print("     └ [BASE] %s：快照无此件基线（老版本装机）——本次写入基线，下次装机起生效保护" % name)
         _copy(src, dst, dry)
         if not dry:
             _fill(dst, mc)
+            _snap[name] = _sha8(dst)
         done.append(name)
+    if not dry:
+        try:
+            os.makedirs(os.path.dirname(_snap_path), exist_ok=True)
+            with io.open(_snap_path, "w", encoding="utf-8") as _f:
+                json.dump(_snap, _f, ensure_ascii=False, indent=1)
+        except Exception as _e:
+            print("     └ ⚠️ 快照写入失败（SD-1 保护本轮未落·不阻断安装）：%s" % _e)
+        if _sd1_conflicts:
+            _cp = os.path.join(mc, ".install", "rule-data-conflicts.md")
+            try:
+                with io.open(_cp, "w", encoding="utf-8") as _f:
+                    _f.write("# 规则层本机改动冲突（SD-1 判据跳过生成·⛔静默覆盖的对账回执）\n\n")
+                    for _n, _d, _s, _c, _b in _sd1_conflicts:
+                        try:
+                            _dl = len(io.open(_d, encoding="utf-8").read().splitlines())
+                        except Exception:
+                            _dl = -1
+                        try:
+                            _sl = len(io.open(_s, encoding="utf-8").read().splitlines())
+                        except Exception:
+                            _sl = -1
+                        _f.write("- **%s**：本机 %d 行·包内 %d 行｜本机指纹 %s·上次写入基线 %s\n"
+                                 "  处置：本机版已原样保留未覆盖；如需包内新版，人工 diff 合并后删除快照里该件条目重跑安装\n"
+                                 % (_n, _dl, _sl, _c, _b))
+                print("     └ [冲突回执] %d 件本机改动已显形：%s" % (len(_sd1_conflicts), _cp))
+            except Exception as _e:
+                print("     └ ⚠️ 冲突回执写入失败：%s" % _e)
     return done
 
 
@@ -3135,6 +3258,7 @@ def main():
           % (tag, n_dt, MC_PATH, ",".join(DT_SUITE.keys())))
     for _bs in bootstrap_runtime_state(MC_PATH, a.dry_run):
         print("   %s①a+ 运行落点自举：%s" % (tag, _bs))
+    print("   %s①a++ 端规则投影：%s" % (tag, install_end_rules(a.dry_run)))
 
     rd = install_rule_data(MC_PATH, a.dry_run)
     rf = install_rule_files(MC_PATH, a.dry_run)

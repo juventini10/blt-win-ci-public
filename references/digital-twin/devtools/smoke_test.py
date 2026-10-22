@@ -104,7 +104,10 @@ def _carrier_rx(v: str) -> str:
     esc = re.escape(v)
     parts = v.split(".")
     short = "%s.%s" % (parts[0], parts[1]) if len(parts) > 2 else ""
-    alt = esc if not short or short == v else "%s|%s" % (esc, re.escape(short))
+    # 2026-10-23 V2.2.10：短形式必须带 (?!\.\d) 负向前查——否则真源 2.2.10 时，
+    # 旧号 2.2.9 的 "2.2" 前缀会被短形式命中，patch 级升版（2.2.9→2.2.10）的
+    # 首行标题旧号恒漏检（实证：INSTALL/README 首行仍写 2.2.9 而 smoke 全绿）。
+    alt = esc if not short or short == v else "%s|%s(?!\\.\\d)" % (esc, re.escape(short))
     return alt
 
 
@@ -628,14 +631,18 @@ def check_platform_roster(pkg: Path) -> list:
 
 def check_reference_paths(pkg: Path) -> list:
     """P6 单数 reference 斜杠路径形态 0 残留（防 2026-09 单复数混用复发）。
+    2026-10-22 盲审F-2根治：负向前查扩含连字符——pr-reference 等复合目录名是合法词段
+    不再误伤；真单数残留（行首/空白/斜杠后裸单数形式）照抓。
 
     frontmatter `type: reference` 字段值是 Diataxis 术语非路径，天然不命中
     （无斜杠）。本函数自身源码也不含该字面量（运行期拼接），自扫不误伤。
     """
     issues = []
-    rx = re.compile(r"(?<![A-Za-z])reference" + "/")
-    _diataxis_rx = re.compile(r"(?<![A-Za-z])reference"
-                              + r"/(?:explanation|how-to|tutorial)")
+    rx = re.compile(r"(?<![A-Za-z-])reference" + "/")
+    # 2026-10-23 V2.2.10：`reference/page` 是「该读哪个 reference 页」的泛指术语，
+    # 与 Diataxis 目录名同性质，非路径残留（实证=triwich SKILL.md L53 假阳性）。
+    _diataxis_rx = re.compile(r"(?<![A-Za-z-])reference"
+                              + r"/(?:explanation|how-to|tutorial|page)")
     for f in pkg.rglob("*"):
         if not f.is_file() or f.suffix.lower() not in _PATH_EXT:
             continue

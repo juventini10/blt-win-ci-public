@@ -73,12 +73,14 @@ Write-Host "执行体2:  $StateBus --update"
 $action1 = New-ScheduledTaskAction -Execute $PyExe -Argument "`"$SliceWatch`""
 $action2 = New-ScheduledTaskAction -Execute $PyExe -Argument "`"$StateBus`" --update"
 
-# 触发：开机+登录即注册 + 每日 9:00 起每 24h 重复（等价 mac StartInterval 86400）
-# Repetition 是 trigger 的 CIM 属性·文档正解直接赋 ISO8601 字符串（⛔ New-ScheduledTaskRepetitionTrigger 不存在·真机爆点已拆）
+# 触发：仅时间型（-Daily 本身即每 24h 一次·等价 mac StartInterval 86400）。
+# ⛔ 不给 -Daily trigger 赋 Repetition：PS 5.1/7 实测该属性不可写
+#    （"The property 'Interval' cannot be found on this object"·2026-10-22 Win 真机反馈），
+#    每 24h 重复与 -Daily 同义，无需 Repetition。
+# ⛔ 不用 AtLogOn/AtStartup：机级触发器在非提权账户注册返回"拒绝访问"（同日真机实证）；
+#    开机补贴由 -StartWhenAvailable 承载（关机/睡眠错过的轮次在可用后补跑）。
 $daily = New-ScheduledTaskTrigger -Daily -At 9:00am
-$daily.Repetition.Interval = 'PT24H'
-$daily.Repetition.Duration = 'P3650D'
-$triggers = @((New-ScheduledTaskTrigger -AtLogOn), (New-ScheduledTaskTrigger -AtStartup), $daily)
+$triggers = @($daily)
 
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `

@@ -113,22 +113,38 @@ if ($py) {
   else { no "数据污染检测: 命中污染(需 --apply 清理或人工核对)" }
 } else { no "未找到可用 python.exe(跳过污染检测)" }
 
+# 0.9) 有效长度判定（P2-3 根治·2026-10-23 V2.2.9 Win 反馈）
+#      Get-Item 对符号链接返回链接对象（Length=0）⇒ 软链件恒报"缺失"，用户按提示
+#      重建实体副本会破坏三端同源。此处解引用 Target 再量真实文件长度。
+function Get-EffLen([string]$p) {
+  try {
+    $gi = Get-Item -LiteralPath $p -Force
+    if ($gi.PSObject.Properties.Name -contains 'LinkType' -and $gi.LinkType) {
+      $t = @($gi.Target)[0]
+      if ($t -and -not [System.IO.Path]::IsPathRooted($t)) { $t = Join-Path (Split-Path -Parent $p) $t }
+      if ($t -and (Test-Path -LiteralPath $t)) { return (Get-Item -LiteralPath $t -Force).Length }
+      return 0
+    }
+    return $gi.Length
+  } catch { return 0 }
+}
+
 # 1) 系统文件（发布包模板齐全）+ 记忆中心核心层
 #    2026-09-17 童灵根治：原查 $MC/SOUL.md 等与 step5 契约不符——SOUL/IDENTITY/USER/MEMORY
 #    是 WorkBuddy 平台专属落点（~/.workbuddy/），非记忆中心根。已与 verify.sh 同口径。
 foreach ($e in @(@("references\templates\SOUL.md", "人格模板"), @("references\templates\IDENTITY.md", "身份模板"), @("references\templates\USER.md", "用户画像模板"))) {
   $rel = $e[0]; $lb = $e[1]
   $p = Join-Path $PKG_ROOT $rel
-  if ((Test-Path $p) -and ((Get-Item $p).Length -gt 0)) { ok "发布模板 ${lb}: $rel" } else { no "发布模板 ${lb}: $rel (缺失)" }
+  if ((Test-Path $p) -and ((Get-EffLen $p) -gt 0)) { ok "发布模板 ${lb}: $rel" } else { no "发布模板 ${lb}: $rel (缺失)" }
 }
 $coreMd = Join-Path $MC "核心层\CORE.md"
-if ((Test-Path $coreMd) -and ((Get-Item $coreMd).Length -gt 0)) { ok "记忆中心 核心层: CORE.md" } else { miss "记忆中心 核心层: CORE.md (缺失/为空)" }
+if ((Test-Path $coreMd) -and ((Get-EffLen $coreMd) -gt 0)) { ok "记忆中心 核心层: CORE.md" } else { miss "记忆中心 核心层: CORE.md (缺失/为空)" }
 
 # 1.5) 平台系统文件（step5 契约落点 = 端配置根 $CONFIG_ROOT\）
 #     2026-09-17 新增·2026-09-30 多端化：SOUL/IDENTITY/USER/MEMORY 写入端配置根目录（WB=.workbuddy、Qoder CN=.qoder-cn），而非记忆中心根。
 foreach ($rel in @("SOUL.md", "IDENTITY.md", "USER.md")) {
   $p = Join-Path $CFG_DIR $rel
-  if ((Test-Path $p) -and ((Get-Item $p).Length -gt 0)) { ok "平台系统文件: $CONFIG_ROOT/$rel" } else { miss "平台系统文件: $CONFIG_ROOT/$rel (缺失)" }
+  if ((Test-Path $p) -and ((Get-EffLen $p) -gt 0)) { ok "平台系统文件: $CONFIG_ROOT/$rel" } else { miss "平台系统文件: $CONFIG_ROOT/$rel (缺失)" }
 }
 
 # 1.6) 端功能面 twin_surface（条文33·fail-closed·与 verify.sh §1.6 同口径·2026-10-11 Q1补Win验收对等）
@@ -154,7 +170,7 @@ if ($py -and (Test-Path $pac)) {
 
 # 2) 规则三层
 foreach ($rel in @("记忆规则/用户基本规则-铁律版.md", "记忆规则/用户基本规则-摘要版.md")) {
-  $rp = Join-Path $MC $rel; if ((Test-Path $rp) -and ((Get-Item $rp).Length -gt 0)) { ok "规则三层 $rel" } else { no "规则三层 $rel (缺失/为空)" }
+  $rp = Join-Path $MC $rel; if ((Test-Path $rp) -and ((Get-EffLen $rp) -gt 0)) { ok "规则三层 $rel" } else { no "规则三层 $rel (缺失/为空)" }
 }
 
 # 3.0) Skill 落点三口径判定（2026-10-21 双端补腿·与 verify.sh §3.0 同 verify_pair_checks 源）
@@ -381,9 +397,14 @@ if ($DIRT -eq 0) { ok "安装包干净度: 8 类卫生项全过 + 无未声明�
 # 4.5) 装后双拼产物扫描（2026-10-10 十一轮·与 verify.sh §4.5 同口径·装机面）
 $integrity = Join-Path $PKG_ROOT "references\scripts\path_integrity_check.py"
 if ($py -and (Test-Path $integrity)) {
-  & $py $integrity --root $MC --quiet | Out-Null
+  # 产物域声明（P2-4 根治·2026-10-23 V2.2.9 Win 反馈）：不声明 --only-dirs 时
+  # 用户历史日志/成长箱/洞察报告里的作者路径引用也被算成装机产物（实测全库 867 件）。
+  # 目录清单与 verify.sh §4.5 逐字同源（孪生同构律）。
+  $piDirs = "脚本中心,数字分身,知识联邦引擎,记忆规则,技能配置,核心层,潜意识层,情境层,成就系统,记忆蓝图,未知未知,最伟大的我,自定义层,成长箱,工作日志"
+  $piPh = "AutoClaw/SOUL.md,AutoClaw/AGENTS.md,记忆规则/用户基本规则-摘要版.md,情境层/动态状态快照.md"
+  & $py $integrity --root $MC --only-dirs $piDirs --placeholder-files $piPh --quiet | Out-Null
   if ($LASTEXITCODE -ne 0) {
-    & $py $integrity --root $MC | Out-Host
+    & $py $integrity --root $MC --only-dirs $piDirs --placeholder-files $piPh | Out-Host
     no "装后产物含双拼/占位符残留（上方 [FAIL] 行=明细）"
   } else { ok "装后产物路径完整性: 无双拼形态、无占位符残留" }
 }

@@ -13,6 +13,10 @@ make_manifest.py — 页表指纹生成器（M2·2026-10-21·⛔手维护=漂移
   check  [--root <skill目录>]   只验不写：manifest 表内 == 页 frontmatter 声明 == 重算，三方一致才绿
 退出码：0=一致/建表成功；1=漂移（逐页列出）；2=页缺失/manifest 缺失。
 """
+# Win console UTF-8 guard (auto by build chain · V9)
+try:
+    import sys as _v9sys; _v9sys.stdout.reconfigure(encoding="utf-8"); _v9sys.stderr.reconfigure(encoding="utf-8"); _v9sys.stdin.reconfigure(encoding="utf-8")
+except Exception: pass
 import sys, os, re, json, hashlib, argparse, datetime
 
 def skill_pages(root):

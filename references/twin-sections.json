@@ -9,6 +9,11 @@
       "sh_only": [],
       "ps1_only": [
         {
+          "section": "0.9",
+          "reason": "Get-EffLen 软链解引用 helper（平台专属：bash 的 test -e 对软链天然解引用，Mac 侧无需等价段）",
+          "basis": "2026-10-23 V2.2.10 Win 反馈 P2-3 根治：Get-Item 对符号链接返回 Length=0 ⇒ 软链件恒判缺失；verify.sh 无此病故无对应段"
+        },
+        {
           "section": "5.5",
           "reason": "Windows 平台差异告知（不参与评分·信息项）",
           "basis": "内容=PowerShell 版本/执行策略等平台特有叙述，Mac 端无对应物可告知（verify.ps1 头注+§5.5 段实文·2026-10-21 建档实查）"

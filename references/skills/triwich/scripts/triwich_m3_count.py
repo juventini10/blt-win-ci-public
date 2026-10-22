@@ -26,8 +26,9 @@ import re
 import sys
 
 HOME = os.path.expanduser("~")
+_SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 2026-10-23 P10：自我定位改 __file__ 推导
 DECISION_ROOM = os.environ.get("TRIWICH_DECISION_ROOM") or os.path.join(
-    HOME, "[记忆共享中心]/技能配置/triwich/references/decision-room.md"
+    _SKILL_ROOT, "references/decision-room.md"
 )  # v4.4.9·R1-P3-07：与 seal 同 env 口——计数与登记两本账的口子关闭
 M3_THRESHOLD = 20
 FU_HEAD_RX = re.compile(r"^## FU-(\d+)\s*·\s*状态:([^·\n]+)", re.MULTILINE)

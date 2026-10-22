@@ -146,7 +146,8 @@ import hashlib
 from datetime import datetime
 
 SEAL_SALT = "triwich-seal-v1"
-LOG_PATH = os.path.expanduser("[记忆共享中心]/技能配置/triwich/scripts/seal.log")  # 2026-09-04随guard迁移：器官随Skill走（历史日志留原开发工具目录）
+_SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 2026-10-23 P10：自我定位改 __file__ 推导
+LOG_PATH = os.path.join(_SKILL_ROOT, "scripts", "seal.log")  # 2026-09-04随guard迁移：器官随Skill走（历史日志留原开发工具目录）
 # 自动检测当前工具的chat-history目录（跨工具通用·符合愿景"能通用的，就不要只绑定在一个工具上"）
 def detect_chat_history_dir():
     """自动检测当前工具的chat-history目录"""
@@ -176,8 +177,8 @@ else:
         TOOL_NAME = "AutoClaw (default fallback)"
 LOG_PATH = os.environ.get("TRIWICH_SEAL_LOG", LOG_PATH)
 # 决策卡台账（G2 回访闭环唯一 source）——环境变量仅测试隔离用
-DECISION_ROOM_PATH = os.environ.get("TRIWICH_DECISION_ROOM") or os.path.expanduser(
-    "[记忆共享中心]/技能配置/triwich/references/decision-room.md")
+DECISION_ROOM_PATH = os.environ.get("TRIWICH_DECISION_ROOM") or os.path.join(
+    _SKILL_ROOT, "references", "decision-room.md")
 
 # —— G2「机制回访」物理锚（v1.5.0·2026-09-18 Qoder CN·L2 裁决）——
 # 病灶：resolve 的 --mechanism 仅校验枚举，不校验「这张卡是否真由 followup 前置筛查发起过」

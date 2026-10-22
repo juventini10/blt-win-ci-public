@@ -13,6 +13,10 @@ page_receipt_guard.py — 翻页回执对账（V3·回执缺失→封口判红�
   · 回执行：`已读 pages/<页> @<8位指纹>`，指纹必须 == manifest 表内值（改版即漂=判红提示重读）
 退出码：0=OK/SKIP-legacy；1=FAIL（stderr 逐条）；2=输入不可达（键文件/manifest 缺）。
 """
+# Win console UTF-8 guard (auto by build chain · V9)
+try:
+    import sys as _v9sys; _v9sys.stdout.reconfigure(encoding="utf-8"); _v9sys.stderr.reconfigure(encoding="utf-8"); _v9sys.stdin.reconfigure(encoding="utf-8")
+except Exception: pass
 import sys, os, re, json, argparse, glob
 
 # M1 分家（内核 47KB+回执制）实落窗口 15:5x；分家前最后一枚真实键=20261021_153149（L2 设计轮）

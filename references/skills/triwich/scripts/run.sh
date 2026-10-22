@@ -4,6 +4,15 @@
 # v1.8（2026-10-21·R0①）：两档存量键检加 cutoff（带理由行·单常量可回落）+同日并窗真违规具名登记只报不改（WARN 显形不计红）
 # v1.9（2026-10-21·首采 Agent B F2）：模板同构负例闸——模板面旧标签「下一步·决策」回流即显形（token 弱锚补强）
 # v2.0（2026-10-21·P1-2 弱锚升级）：否证 token 族外置 scripts/negative_tokens.txt（形态级正则·⛔不误伤禁例引用），单条→族循环
+# v2.1（2026-10-21·你令模板统一）：同构位齐闸 template_parity_check.py 常驻（L1×3/L2/L3/示例/SKILL 七文件×七必备件）
+# v2.2（2026-10-22·clock-loop Loop R2）：简报字段判据三字段→七字段（对齐 SKILL.md §防跳步十锁「键文件熔断器」·修「条款索七/仪器查三/实跑交五」三方脱节）
+# v2.3（2026-10-22·你令修R3-2）：tests/ 目录不可达由 SKIP(仍绿) 升 FAIL(exit=1)——闸门互遮根治，判定面缺失不得按绿交付
+# v2.4（2026-10-22·R4-C2 同批）：套件级缺失（目录在而单件缺）同步升 FAIL——互遮面清零不迁移；R3-2 原"文件级维持SKIP"口径随之作废归正
+# v2.5（2026-10-22·你令处理任务卡 R3-1/R3-3）：基线代次入文件头(#gen=)防判据升档后旧基线洗白；WAIVED 豁免加到期默认(2026-11-05)过期自动转判红
+# v2.6（2026-10-22·F10 编排革命重构）：新增编排结构闸常驻 orchestration_gate.py（≤350行/结论块模板住末30%/指路牌≡实际节集合·⛔行号锚），负例五连测全中
+# v2.7（2026-10-22·F10 收尾）：WAIVED 具名增补并行会话键 20261022_201200（只报不改·他轮证据不代改）；test_closeout_guard v2.1.0 扫描域隔离后套件 21/21
+# v2.8（2026-10-22·clock-loop Loop R5）：接入指针可达性闸 anchor_reach_check.py（路径可达+path#§节名可锚；
+#   PARITY 同时增计数对账 COUNT 段）——本批实证两处死锚+一处计数漂移（11→14）均属"无人检查指向"空场。
 # 用例：neg1=普通任务含L3任务名+✅验证块+[📝]签名→放行 / neg2=正文中部引用L3签名+后续正文→放行
 #       pos1=L3完成签名末尾+缺新段头结论块→拦截 / pos2=L3完成签名末尾+新段头结论块+署名→放行
 #       pos3=L1完成签名末尾+缺L1结论块→拦截 / pos4=L2完成签名末尾+缺L2结论块→拦截
@@ -101,8 +110,12 @@ SUITES="test_triwich_decision_room test_triwich_seal_adversarial test_triwich_me
 echo ""
 echo "--- triwich 全量测试套件（v1.5.6·T1 根治）---"
 if [ ! -d "$TESTS_DIR" ]; then
-  echo "SKIP tests/ 不可达（${TESTS_DIR}）——⚠️ 无法确认 seal 夹具是否与脚本同步"
+  # R3-2 根治（Loop 2026-10-22·皮叔令「修R3-2」·时钟审查 Agent B/R3 探针B 实锤）：
+  #   原状=tests/ 目录缺失时全套件+其后六段仪器（漂移/落盘/简报/否证/parity/指纹）整体静默消失且 EXIT=0——
+  #   "全套件绿"宣称可被空目录制造。判定面不完整=不可判通过（SKIP≠通过·v4.5.1 F11②语义升进退出码）。
+  echo "FAIL tests/ 不可达（${TESTS_DIR}）——⛔ 判定面缺失（全套件+六段仪器未执行），不得按绿交付"
   TESTS_SKIPPED=1  # v4.5.1(F11②):跳过≠通过——无夹具时剥夺指纹台账刷新资格
+  FAIL=1
 else
   for t in $SUITES; do
     if [ -f "$TESTS_DIR/$t.py" ]; then
@@ -122,7 +135,8 @@ else
         FAIL=1
       fi
     else
-      echo "SKIP 套件缺失：$t.py"; TESTS_SKIPPED=1  # v4.5.1(N2收口):文件级缺失同剥落账资格——旧版只封目录级
+      echo "FAIL 套件缺失：$t.py——R4-C2 根治(你令修R3-2同族面):套件在列而文件缺失=判定面缺失，⛔不得按绿交付"; TESTS_SKIPPED=1
+      FAIL=1
     fi
   done
 
@@ -162,6 +176,8 @@ else
     STEPS_DIR="$HOME/steps"
   fi
   # 基线文件（存量不判红·只对基线后新增轮次判红）——⛔ 须在循环前定义：脚本头部 set -u
+  # R3-1（v2.5·皮叔令「处理」）：判据代次入基线——判据升档(三→七字段等)后旧基线不得静默洗白新闸；代次不符→存档重建（空基线=故意全判·语义不动）
+  _gen='v2.5'
   # 基线按 steps 目录分键（C4 根治 2026-10-02·你批）：单一 .landing_baseline 只覆盖建基线时的目录，
   #   换 cwd（=换 STEPS_DIR）后全部样本被判"新轮次"→ 历史轮次判红 30/40 现场复实在案。
   #   键 = 目录绝对路径哈希前8位；旧无键基线自动迁移到 $HOME/steps 名下（38 份基线实归该目录·不洗真红）。
@@ -177,7 +193,12 @@ else
   #   判红=永久红报警器（v4.4.10 同族教训）；单常量可回落（RECEIPT_SINCE/S4_SINCE 同族先例）。
   #   同日（>=cutoff）真违规轮⛔不改其键文件（他窗轮次=他窗证据），逐枚具名登记显形 WARN，不计 FAIL。
   KEYCHECK_CUTOFF="${TRIWICH_KEYCHECK_CUTOFF:-20261021_000000}"
-  WAIVED_KEYS="step0-determination-20261021_091432.md step0-determination-20261021_103113.md step0-determination-20261021_205055.md step0-determination-20261021_215957.md"
+  # 2026-10-22 增补（Qoder CN·F10 收尾轮）：step0-determination-20261022_201200.md = 并行会话 K007 三源闭环评估 L3 轮的键文件
+  #   （20:12 铸造·仅 Step0 段 419B·非本窗所有）——他轮证据不可代改，⛔不伪造补段；按卡轮28令「只报不改」具名登记，随全局到期日失效转判红。
+  WAIVED_KEYS="step0-determination-20261021_091432.md step0-determination-20261021_103113.md step0-determination-20261021_205055.md step0-determination-20261021_215957.md step0-determination-20261022_201200.md"
+  # R3-3（v2.5·皮叔令「处理」）：豁免到期默认——过日 WAIVED 自动失效转判红，单常量可回落（RECEIPT_SINCE 先例同族）
+  WAIVED_EXPIRY="${TRIWICH_WAIVED_EXPIRY:-2026-11-05}"
+  if [[ "$(date +%F)" > "$WAIVED_EXPIRY" ]]; then WAIVED_KEYS=""; echo "INFO WAIVED 豁免已过期($WAIVED_EXPIRY)→失效，存量违规转判红（R3-3 到期默认）"; fi
   if [ ! -d "$STEPS_DIR" ]; then
     echo "SKIP ${STEPS_DIR} 不可达——无法校验静默落盘锁（本轮 cwd 无 steps/）"
   else
@@ -191,8 +212,16 @@ else
     # 31/38 份红里绝大多数是 v4.4.15 生效**前**的历史轮次（当时无此锁）——
     #   把历史全算红 = 造"永久红" = 报警器永久失效（v4.4.10 撤销 l3_conclusion_guard 的同一教训）。
     # 口径：首跑建立基线（记下当前键文件清单与数量），此后**只对基线之后新增的轮次**判红。
+    if [ -s "$BASELINE_FILE" ] && ! head -1 "$BASELINE_FILE" | grep -q "^#gen="; then
+      mv "$BASELINE_FILE" "$BASELINE_FILE.pre-gen" 2>/dev/null || true   # 旧无代次基线→补代次头（存档不删·防洗白）
+      { echo "#gen=${_gen}"; cat "$BASELINE_FILE.pre-gen"; } > "$BASELINE_FILE" 2>/dev/null || true
+    elif [ -s "$BASELINE_FILE" ] && ! head -1 "$BASELINE_FILE" | grep -q "^#gen=${_gen}$"; then
+      mv "$BASELINE_FILE" "$BASELINE_FILE.gen-stale" 2>/dev/null || true
+      { echo "#gen=${_gen}"; ls -1 "$STEPS_DIR"/step0-determination-*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sort; } > "$BASELINE_FILE" 2>/dev/null || true
+      echo "INFO landing 基线代次升 ${_gen}→重建（旧档存 .gen-stale·R3-1 防新闸被旧基线洗白）"
+    fi
     if [ ! -f "$BASELINE_FILE" ]; then
-      ls -1 "$STEPS_DIR"/step0-determination-*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sort > "$BASELINE_FILE" 2>/dev/null || true
+      { echo "#gen=${_gen}"; ls -1 "$STEPS_DIR"/step0-determination-*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sort; } > "$BASELINE_FILE" 2>/dev/null || true
       echo "INFO 静默落盘锁基线已建立（$(wc -l < "$BASELINE_FILE" | tr -d ' ') 份历史轮次）——本次不判红"
       echo "     今后只对基线之后新增的轮次判红（存量红=历史·非回归）"
       VIOLATION=0; CHECKED=0
@@ -244,9 +273,10 @@ else
     fi
   fi
 
-  # --- 简报字段校验（v4.5.0·观测型·2026-10-05 启动简报块改造）---
-  # 判据：v4.5.0 生效后新铸造键文件✅DO含 路线声明/深度声明/验证保障 三字段
-  #   （对话3行简报块的唯一真源——SKILL.md §Step0 · 启动简报块·同源投影纪律）。
+  # --- 简报字段校验（v4.5.0·观测型·2026-10-05 启动简报块改造·v2.2 升七字段）---
+  # 判据：新铸造键文件✅DO含 本轮键/会话戳/路线声明/深度声明/验证保障/目的/输出类型 七字段
+  #   （对齐 SKILL.md §防跳步十锁「键文件熔断器」格式排他判据·2026-10-22 Loop R2 由三字段升七——病名：条款索七、仪器查三、实跑交五，三方各说各话）
+  #   （对话3行简报块的唯一真源——SKILL.md §启动简报块·同源投影纪律）。
   #   基线机制与落盘锁同构：首跑建基线不判红，此后只对基线后新增轮次判红（防"永久红"
   #   ——v4.4.10 撤销 l3_conclusion_guard 的教训）。⛔不检测对话侧逐字比对（跨端能力不一·已知边界，见 eval #53）。
   echo ""
@@ -256,8 +286,13 @@ else
   else
     BRIEF_BASELINE="${TRIWICH_BRIEFING_BASELINE:-$DIR/.briefing_baseline.${_dirkey:-fallback}}"
     BF=0; BV=0; BV_FILES=""; BW=0; BW_FILES=""
+    if [ -s "$BRIEF_BASELINE" ] && ! head -1 "$BRIEF_BASELINE" | grep -q "^#gen=${_gen}$"; then
+      mv "$BRIEF_BASELINE" "$BRIEF_BASELINE.gen-stale" 2>/dev/null || true
+      { echo "#gen=${_gen}"; ls -1 "$STEPS_DIR"/step0-determination-*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sort; } > "$BRIEF_BASELINE" 2>/dev/null || true
+      echo "INFO 简报基线代次升 ${_gen}→重建（旧档存 .gen-stale·R3-1）"
+    fi
     if [ ! -f "$BRIEF_BASELINE" ]; then
-      ls -1 "$STEPS_DIR"/step0-determination-*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sort > "$BRIEF_BASELINE" 2>/dev/null || true
+      { echo "#gen=${_gen}"; ls -1 "$STEPS_DIR"/step0-determination-*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sort; } > "$BRIEF_BASELINE" 2>/dev/null || true
       echo "INFO 简报字段基线已建立（$(wc -l < "$BRIEF_BASELINE" | tr -d ' ') 份存量）——本次不判红，今后只对基线后新增轮次判红"
     fi
     for kf in "$STEPS_DIR"/step0-determination-*.md; do
@@ -273,9 +308,10 @@ else
       if [ -n "$ts14" ] && [[ "$ts14" < "$KEYCHECK_CUTOFF" ]]; then continue; fi
       BF=$((BF+1))
       MISS=0
-      grep -q '\*\*路线声明\*\*' "$kf" || MISS=1
-      grep -q '\*\*深度声明\*\*' "$kf" || MISS=1
-      grep -q '\*\*验证保障\*\*' "$kf" || MISS=1
+      _head=$(sed -n '1,/^### /p' "$kf")   # 首部段（到第一个###前）·对齐 SKILL.md §防跳步十锁「键文件熔断器」首部位置判据
+      for _fld in 本轮键 会话戳 路线声明 深度声明 验证保障 目的 输出类型; do
+        printf '%s\n' "$_head" | grep -qE "^[-*+]?[[:space:]]*(\*\*)?${_fld}(\*\*)?[[:space:]]*[:：][[:space:]]*[^[:space:]]" || MISS=1
+      done
       if [ "$MISS" -eq 1 ]; then
         case " $WAIVED_KEYS " in
           *" $bn "*) BW=$((BW+1)); BW_FILES="$BW_FILES $bn" ;;  # 只报不改（卡轮28令）
@@ -285,12 +321,22 @@ else
     done
     if [ "$BF" -eq 0 ]; then
       echo "SKIP 未找到基线后新增键文件样本（${STEPS_DIR}）——⚠️ 简报字段锁尚未被真实轮次验证"
+      _mat=""
+      for _mk in "$STEPS_DIR"/step0-determination-*.md; do
+        [ -f "$_mk" ] || continue
+        _h=$(sed -n '1,/^### /p' "$_mk"); _c=0
+        for _fld in 本轮键 会话戳 路线声明 深度声明 验证保障 目的 输出类型; do
+          printf '%s\n' "$_h" | grep -qE "^[-*+]?[[:space:]]*(\*\*)?${_fld}(\*\*)?[[:space:]]*[:：][[:space:]]*[^[:space:]]" && _c=$((_c+1))
+        done
+        _mat="$_mat $(basename "$_mk" | sed 's/step0-determination-//;s/\.md//')=${_c}/7"
+      done
+      echo "     INFO 存量件七字段命中矩阵（新闸对历史样本零覆盖的可见化·R3 A-06 承接）:${_mat:- 无}" 
     elif [ "$BV" -gt 0 ]; then
-      echo "FAIL 简报字段：$BV/$BF 份新轮次键文件缺 路线声明/深度声明/验证保障 字段 ——$BV_FILES"
-      echo "     ⇒ v4.5.0 同源投影在文件侧断裂（对话3行失去唯一真源）。查 SKILL.md §Step0 · 启动简报块"
+      echo "FAIL 简报字段：$BV/$BF 份新轮次键文件缺 本轮键/会话戳/路线声明/深度声明/验证保障/目的/输出类型 七字段之一 ——$BV_FILES"
+      echo "     ⇒ v4.5.0 同源投影在文件侧断裂（对话3行失去唯一真源）。查 SKILL.md §启动简报块"
       FAIL=1
     else
-      echo "PASS 简报字段（$BF 份基线后新键文件三字段齐全）"
+      echo "PASS 简报字段（$BF 份基线后新键文件七字段齐全）"
     fi
     if [ "$BW" -gt 0 ]; then
       echo "WARN 简报字段·存量违规只报不改：$BW 份（卡轮28令具名登记）——$BW_FILES"
@@ -314,6 +360,30 @@ else
       fi
     done < "$NEG_FILE"
     [ "$NEG_HIT" -eq 0 ] && echo "PASS 否证 token 族（全条零命中）"
+  # --- 模板同构位齐闸（v2.1·你令 L1/L2/L3 模板统一）---
+  echo ""
+  echo "--- 模板同构位齐闸（v2.1）---"
+  _tp_out=$("$PY" "$DIR/template_parity_check.py" 2>&1); _tp_rc=$?
+  if [ "$_tp_rc" -eq 0 ]; then echo "PASS $_tp_out"; else echo "FAIL 模板同构位缺件"; printf '%s\n' "$_tp_out" | head -8; FAIL=1; fi
+
+# --- 编排结构闸（F10·orchestration_gate.py v1.0·2026-10-22·方案v1.1 §五验收关1）---
+_orch_out=$("$PY" "$DIR/orchestration_gate.py" 2>&1); orch_rc=$?
+if [ "$orch_rc" -eq 0 ]; then
+  echo "PASS 编排结构闸 $_orch_out"
+else
+  echo "FAIL 编排结构闸"; printf '%s\n' "$_orch_out" | head -8; FAIL=1
+fi
+  fi
+
+  # --- 指针可达性抽测闸（v2.8·2026-10-22 Loop R5·死锚根治）---
+  # 根因：SKILL.md 两处 `pages/p0-step0.md#§熔断器` / `#§家根红线` 指向该页不存在的节名，
+  #   而原有八段仪器无一段检查「指针指向的东西存不存在」⇒ 死锚可静默存活（本批实证）。
+  # 判据：路径可达 + `path#§节名` 必须命中目标文件某标题；纯 §节名 只 advisory（可能指外部规范）。
+  _anc_out=$("$PY" "$DIR/anchor_reach_check.py" 2>&1); anc_rc=$?
+  if [ "$anc_rc" -eq 0 ]; then
+    echo "PASS 指针可达性 $_anc_out"
+  else
+    echo "FAIL 指针可达性（死锚）"; printf '%s\n' "$_anc_out" | head -8; FAIL=1
   fi
 
   if [ -f "$FINGERPRINT_FILE" ] && [ "$(cat "$FINGERPRINT_FILE" 2>/dev/null)" != "$SEAL_FP" ]; then

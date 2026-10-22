@@ -38,11 +38,12 @@ import sys
 __version__ = "1.0.0"
 
 HOME = os.path.expanduser("~")
-DECISION_ROOM = os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置/triwich/references/decision-room.md")
+_SKILL_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 2026-10-23 P10：自我定位改 __file__ 推导
+DECISION_ROOM = os.path.join(_SKILL_ROOT, "references/decision-room.md")
 SAMPLE_LEDGER = os.path.join(os.path.expanduser("[记忆共享中心]"), "自定义层/待完成工作/阶段A采样清单-三明智4.0.md")
-SKILL_MD = os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置/triwich/SKILL.md")
+SKILL_MD = os.path.join(_SKILL_ROOT, "SKILL.md")
 DIFF_DIR = os.path.join(os.path.expanduser("[记忆共享中心]"), "自定义层/待完成工作")
-CHANGELOG_MD = os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置/triwich/references/CHANGELOG.md")
+CHANGELOG_MD = os.path.join(_SKILL_ROOT, "references/CHANGELOG.md")
 
 
 def calc_status():

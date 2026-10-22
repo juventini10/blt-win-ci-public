@@ -31,25 +31,27 @@ Agent(
   description="两阶段独立审查Agent A的分析结论——先盲审后全量，交叉验证",
   subagent_type="general-purpose",
   mode="default",
-  prompt={见 references/reviewer-protocol.md v1.3 完整审查协议}
+  prompt={见 references/reviewer-protocol.md 完整审查协议（现行版）}
 )
 ```
 
 ### Agent B 输入（两阶段）
 
+**🔀 路径基线（v4.10.7 跨平台根治）**：下文 `{tmpdir}` = 系统临时目录**运行时派生**——`python3 -c "import tempfile; print(tempfile.gettempdir())"`（macOS/Linux 通常解析为 `/tmp`；Windows 解析为 `%TEMP%` 值）。⛔DO NOT 硬编码 `/tmp`——Windows 无 `/tmp`，写死=Win 端 Agent B 输入/输出全断链（2026-10-22 布洛陀发布链 D5 检查⑩判红根治）。与 flow-agent-a.md §跨平台声明、p0-step0.md §临时目录声明同源同口径。
+
 **阶段1·盲审输入**（仅结论，不传推导）：
-1. `/tmp/triwich_l3_{ts}/user_question.md` — 用户原始问题
-2. `/tmp/triwich_l3_{ts}/agent_a_output.md` — Agent A的结论+8要素自评
+1. `{tmpdir}/triwich_l3_{ts}/user_question.md` — 用户原始问题
+2. `{tmpdir}/triwich_l3_{ts}/agent_a_output.md` — Agent A的结论+8要素自评
 
 **阶段2·全量输入**（阶段1完成后追加）：
-3. `/tmp/triwich_l3_{ts}/agent_a_reasoning.md` — Agent A的完整推导链
+3. `{tmpdir}/triwich_l3_{ts}/agent_a_reasoning.md` — Agent A的完整推导链
 
 **⚠️ Agent B在阶段1**看不到推导过程——锚点、苏格拉底五问、假设表、跨域映射全部隔离。
 **🔴 输入排他性**：以上文件是 Agent B 的**全部**合法输入。⛔DO NOT 在 Agent B 的 prompt 里粘贴推导原文、⛔DO NOT 让其读取主聊上下文——隔离靠"没给"而不是"要求它别看"。
 
 ### Agent B 执行 Step3：批判验证（两阶段）
 
-→ 按 `references/reviewer-protocol.md` v1.3 执行（含 ⚔️对抗性验证——委派 `references/l1/critical-verify.md` Step3 单一来源，详见 reviewer-protocol.md §2d）。
+→ 按 `references/reviewer-protocol.md`（现行版）执行（含 ⚔️对抗性验证——委派 `references/l1/critical-verify.md` Step3 单一来源，详见 reviewer-protocol.md §2d）。
 
 **阶段1·盲审**：
 - 实事求是检查（独立WebSearch查证事实主张）
@@ -79,7 +81,7 @@ Agent(
 **规则**：Agent B连续3次输出✅通过 → 第4次强制执行：**即使结论正确，也必须找出至少1个可改进的方向（不是错误，是改进空间）**。输出格式中加 `[改进建议]` 段。
 
 **计数器载体（v3.0.4 新增·M13修复·v3.0.5 补初始化）**：`{skill根目录}/steps/agent_b_streak.md`，单行内容 `consecutive_pass: N`。
-- **路径基准声明（2026-09-06 A2 patch·双向对齐）**：本载体显式带 `{skill根目录}`·= SKILL.md §路径基准声明"唯一例外：计数器载体 `{skill根目录}/steps/agent_b_streak.md`（路径显式带 `{skill根目录}`·跨会话持久需随 Skill 分发）"。⛔DO NOT解析到当前执行工作区（`pwd`）·否则跨会话断链=机制不存在。与 SKILL.md §路径基准声明段(引用块粗体句·段锚非节标题·v4.5.1如实标注) "裸 steps/ = 当前工作区" 主句不冲突——唯一例外已显式锚定。
+- **路径基准声明（2026-09-06 A2 patch·双向对齐）**：本载体显式带 `{skill根目录}`·= pages/p0-step0.md §路径基准声明"唯一例外：计数器载体 `{skill根目录}/steps/agent_b_streak.md`（路径显式带 `{skill根目录}`·跨会话持久需随 Skill 分发）"。⛔DO NOT解析到当前执行工作区（`pwd`）·否则跨会话断链=机制不存在。与 pages/p0-step0.md §路径基准声明段(引用块粗体句·段锚非节标题·v4.5.1如实标注) "裸 steps/ = 当前工作区" 主句不冲突——唯一例外已显式锚定。
 - **初始化（v3.0.5）**：L3 启动时主agent 检查该文件——不存在则**先创建**（内容 `consecutive_pass: 0`）再继续，⛔DO NOT 等 Agent B 终判后才想起建载体。原因是载体缺失=质量监控无从查起（2026-08-09 实测：文件不存在，Agent B 报告自证"文档写了磁盘没有"）。
 - 每次 Agent B 终判后由**主agent** 更新该文件：终判✅ → N+1；终判❌ → N 归 0。**写入姿势（2026-09-02 清零批#15·并发 L3 竞态根治）**：✅DO 原子写——先写同目录临时文件再 `mv` 覆盖（`mv steps/agent_b_streak.md.tmp steps/agent_b_streak.md`·同分区 mv 原子，并发读侧只见完整旧值或完整新值，⛔DO NOT 直接 open-write 截断旧文件——读到半行 `consecutive_pass:` 会误判 N=0 触发重置）；读到格式异常/半行 → 视为 N=0 并重写完整内容（容错自愈，不中断 L3 主流程）。
 - 读到 N≥3 → 本次 Agent B 启动参数中✅DO追加「强制改进指令」→ 产出 `[改进建议]` 段后将 N 重置为 0。
@@ -104,7 +106,7 @@ Agent(
 
 ### Agent B 输出
 
-写入 `/tmp/triwich_l3_{ts}/agent_b_review.md`：
+写入 `{tmpdir}/triwich_l3_{ts}/agent_b_review.md`：
 
 ```markdown
 # Agent B 审查报告
@@ -113,10 +115,15 @@ Agent(
 
 {如果❌打回，打回理由至少一条具体可操作的修正建议}
 
-Agent B 独立评估：
+Agent B 独立评估（五维·对齐 reviewer-protocol 终审评分·2026-10-22 R2）：
 ├─ 实事求是（事实基础）：🟢/🟡/🔴
-├─ 逻辑自洽：🟢/🟡/🔴
+├─ 锚点质量：🟢/🟡/🔴
+├─ 逻辑自洽（推导严谨）：🟢/🟡/🔴
 ├─ 可验证性：🟢/🟡/🔴
 └─ 综合判定：✅通过 / ❌打回
 
+## 未复测清单
+{凡承重主张未独立复测者列此（v4.10.0 F1：缺段=流程轴❌）；全部复测则写「无」}
+
 {如果触发质量监控：[改进建议] xxx}
+```

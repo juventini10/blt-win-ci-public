@@ -65,12 +65,24 @@ def scan(mc):
                         continue                       # 非 utf-8/不可读：不在本判据面
                     except SyntaxError as e:
                         red.append("PY雷 %s: %s" % (p, e))
-                elif ext == ".json":
+                elif ext in (".json", ".jsonl"):
                     try:
-                        json.load(open(p, encoding="utf-8-sig"))
-                        checked += 1
+                        _txt = open(p, encoding="utf-8-sig").read()
                     except (UnicodeDecodeError, OSError):
                         continue
+                    # 先按单文档验；失败再按 JSONL 逐行验（按日追加的队列件·2026-10-23
+                    # V2.2.9 Win 反馈 P2-6：原实现一律整文件 loads，JSONL 恒报解析失败）。
+                    # 顺序不可倒：格式化多行 JSON 首字符是 `{`，先逐行会把合法 JSON 误判成雷。
+                    try:
+                        try:
+                            json.loads(_txt)
+                        except json.JSONDecodeError:
+                            _lines = [ln for ln in _txt.splitlines() if ln.strip()]
+                            if not _lines:
+                                raise
+                            for _ln in _lines:
+                                json.loads(_ln)
+                        checked += 1
                     except json.JSONDecodeError as e:
                         red.append("JSON雷 %s: %s" % (p, str(e)[:80]))
     return red, checked

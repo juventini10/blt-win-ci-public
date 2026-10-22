@@ -121,9 +121,28 @@ class Patrol:
     # mac=osascript 弹窗（B-1 原设计）；Win/其他=pending 文件留痕，由唤醒轻量会话内转述
     # （S4U 非交互会话弹不出 toast 是 2026-10-21 任务卡设计决策 a·形态 b 待你拍板可升级）
     # D-3：弹窗/留痕顶部带仪表盘单行摘要（脚本缺失/失败降级=不含摘要不阻塞）
+    def _retire_pending(self):
+        """巡检成功轮退场旧告警：pending 存在则归档（⛔不删·可追溯）。
+
+        2026-10-23 根治（V2.2.9 Win 反馈 P1-3）：原实现只在有告警时写 pending、
+        无告警轮直接 return ⇒ 一次失败留下的告警永久存在，下次「小美」仍按旧告警
+        报假红，端用户无法判断是历史还是当前。成功轮归档 + 归档名带时间戳=新鲜度可判。
+        """
+        if not PENDING_FILE.exists():
+            return
+        try:
+            arc_dir = LOG_DIR / "archive"
+            arc_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            PENDING_FILE.replace(arc_dir / ("awaken_patrol_alerts_%s.pending" % ts))
+            self.log("[触达] 旧告警已归档（archive/awaken_patrol_alerts_%s.pending）" % ts)
+        except OSError as exc:
+            self.log("[触达] 旧告警归档失败: %s" % exc)
+
     def touch(self):
         if not self.alerts:
             self.log("[触达] 无事不打扰（静默）")
+            self._retire_pending()
             return
         joined = " ".join(self.alerts)
         dash = ""
@@ -151,7 +170,8 @@ class Patrol:
                 self.log(f"[触达] 弹窗失败（{joined}）·osascript 不可启动: {exc}")
         else:
             try:
-                PENDING_FILE.write_text(msg + "\n", encoding="utf-8")
+                _ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                PENDING_FILE.write_text("生成时间: %s\n\n%s\n" % (_ts, msg), encoding="utf-8")
                 self.log(f"[触达] 告警已记录（{joined}）·pending·待会话内转述")
             except OSError as exc:
                 # 失败显形：连留痕都写不进=巡检异常级告警，进日志显眼

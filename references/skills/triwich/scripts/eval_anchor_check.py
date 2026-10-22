@@ -2,7 +2,7 @@
 # REG: skip triwich Skill 包内 eval 对账件（非脚本中心守卫族）·版本纪律走本 Skill CHANGELOG·先例=triwich_scan.py 同口径
 # -*- coding: utf-8 -*-
 """
-eval_anchor_check.py — eval 56 断言 × 分家现位 逐条机械对账（M3·防"迁移表=第二本账"）
+eval_anchor_check.py — eval 68 断言（M3首批56·随版增补） × 分家现位 逐条机械对账（M3·防"迁移表=第二本账"）
 输入：references/eval-migration-map.md 表格（真源=本表，逐行 `现位`×`校验token`）
 判据：现位每文件必含 token；`-`=人眼自锚跳过；不一致逐行显形。
 用法：python3 eval_anchor_check.py [--skill-root DIR] [--verbose]
@@ -34,8 +34,8 @@ def main():
             continue
         rows.append((int(m.group(1)), cells[3], cells[4]))  # (#, 现位, token)
     total = len(rows)
-    if total != 64:  # v4.9.2：eval-set 63→64（弱锚否证族断言）；单常量可回落（SINCE 族同款）
-        print("EVALMAP:FAIL 迁移表行数=%d ≠ 64（eval-set 与表脱节，先补行再对账）" % total, file=sys.stderr)
+    if total != 68:  # v4.10.1：模板同构齐闸断言（67→68）；单常量可回落（SINCE 族同款）
+        print("EVALMAP:FAIL 迁移表行数=%d ≠ 68（eval-set 与表脱节，先补行再对账）" % total, file=sys.stderr)
         return 1
     bad = []
     cached = {}
