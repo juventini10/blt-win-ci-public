@@ -7,5 +7,12 @@
     "⛔ 不要把 todo_landing_check.py 的判据（正则／扫描面）改窄来凑绿：那等于把真坑埋回盲区（先例=personal-path-whitelist 合账史）"
   ],
   "_实测现状": "2026-10-15 首轮全量干跑：承诺面 22 条自陈待办语句全部在位，红 0 ⇒ 本清单 items 为空。空清单≠闸没牙：假待办注入与真 C27 句形两条负例见 --selftest（12 条全绿）。",
-  "items": []
+  "items": [
+    {
+      "where": "references/skills/clock-loop/references/triwich-integration.md:17",
+      "fp": "f4cf6794",
+      "target": "闸门互遮根治·run.sh",
+      "reason": "历史变更来源说明（『上一次来源：triwich v4.10.7…』），非对包内件的前景承诺；run.sh 本体在位（同文件另有 ✅ 在位行），本条是记录性叙述被待办语汇误捕"
+    }
+  ]
 }

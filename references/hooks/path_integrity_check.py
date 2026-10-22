@@ -84,7 +84,10 @@ def scan(root, only_dirs=None, ph_files=None):
                     if TILDE_PREFIXED in _ln and EXEMPT not in _ln:
                         hits["tilde_prefixed"].append(rel)
                         break
-            if os.path.splitext(f)[1].lower() in REPEAT_EXT:
+            # CHANGELOG 是历史文本：引用历史病形（如「曾渲染出 A/B/A/B 双段」）是记录本身，
+            # 不是当前产物里的路径重复（2026-10-23 V2.2.10 Win 真机 T15/T16 误报实证：
+            # daily-buddy CHANGELOG L61 描述 $DIARY 双段渲染被 REPEAT_SEG 误判）。
+            if os.path.splitext(f)[1].lower() in REPEAT_EXT and f.lower() != "changelog.md":
                 for _ln in t.splitlines():
                     if EXEMPT in _ln:
                         continue

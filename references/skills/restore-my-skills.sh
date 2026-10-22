@@ -302,7 +302,7 @@ for line in raw.strip().split("\n"):
     if ":" not in line:
         continue
     name, ver = line.rsplit(":", 1)
-    rows.append("| %s | %s | `[记忆共享中心]/技能配置/%s/` |" % (name, ver or "未知", name))
+    rows.append("| %s | %s | `<记忆中心>/技能配置/%s/` |" % (name, ver or "未知", name))
 content = open(p, encoding="utf-8").read()
 pat = re.compile(r'(\| Skill \| 版本 \| 权威源路径 \|\n\|-------\|------\|-----------\|\n)(.*?)(\n版本不一致时运行)', re.S)
 new = pat.sub(lambda m: m.group(1) + "\n".join(rows) + m.group(3), content, count=1)
