@@ -1375,6 +1375,9 @@ def sync_memory_md():
 # ─── 入口 ────────────────────────────────────────────────────
 if __name__ == "__main__":
     import sys
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("用法：achievement_tracker.py [--all | --date YYYY-MM-DD | --status | --sync-memory | --force <id>] [--json]")
+        sys.exit(0)
     as_json = "--json" in sys.argv
     if as_json:
         sys.argv.remove("--json")

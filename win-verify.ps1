@@ -173,7 +173,10 @@ if ($py) {
 # ---------- T10: pkg_cleanliness_check.py ----------
 info "T10: pkg_cleanliness_check.py..."
 if ($py) {
-  & $py (Join-Path $PKG "references/scripts/pkg_cleanliness_check.py") --pkg-root $PKG *> (Join-Path $SB "t10.log")
+  # --exclude-runtime（R9 判据·2026-10-23 修正接线）：T1-T9 已跑过 python，
+#   包内 __pycache__ / git 钩子锁属「装机过程出生物」，不是发布包夹带物；
+#   不加本参数=T10 恒红（时序差误判成卫生缺陷）。真夹带由发版链生成侧照红。
+& $py (Join-Path $PKG "references/scripts/pkg_cleanliness_check.py") --pkg-root $PKG --exclude-runtime *> (Join-Path $SB "t10.log")
   $t10Exit = $LASTEXITCODE
   if ($t10Exit -eq 0) { ok "T10 发布卫生检查 exit=0" } else { no "T10 发布卫生 exit=$t10Exit"; Get-Content -Encoding UTF8 (Join-Path $SB "t10.log") | Select-Object -First 8 | ForEach-Object { Write-Host "    T10LOG: $_" } }
 } else { info "T10 跳过: 无 python" }

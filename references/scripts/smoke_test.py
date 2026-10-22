@@ -139,7 +139,8 @@ def check_empty_files(pkg: Path) -> list:
     for f in pkg.rglob("*"):
         if not f.is_file():
             continue
-        if "__pycache__" in f.parts or ".git" in f.parts or f.name == ".DS_Store":
+        # `.git-commit.lock` = 本仓 pre-commit 钩子重建的 0 字节锁（工具链副产物，非包内容）
+        if "__pycache__" in f.parts or ".git" in f.parts or f.name in (".DS_Store", ".git-commit.lock"):
             continue
         if f.name.endswith(".bak"):
             continue

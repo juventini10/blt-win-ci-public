@@ -238,7 +238,12 @@ def scan(pkg_root: Path) -> dict:
             if is_log(f) and "fixtures" not in parts:
                 hits["log"].append(rel)
                 continue
-            if f.endswith(".lock") or ".zcode" in parts:  # 2026-09-30 类级收口：运行时锁(.git-commit.lock)+端工具workflow缓存(.zcode)——与 mirror-sync._source_skipped 同源
+            # `.git-commit.lock` = 本仓 pre-commit 钩子每次 git 操作重建的 0 字节锁，
+            # 属工具链副产物、不是发布包内容（发版 zip 由 generate_release 从干净树出包，不含此件）。
+            # 2026-10-23 V2.2.10 Win 真机 T10 实证：删了被钩子秒重建，只能判据侧豁免。
+            if f == ".git-commit.lock":
+                continue
+            if f.endswith(".lock") or ".zcode" in parts:  # 2026-09-30 类级收口：运行时锁+端工具workflow缓存(.zcode)——与 mirror-sync._source_skipped 同源
                 hits["runtime"].append(rel)
                 continue
             if TOOL_WHITELIST.search(rel):
