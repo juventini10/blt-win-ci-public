@@ -197,6 +197,9 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | F5 | 检查器域声明 | 扫描器调用必须带 `--only-dirs` 等域参数<br>未带=全树扫=把用户数据算成产物 |
 | F6 | Win 真机四项 | 计划任务注册实跑 + L6 账本存在<br>ps1 守卫落地 + 软链件判 PASS |
 | F7 | 改包前查归属面 | manifest 内投影件必改源再同步<br>直改包内 = 秒级被冲回 |
+| F8 | 发布链与镜像链同源 | 派生器的源解析必须= mirror-manifest<br>⛔各自硬编码 SRC_ROOT |
+| F9 | 冻结件必须真冻结 | 冻结须覆盖全部入包路径<br>只改一条链=对该链无效 |
+| F10 | Win 脚本编码门禁 | 含非 ASCII 的 .ps1 须带 UTF-8 BOM<br>PS5.1 无 BOM 按码页解=语法碎 |
 
 **F1 实证**：断言台账判据被指「与 schema 不符」，回源发现「悬置(未闭合)」是**另一个容器**（悬置区）的 schema，台账实为「活跃/废弃」，脚本与台账一致 → 证伪。若照改，会把对的改成错的。
 **F2 实证**：`registry_guards.ps1` 在包内但 `DT_SUITE["guards"]` 只列 3 个 `.sh` → Win 端 `run_registry_guards.ps1` 回退 bash（Win 无 bash）→ **整个守卫族空转**，比「入口件缺失」重一级。
@@ -204,6 +207,9 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 **F4 实证**：`crossend_guard.py` 读 `<配置根>/rules/cross-end-guard.md`，规则不在部署链 → `parse_signatures()` 返回 `[]` → `sys.exit(0)`。**守卫装上了，一分钟都没检测过**。
 **F5 实证**：`verify.ps1` 调 `path_integrity_check.py` 未带 `--only-dirs`，把用户历史日志/成长箱/洞察报告算成装机产物（实测全库 867 件）；`SKIP_DIRS` 缺 `.venv/_wip`，`_wip` 单项 844 件噪声。
 **F7 实证**：`references/component-versions.json` 直改包内后，`com.qclaw.mirror-sync`（fswatch 常驻）3 秒内用母本冲回原值，`stat` mtime 不变、报告仍显示旧号；`references/scripts/smoke_test.py` 同理。判据：**改包前先查 mirror-manifest 归属面**，投影件一律 改源 → mirror-sync，否则白改且难查（表面看「改了」，实盘没变）。
+**F8 实证**：`generate_release.py` 硬编码 `SRC_ROOT=技能配置`，全文 `mirror-manifest` 出现 **0 次**；作者已把 `skills-bulk-daily-buddy` 的 src_dir 改指记忆琥珀永久存档——mirror 链认、发布链不认，于是每跑一次生成器就把改造中的 live 版写进包（本次连踩 3 次）。已补 skill_src() 读 manifest。
+**F9 实证**：同上。冻结只在一条链生效=半冻结，比没冻结更坏（它让人以为安全）。同型缺口：`references/rules/cross-end-guard.md` 不在 manifest 任何清单=无主副本。
+**F10 实证**：Win 真机 T22 注册 rc=1 task=缺席，日志碎码 `Š¨å·¡æ£â€”â€”`；根因=源侧那批 .ps1 无 BOM，powershell.exe 按系统码页解码，中文注释直接打断语法（Unexpected token）。同族 verify.ps1/win-verify.ps1 一直有 BOM 所以从没暴露——**同一个仓库里两套编码口径**才是病根。
 **F6 实证**：同一份包 Mac 侧全绿，Win 侧四项全红（计划任务装不上、L6 恒 ⚪、守卫族空转、软链恒判缺失）。**Mac 绿 ≠ 可发布**（S862 立场卡：安装包首版可糙，真机门禁不可省）。
 
 > ⚠️ F6 的「Win 真机」若本轮无可用真机，✅DO 在报告里显式标 `Win 真机未验`，⛔DO NOT 用「Mac 全绿」代替；未验项计入发布风险清单。
