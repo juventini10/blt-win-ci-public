@@ -223,6 +223,7 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 import re, glob, math, json, subprocess, itertools
 from datetime import datetime
+import fcntl  # 重建锁（2026-10-22 缺片根治·并发双writer串行化·同2021系统日志fcntl根治同型）
 
 HOME = _MC  # 兼容下游引用
 POOL_DIR = os.path.join(_MC, "知识库", "知识池")
@@ -916,48 +917,101 @@ def _fingerprint(paths):
             fp[_p] = None
     return fp
 
+def _atomic_write_json(path, obj):
+    """原子写：同目录 tmp + os.replace——读者永远只见完整旧文件或完整新文件，无中间态。
+    （2026-10-22 缺片根治·路线A；EPERM 前科系当年沙箱环境，本环境两解释器实测 replace 畅通。）"""
+    _tmp = "%s.tmp.%d" % (path, os.getpid())
+    with open(_tmp, "w", encoding="utf-8") as _f:
+        json.dump(obj, _f, ensure_ascii=False)
+    os.replace(_tmp, path)
+
+
 def build_docs():
-    """缓存包装层：命中=1 次 open；失配=全量重建并回写缓存（直接 write·沙箱 rename 有 EPERM 前科）。"""
+    """缓存包装层：命中=1 次 open；失配=加锁全量重建并原子回写。
+    根治三点（2026-10-22·批E轮外卡）：
+      ① 分片/主缓存全走 _atomic_write_json——⛔读者不再见半截文件；
+      ② 重建加 flock 排他锁串行化并发双 writer——此前两进程同时重建互删互扫
+         （18:23 Errno 2 os.remove(part_6) + chunk=0 假失败的真机制）；
+      ③ 陈旧分片清理挪到全部新片就绪之后（只管 idx≥chunks 残尾）——
+         不再"先删全量"开缺片窗口；os.remove 亦改 missing_ok 语义。
+    等锁上限 240s（超时退回直建路径·不悬死调用方）。"""
     paths = _corpus_paths()
     fp = _fingerprint(paths)
-    try:
-        if os.path.isfile(_DOC_CACHE):
-            c = json.load(open(_DOC_CACHE, encoding="utf-8"))
-            if c.get("schema") == 4 and c.get("fingerprint") == fp and isinstance(c.get("docs"), dict):
-                return c["docs"]
-    except Exception:
-        pass  # 缓存损坏=视作未命中，走全量重建
+
+    def _try_read_cache():
+        try:
+            if os.path.isfile(_DOC_CACHE):
+                c = json.load(open(_DOC_CACHE, encoding="utf-8"))
+                if c.get("schema") == 4 and c.get("fingerprint") == fp and isinstance(c.get("docs"), dict):
+                    return c["docs"]
+        except Exception:
+            pass  # 缓存损坏=视作未命中，走全量重建
+        return None
+
+    docs = _try_read_cache()
+    if docs is not None:
+        return docs
     # ── 重建走分片子进程：每个子进程只 open ~_CHUNK 个文件（配额内），本进程零源文件 open ──
     parts_dir = os.path.join(os.path.dirname(_DOC_CACHE), "parts")
     try:
         os.makedirs(parts_dir, exist_ok=True)
-        for _old in glob.glob(os.path.join(parts_dir, "part_*.json")):
-            os.remove(_old)  # 清陈旧分片（防脏并）
-        pats = _glob_patterns()
-        total = max((len(glob.glob(pt)) for pt in pats), default=0)
-        chunks = (total + _CHUNK - 1) // _CHUNK
-        docs = {}
-        _ok = True
-        for _k in range(chunks):
-            r = subprocess.run([sys.executable, os.path.abspath(__file__), "--build-chunk", str(_k)],
-                               capture_output=True, text=True, timeout=300)
-            partf = os.path.join(parts_dir, "part_%d.json" % _k)
-            if not os.path.isfile(partf):
-                print("⚠️ 索引分片构建失败 chunk=%d %s" % (_k, (r.stderr or "")[-120:]), file=sys.stderr)
-                _ok = False
+        lockf = open(os.path.join(parts_dir, ".rebuild.lock"), "w")
+        import time as _t
+        _deadline = _t.time() + 240
+        _got = False
+        while _t.time() < _deadline:
+            try:
+                fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                _got = True
                 break
-            docs.update(json.load(open(partf, encoding="utf-8")))
-        if _ok and docs:
-            with open(_DOC_CACHE, "w", encoding="utf-8") as _f:
-                json.dump({"schema": 4, "fingerprint": fp, "docs": docs}, _f, ensure_ascii=False)
-            return docs
+            except OSError:
+                _c = _try_read_cache()
+                if _c is not None:
+                    lockf.close()
+                    return _c  # 持锁 writer 已刷好缓存，拿来即用
+                _t.sleep(1)
+        if not _got:
+            lockf.close()
+            raise OSError("重建锁等待超时(240s)·退回直建")
+        try:
+            docs = _try_read_cache()
+            if docs is not None:
+                return docs  # 解锁+关fd交 finally（自埋雷修正：fd 关后 finally 再 unlock=EBADF 假报错）
+            pats = _glob_patterns()
+            total = max((len(glob.glob(pt)) for pt in pats), default=0)
+            chunks = (total + _CHUNK - 1) // _CHUNK
+            docs = {}
+            _ok = True
+            for _k in range(chunks):
+                r = subprocess.run([sys.executable, os.path.abspath(__file__), "--build-chunk", str(_k)],
+                                   capture_output=True, text=True, timeout=300)
+                partf = os.path.join(parts_dir, "part_%d.json" % _k)
+                if not os.path.isfile(partf):
+                    print("⚠️ 索引分片构建失败 chunk=%d %s" % (_k, (r.stderr or "")[-120:]), file=sys.stderr)
+                    _ok = False
+                    break
+                docs.update(json.load(open(partf, encoding="utf-8")))
+            if _ok and docs:
+                _atomic_write_json(_DOC_CACHE, {"schema": 4, "fingerprint": fp, "docs": docs})
+                for _old in glob.glob(os.path.join(parts_dir, "part_*.json")):
+                    _stem = os.path.basename(_old)
+                    try:
+                        if int(_stem[len("part_"):-len(".json")]) >= chunks:
+                            os.remove(_old)  # 尾数清理：仅删本轮不再产出的残片
+                    except (ValueError, OSError):
+                        pass
+                return docs
+        finally:
+            try:
+                fcntl.flock(lockf, fcntl.LOCK_UN)
+            finally:
+                lockf.close()
     except Exception as _e:
         print("⚠️ 分片重建异常 %s（退回当前解释器直建·可能触发读配额）" % _e, file=sys.stderr)
     docs = _build_docs_full()
     try:
         os.makedirs(os.path.dirname(_DOC_CACHE), exist_ok=True)
-        with open(_DOC_CACHE, "w", encoding="utf-8") as _f:
-            json.dump({"schema": 4, "fingerprint": fp, "docs": docs}, _f, ensure_ascii=False)
+        _atomic_write_json(_DOC_CACHE, {"schema": 4, "fingerprint": fp, "docs": docs})
     except Exception:
         pass  # 缓存写失败不阻断检索主流程（下次重建即可）
     return docs
@@ -1407,8 +1461,7 @@ def main():
         _docs = _build_docs_chunk(_k)
         _parts = os.path.join(os.path.dirname(_DOC_CACHE), "parts")
         os.makedirs(_parts, exist_ok=True)
-        with open(os.path.join(_parts, "part_%d.json" % _k), "w", encoding="utf-8") as _f:
-            json.dump(_docs, _f, ensure_ascii=False)
+        _atomic_write_json(os.path.join(_parts, "part_%d.json" % _k), _docs)  # 原子写片·根治半截文件
         print("chunk %d: %d docs" % (_k, len(_docs)))
         return 0
     if args[0] == "--drill":

@@ -680,6 +680,12 @@
       "basis": "guard_selftest_check L61-62 BASE=记忆共享中心/开发工具实证·2026-10-11 批次9 §4-3三态处置·逐件判据=台账win_pairing_triage_20261010+本端执行形引用实测"
     },
     {
+      "file": "references/skills/daily-buddy/scripts/run.sh",
+      "scope": "not_on_windows_path",
+      "reason": "明示不适用：daily-buddy 开发侧统一机检入口（结构闸/引用闸/形态闸/语法闸），非 Windows 装机运行件；包内执行形引用 0 命中实测",
+      "basis": "件头自述「编排律迁移·统一机检入口 v1.1·2026-10-23」+ grep references/skills/daily-buddy/ 对 scripts/run.sh 执行形引用 0 命中·2026-10-23 V2.2.10 daily-buddy 冻结态回滚带出（同 triwich run.sh 判据形）"
+    },
+    {
       "file": "references/成就系统/achievement_notify.sh",
       "scope": "mac_only",
       "reason": "仅 macOS 运行：依赖 osascript",

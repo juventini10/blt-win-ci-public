@@ -1,4 +1,4 @@
-﻿# awaken-patrol-install-task.ps1 — 注册 Windows Task Scheduler 记忆健康自动巡检（8.4.0 Win对等件·2026-10-21）
+# awaken-patrol-install-task.ps1 — 注册 Windows Task Scheduler 记忆健康自动巡检（8.4.0 Win对等件·2026-10-21）
 # 等价 macOS 侧 com.buluotuo.awaken-patrol.plist（执行体同一份平台中性 python awaken_patrol.py·单一真源⛔ps1逻辑副本）
 # ─────────────────────────────────────────────────────────────
 # 加固模式镜像 slice-watch-install-task.ps1（0xC000013A 对症三连：python 全路径/S4U/防重入）。
