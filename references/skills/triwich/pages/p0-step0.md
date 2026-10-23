@@ -2,7 +2,7 @@
 title: Step0 细则页（键铸造/路径基准/取值防伪）
 type: page
 version: v1.0
-page_fingerprint: f31c5191
+page_fingerprint: c17fb7b4
 author: 皮叔
 license: Proprietary
 source: 技能配置/triwich/pages/p0-step0.md
