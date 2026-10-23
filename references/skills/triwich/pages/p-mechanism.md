@@ -2,7 +2,7 @@
 title: 防跳步机制详解页（十锁全文）
 type: page
 version: v1.0
-page_fingerprint: 40cc7e17
+page_fingerprint: de9a193a
 author: 皮叔
 license: Proprietary
 source: 技能配置/triwich/pages/p-mechanism.md
