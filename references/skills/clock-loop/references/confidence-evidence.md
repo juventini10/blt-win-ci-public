@@ -12,7 +12,8 @@
 → 阶段2:
   L1拆解:核心功能/依赖/输出/核心矛盾
   逐维度评分(6个宏观维度→19个微观检查项＝len(WEIGHTS)·v4.12.2随实盘，详见skill_eval.py的MACRO_DIMENSIONS映射表):
-    开发规范19%+指令准确性21%+逻辑一致性29%+文档完整性14%+测试覆盖7%+哲学评估10%（v4.12.2随双源实值·旧数系规范v5.16.0改权前快照未注明=E6残留）
+    开发规范19%+指令准确性21%+防误与一致性29%+表述与产出14%+熔断与触发覆盖7%+哲学评估10%（v4.12.2随双源实值·旧数系规范v5.16.0改权前快照未注明=E6残留）
+    旧名→新名对照（v4.20.6·历史材料用旧名检索）：逻辑一致性→防误与一致性｜文档完整性→表述与产出｜测试覆盖→熔断与触发覆盖
     [v2.8.8]宏观声明权重=下属微观维度WEIGHTS之和/100，由verify_dimension_consistency()启动时自检
     [v3.0.0]置信度分层标注——每个维度标注🔧脚本确定性/🧠AI判断（见下表）
   L2自检:锚点对立面/证据链/假设验证/结论块门禁锁
@@ -28,7 +29,7 @@
 | 🔧 脚本确定性 | 纯算术/字符串/文件系统状态，可复现不漂移（代表性清单，非 20 微观项精确枚举） | version_single_source, version_uniform, single_number_source, cross_file_consistency, internal_links, file_clutter, token_budget, eval_set_gate, trigger_coverage, path_safety, backup_gate, fuse_mechanism, layering, attack_surface, l1_l2_substance（T5声明条目计数由attack_t5检查承担·其"声明实效"语义判断归🧠行——2026-09-02消解双行列同名冲突） | 🟢高 |
 | 🧠 AI判断 | 需语义理解，会受上下文/模型版本影响 | yaml_required(字段语义), causal_chain(原因质量), poka_yoke(设计质量), binary_annotations(标注合理性), t5_adversarial(声明实效), mechanism_selection(选配合理性), 哲学评估, Alternatives质量 | 🟡中 |
 
-✅DO 在评分表每行末尾标注 `🔧` 或 `🧠`。⛔DO NOT 把AI判断项与脚本确定性项混在一起不加区分——原因是你需要知道哪些分数可靠、哪些有偏差风险。
+✅DO 在评分表每行末尾标注 `🔧` 或 `🧠`。⛔DO NOT 把AI判断项与脚本确定性项混在一起不加区分——原因是用户需要知道哪些分数可靠、哪些有偏差风险。
 
 **证据档位与评分天花板（v3.13.0·P1证据状态学·源=02对标§一#1-6）**：
 - skill_eval输出 `evidence` 区：`grade`（本次评估证据档）+`ceiling`（该档分数天花板）+`raw_total`与`capped_score`**并列**（raw保历史可比·capped为诚实上限）+`per_check_reason`（每项理由码三分：checked-clean/candidate-found/**not-evaluable-missing-***——"没查""查了没事""没法查"三态永久可区分·v3.16.0）+`posture`（≥2项不可查→**evidence-limited**：报告措辞必须降档⛔说"全部通过"——优点不得均值掩盖未验证项）

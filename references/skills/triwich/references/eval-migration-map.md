@@ -78,6 +78,6 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | 65 | 盲审复测封顶 | F1 | references/reviewer-protocol.md | 未复测清单 | 新增v4.10.0 |
 | 66 | 负担闸判据 | F5 | SKILL.md | 负担闸 | 新增v4.10.0 |
 | 67 | 呈现边界+单签名 | F8 | SKILL.md+references/shared/signature.md | 单签名行 | 新增v4.10.0 |
-| 68 | 模板同构位齐闸 | 你令统一 | scripts/run.sh+scripts/template_parity_check.py | template_parity_check | 新增v4.10.1 |
+| 68 | 模板同构位齐闸 | 用户指令统一 | scripts/run.sh+scripts/template_parity_check.py | template_parity_check | 新增v4.10.1 |
 
 > 对账结论（v4.8.1 首跑）：56/56 无断锚（v4.8.1首跑口径）·现 68/68 EVALMAP 常驻；分家触碰面=页移 6 行（#26/27/42/43/51/55/56 系）+双锚 7 行，内核留守红线（结论块模板/分层定句/对照表/四层契约/禁止行为/自检清单）与既有 references 全部未变——与 M1 判耦清单一致。

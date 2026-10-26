@@ -74,7 +74,7 @@ DRAFT_DIR = os.environ.get(
 )
 LEDGER = os.path.join(DRAFT_DIR, "审批台账.md")
 CHECK_SH = os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置/growth-box/scripts/growth_box_check.sh")
-SKILL_VER_GUARD = os.path.join(HOME, "[记忆共享中心]/脚本中心/changelog-guard/skill_version_guard.sh")
+SKILL_VER_GUARD = os.path.join(HOME, "[记忆共享中心]/脚本中心/skill_version_guard.sh")
 
 # 三态修法来源：authority=权威源（可派生）；note=为什么不是纯派生
 SOURCE_CLASS = {
@@ -752,8 +752,8 @@ CLAIM_CLEAN = ("[记忆共享中心]/知识库/AI学习库/立场卡#fake.md",
                "本卡结论：你已质证\n- 置信度: 🟢 · 自述\n- 碰撞来源: 你原话\n")
 
 POSITIVE = {
-    "W4": (lambda r: _mk(r, "[记忆共享中心]/脚本中心/changelog-guard/skill_version_guard.sh", FAKE_GUARD_LEAD),
-           lambda r: _mk(r, "[记忆共享中心]/脚本中心/changelog-guard/skill_version_guard.sh", FAKE_GUARD_CLEAN)),
+    "W4": (lambda r: _mk(r, "[记忆共享中心]/脚本中心/skill_version_guard.sh", FAKE_GUARD_LEAD),
+           lambda r: _mk(r, "[记忆共享中心]/脚本中心/skill_version_guard.sh", FAKE_GUARD_CLEAN)),
     "W5": (_both(UPS_PIT, UPS_INDEX_PIT), _both(UPS_PIT, UPS_INDEX_CLEAN)),
     "W6": (lambda r: _mk(r, LOG_TODAY[0], LOG_TODAY[1]),
            lambda r: (_mk(r, LOG_TODAY[0], LOG_TODAY[1]),
@@ -778,6 +778,7 @@ def run_positive_controls(wids=None, quiet=False):
             continue
         cmd = resolved[wid]["cmd"]
         base = tempfile.mkdtemp(prefix="gb-ctl-")
+        ok_case = False
         try:
             pit = os.path.join(base, "pit")
             cln = os.path.join(base, "cln")
@@ -785,11 +786,41 @@ def run_positive_controls(wids=None, quiet=False):
             os.makedirs(cln)
             POSITIVE[wid][0](pit)
             POSITIVE[wid][1](cln)
-            hp, _, _ = run_cmd(cmd, home=pit)
-            hc, _, _ = run_cmd(cmd, home=cln)
+            hp, _, ep = run_cmd(cmd, home=pit)
+            hc, _, ec = run_cmd(cmd, home=cln)
+            ok_case = (hp == 0 and hc != 0)
+            # T9 红时自证回执（内部记录 配套·T9转单卡判据2）：每次运行落一行 jsonl，
+            # 读数分裂取证用——rc/双 stderr 摘要/沙箱根入账，红了能自证"读的是沙箱非活体"。
+            try:
+                import json, time as _t
+                trail = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     os.pardir, "logs", "t9_control_trail.jsonl")
+                with open(trail, "a", encoding="utf-8") as tf:
+                    tf.write(json.dumps({"ts": _t.strftime("%Y-%m-%dT%H:%M:%S%z"), "wid": wid,
+                                          "ok": ok_case, "hp": hp, "hc": hc,
+                                          "err_pit": (ep or "")[:160], "err_cln": (ec or "")[:160],
+                                          "root": base}, ensure_ascii=False) + "\n")
+            except Exception as _e:
+                print("  ⚠️ T9 回执写入失败（不影响判据）：%s" % _e)
         finally:
-            shutil.rmtree(base, ignore_errors=True)
-        out.append((wid, hp == 0 and hc != 0, hp, hc,
+            if not ok_case:
+                # 红=保留现场（快照不删·含目录树与两 stderr），绿=即删。现场=下一次分析的原料。
+                try:
+                    tree = []
+                    for r0, ds, fs in os.walk(base):
+                        for fn in fs:
+                            tree.append(os.path.relpath(os.path.join(r0, fn), base))
+                    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        os.pardir, "logs", "t9_fail_snapshot_%s.txt" % wid), "w",
+                     encoding="utf-8") as snap:
+                        snap.write("ROOT=%s\nTREE:\n%s\nSTDERR_PIT=%s\nSTDERR_CLN=%s\nCMD=%s\n"
+                                   % (base, "\n".join(sorted(tree)), (ep or "")[:400], (ec or "")[:400], cmd[:400]))
+                    print("  📸 %s 红现场已存 logs/t9_fail_snapshot_%s.txt（沙箱未删：%s）" % (wid, wid, base))
+                except Exception:
+                    pass
+            else:
+                shutil.rmtree(base, ignore_errors=True)
+        out.append((wid, ok_case, hp, hc,
                     "%s L%s" % (resolved[wid]["src"], resolved[wid]["lineno"])))
     if not quiet:
         for wid, ok, hp, hc, loc in out:

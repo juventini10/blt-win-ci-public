@@ -92,9 +92,16 @@ def read_syslog(d):
         return None
     return open(path, encoding="utf-8").read().strip()
 
-def cmd_prepare():
+def cmd_prepare(force_date=None):
     state = load_state()
-    dates = dates_to_process(state)
+    is_backfill = force_date is not None
+    if is_backfill:
+        # 2026-10-23 补录日期重扫（方案A）：显式指定历史日期，绕开"日期已处理=SKIP"，
+        # 把晚写的补录感悟强制纳入本次 bundle；进度状态由 commit 依 BACKFILL 标记保持不动
+        dates = [date.fromisoformat(force_date)]
+        print(f"BACKFILL: 补录重扫 {force_date}（进度状态不受本次影响）")
+    else:
+        dates = dates_to_process(state)
     if not dates:
         # v2026-08-12 根治（时序边角·8/12晚写感悟漏抽）：日期已处理≠该日源已抽完
         # 日记感悟可在批次后任意时刻晚写（如8/11补录时8/12感悟尚未写）——mtime晚于上次批次→重扫今日
@@ -124,6 +131,10 @@ def cmd_prepare():
         if not diary and not syslog:
             missing.append(d.isoformat())
     if not sections:  # 有痕跳过≠静默跳过（D-F6）
+        if is_backfill:
+            append_log("ingest", f"skipped: 补录无源 {force_date}")
+            print(f"SKIP-BACKFILL: 补录日期 {force_date} 无日记感悟/系统日志源（进度不动）")
+            return
         append_log("ingest", f"skipped: no sources ({','.join(missing)})")
         # 时序保护: 今天可能还没写感悟(如清晨跑)——进度只推到昨天，今天保持待处理
         yesterday = (today() - timedelta(days=1)).isoformat()
@@ -142,6 +153,8 @@ def cmd_prepare():
               "#   若某源段确无概念可抽，AI须在concepts_out.json显式声明 skipped_sources 才能过。\n"
               f"# 覆盖日期: {dates[0].isoformat()} ~ {dates[-1].isoformat()}\n"
               f"# SOURCES: {'|'.join(s.splitlines()[0][len('### 来源: '):] for s in sections)}\n\n")
+    if is_backfill:
+        header = f"# BACKFILL: {force_date}\n" + header
     with open(BUNDLE_FILE, "w") as f:
         f.write(header + "\n\n".join(sections))
     print(f"PREPARED: {BUNDLE_FILE}\n覆盖{len(dates)}天, {len(sections)}个源段。AI请读bundle抽概念后调commit。")
@@ -299,7 +312,14 @@ def cmd_commit(json_path):
         with open(os.path.join(FED, "rejected_pending.json"), "a") as f:
             f.write(json.dumps({"date": today().isoformat(), "items": rejected}, ensure_ascii=False) + "\n")
     append_log("ingest", f"新增{len(written)}概念 合并{len(merged)} 拒收{len(rejected)} 去重{len(deduped)}")
-    state = load_state(); state["last_batch_date"] = today().isoformat(); save_state(state)
+    # 2026-10-23 补录日期重扫：BACKFILL bundle 只插历史概念卡，不动日进度（last_batch_date/ts 保持），
+    # 防补录跑在当日批次之前时把 today 提前标 done → 反造当日漏抽
+    _is_backfill = bool(BUNDLE_FILE and os.path.exists(BUNDLE_FILE)
+                        and re.search(r"^# BACKFILL:", open(BUNDLE_FILE, encoding="utf-8").read(), re.M))
+    if not _is_backfill:
+        state = load_state(); state["last_batch_date"] = today().isoformat(); save_state(state)
+    else:
+        print("(BACKFILL: 日进度 last_batch_date/ts 保持不变)")
     if os.path.exists(BUNDLE_FILE): os.remove(BUNDLE_FILE)
     regen_index()
     print(f"COMMITTED: 新增{len(written)} 合并{len(merged)} 拒收{len(rejected)} 去重{len(deduped)}(留待clock-loop呈报)")
@@ -412,7 +432,19 @@ if __name__ == "__main__":
     if cmd in ("prepare", "commit"):
         _require_installed()
     ensure_dirs()  # 端用户版·首次自动建库（幂等·仅安装态）
-    if cmd == "prepare": cmd_prepare()
+    if cmd == "prepare":
+        _argv = sys.argv[2:]
+        _force = None
+        if "--date" in _argv:
+            _i = _argv.index("--date")
+            if _i + 1 >= len(_argv):
+                print("\u274c --date \u9700\u8ddf YYYY-MM-DD"); sys.exit(2)
+            _force = _argv[_i + 1]
+            try:
+                date.fromisoformat(_force)
+            except ValueError:
+                print(f"\u274c --date \u683c\u5f0f\u987b YYYY-MM-DD\uff0c\u6536\u5230: {_force}"); sys.exit(2)
+        cmd_prepare(_force)
     elif cmd == "commit": cmd_commit(sys.argv[2])
     elif cmd == "status": cmd_status()
     else: print(__doc__)

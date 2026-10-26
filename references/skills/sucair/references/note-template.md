@@ -15,10 +15,10 @@ related: schemas/笔记schema.md · sucair/SKILL.md
 
 ## 读书笔记完整模板（参考文档）
 
-> **⚠️ 已废弃（2026-09-01 Loop评估#5落地·对齐 SKILL.md references 索引声明）**：本模板为 v3.0 重构前旧长笔记模板，**⛔DO NOT 用于生成**——现行产出物=5分钟精华+独立原子卡片+题库（见 sucair/SKILL.md §2），不再是整本长笔记。本文仅历史存档。
+> **⚠️ 已废弃（2026-09-01 Loop评估#5落地·对齐 SKILL.md references 索引声明）**：本模板为 v3.0 重构前旧长笔记模板，**⛔DO NOT 用于生成**——现行产出物=5分钟精华+独立原子卡片+题库（见 sucair/flow-read.md §Step 2），不再是整本长笔记。本文仅历史存档。
 > **历史定位**：查表型参考材料。生成笔记时按此模板填充，不要逐字复制，要根据书籍实际内容调整。
-> **来源**：sucair/SKILL.md §2 知识包生成（模板）+ 笔记schema
-> **v2.2新增**：A/B双模板系统，自动判断逻辑见SKILL.md
+> **来源**：sucair/flow-read.md §Step 2 知识包生成（模板）+ 笔记schema
+> **v2.2新增**：A/B双模板系统，自动判断逻辑见 flow-read.md §Step 2
 > **字段权威**：frontmatter 字段集以《文件格式规范》§八 `schemas/笔记schema.md` 为准（v2.3 起对齐，禁用 `date_created`、区分 `author`/`book_author`、`reading_status` 用 L1-L4）
 
 ---
@@ -48,7 +48,7 @@ version: v1.0.0
 date: YYYY-MM-DD          # 创建日（ISO），禁用 date_created
 summary: 《书名》核心观点与知识关联   # ≤40字
 source: 输入PDF路径 或 生成器标识
-author: 你                # 笔记维护者（非书作者）
+author: 用户                # 笔记维护者（非书作者）
 book: 书名
 book_author: 作者         # 书作者，独立于 author
 publisher: 出版社
@@ -166,7 +166,7 @@ complies_with: 笔记schema v1.0.0
 ## 🔗 知识网络
 
 ### 本书定位
-[在你认知体系中的位置：底层/应用/工具]
+[在用户认知体系中的位置：底层/应用/工具]
 
 ### 核心互补书（N本，已有笔记）
 | 书籍 | 核心价值 | 组合场景 | 应用目标 |
@@ -259,7 +259,7 @@ version: v1.0.0
 date: YYYY-MM-DD          # 创建日（ISO），禁用 date_created
 summary: 《书名》核心观点与知识关联   # ≤40字
 source: 输入PDF路径 或 生成器标识
-author: 你                # 笔记维护者（非书作者）
+author: 用户                # 笔记维护者（非书作者）
 book: 书名
 book_author: 作者         # 书作者，独立于 author
 publisher: 出版社

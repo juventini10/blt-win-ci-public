@@ -58,6 +58,10 @@ ALLOWED_FM_KEYS = {
     # 自定义触发与展示面·dependencies_note=TimeLoom 依赖备注·python_dependencies=sucair 依赖声明；
     # 第三方组件同类字段不在此列——口径只覆盖自有面）：
     "cured_snapshot", "emoji", "trigger", "role", "dependencies_note", "python_dependencies",
+    # 2026-10-24 收编（SWT v1.7.6 沙箱根治批·同 10-21「收齐」口径——自有组件在用字段全量收编）：
+    # ReservedCode2=文件级指纹水印（源自 2026-07-26 建库之初；SWT×4/system-logger/clock-loop
+    # 全库 6 文件在用、每文件 UUID 唯一、无脚本消费者；曾因缩进破坏严格 YAML——已顶格合法化）：
+    "ReservedCode2",
 }
 
 # ✅DO 步骤后需出现的命令锚点信号（启发式：声明能力不能只有空话）

@@ -29,9 +29,11 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_ROOT = os.path.dirname(HERE)
 def _find_guard():
-    """2026-10-23 P10：守卫双环境探测——包内 references/hooks（装机态/未安装态均有）> 开发端 脚本中心/守卫。
+    """2026-10-23 P10：守卫探测序——env TRIWICH_GUARD_PATH > 发布包顶层 hooks/ > 包内 references/hooks（⚠️triwich 包内实无该目录，仅发布包顶层布局命中·v4.12.11 名实更正）> 开发端 脚本中心/守卫。
     根因：原写死 expanduser("[记忆共享中心]/...")，包内脱敏成 [记忆共享中心] 后必然找不到（P10）。"""
     cands = [
+        # v4.12.11 根治P6：显式 env 优先（装机态投递路径不固定，⛔不靠猜家根）
+        *([os.environ["TRIWICH_GUARD_PATH"]] if os.environ.get("TRIWICH_GUARD_PATH") else []),
         # 包内布局：<包>/references/skills/triwich/tests → 上三级到 references/，hooks 与 skills 同级
         os.path.join(HERE, "..", "..", "..", "hooks", "triwich_closeout_guard.py"),
         os.path.join(HERE, "..", "references", "hooks", "triwich_closeout_guard.py"),

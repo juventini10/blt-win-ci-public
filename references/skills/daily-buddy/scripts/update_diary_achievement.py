@@ -246,6 +246,9 @@ def add_review_seal(content, date_str, achievement_data):
 
 # ─── 主流程 ────────────────────────────────────────────────
 def main():
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("用法：update_diary_achievement.py [--date YYYY-MM-DD] [--no-seal]")
+        return 0
     # ─── 环境自检（第一性原理根治·沙箱假 python 拒绝空跑）───
     if not dbenv.self_check(verbose=True):
         sys.exit(9)

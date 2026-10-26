@@ -60,11 +60,14 @@ if "--src" in _a and _a.index("--src") + 1 < len(_a):
 # 三段配置根（2026-10-01 端隔离根治·对齐 doenglingz_inject_prompt.py L83 形态）：
 #   DOENGLINGZ_CONFIG_DIR（install_scripts --platform 写进钩子命令·端专属落点）
 #   > WORKBUDDY_CONFIG_DIR（向后兼容缝·lobsterai 已在用）
+#   > --src 端根映射（2026-10-23 MiniMax Code 端接入·⛔不设 env 时旧默认会把本端守护台账写进 ~/.workbuddy/ = 串端）
 #   > ~/.workbuddy（旧默认行为·WB/Qoder CN 端不变）
 # 病灶：原式只认 WORKBUDDY_CONFIG_DIR，⛔不认 DOENGLINGZ_CONFIG_DIR ⇒ 非 WB 端调本脚本
 #       会把守护台账写进 ~/.workbuddy/（Hermes 端 2026-10-01 实测踩中·已还原留证）。
+_SRC_ROOTS = {"minimaxcode": os.path.expanduser("~/.minimax"), "qoderdesktop": os.path.expanduser("~/.qoder")}  # 2026-10-23 MiniMax Code；2026-10-24 Qoder Desktop
 _DLZ_CFG = (os.environ.get("DOENGLINGZ_CONFIG_DIR")
             or os.environ.get("WORKBUDDY_CONFIG_DIR")
+            or _SRC_ROOTS.get(_SRC.lower())
             or os.path.expanduser("~/.workbuddy"))
 STATE_FILE = os.path.join(_DLZ_CFG, f"doenglingz_guard_state_{_SRC}.json")
 
@@ -321,7 +324,7 @@ def write_state(text_len, red_hits, hard_hits, reflection_signals, alarm,
 def mode_selfcheck():
     """挂载自检：不读 stdin，直接查挂载态"""
     # 1. 是否在 settings.json Stop 链中
-    settings_path = os.path.expanduser("~/.qoder-cn/settings.json")
+    settings_path = os.path.expanduser("~/.qoder/settings.json" if _SRC.lower() == "qoderdesktop" else "~/.qoder-cn/settings.json")
     in_settings = "❌ 否"
     try:
         with open(settings_path) as f:

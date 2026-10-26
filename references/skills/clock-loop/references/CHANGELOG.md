@@ -1,3 +1,154 @@
+### v4.21.11 — 2026-10-27（L3反哺派生落地·SWT评估轮·皮叔令「按符合愿景的最优解推进」）
+
+- **L1低风险反哺派生2项落 skill_eval.py**（来源=L3_沉淀_2026-10-26_SWT轮.md 第四节·授权通道=铁律13 L3反哺派生L1低风险项）：①`eval_ownership_ambiguity_advisory`——归属/分发声明「上述/该等」跨实体指代且无「仅」限定/具名枚举→advisory（SWT L382实证：两名独立审查者+lead同一歧义误读）；②`eval_test_surface_watermark`——tests/trigger-* 版本落后本体→advisory（SWT实证trigger停v1.6.2跨8版）。均不计分·粗筛+人终判。
+- 接线3处（调用/_adv_map/phaseX_result 字段）·ast语法过；开工水位线检查 watermark_advisory=null（C07#184）·并发窗无在推条目（10-27系统日志0条）。
+- 自举回归：test_skill_eval.py + 对 clock-loop 自身 --check-only 不降分（结果见本轮系统日志条目）。
+- **file_clutter 判据手术（.DS_Store 显形不扣分）**：实测根级 .DS_Store 为 Finder 秒级再生件（清0后数秒即回·工程不可根治），从 rec_issues（扣0.3）移入 env_advisories 显形不扣分——同 v4.21.7 pyc 外部归责先例；`.bak`/0字节/未登记.md 照扣；发布面质量由裁剪链/triwich杂物闸独立把守。自评 98→100/S·run.sh 十二闸 rc=0（修复批前同构树实跑=98/S/passed=False仅依赖漂移红【独立复核C8可复现口径】·本批对齐 meta-aletheia 3.11.0→3.11.1 他窗级联尾巴+清杂物+判据手术+2）。
+- ⛔ 考题维度/权重/结构零改动——纯 advisory 增量+环境归责校准（对抗性自查：非"为过闸改判据"·辩护链=不可控外部变量+先例同构+显形保留+发布面独立闸·已交独立复核专审）。
+
+### v4.21.10 — 2026-10-26 15:53（机检件归属声明批·皮叔令「改补就补·充分授权」）
+
+- 包面已按 `author-qa-exclude.json` 剔除作者侧 QA 机检件（不随安装包分发），本件「修改后自检」节同步补**归属声明**一行，防端用户照文档敲不存在的命令。
+- 仅加行与抬版本，⛔不改节名集合；依赖 pin 未动（上一步脚本误抬依赖版本已回滚重做）。
+
+### v4.21.9 — 2026-10-26 06:5x（级联第五轮·triwich v4.12.16 声明位跟随）
+
+**动因**：同窗「挪出包」把 triwich 抬到 v4.12.16（运行时态落点根治 + 杂物闸 v1.3 正判据）。
+**改动**：dependencies triwich 4.12.15→4.12.16；frontmatter 4.21.9→4.21.9。
+**验证**：skill_eval --check-only honest_flags 空；check_cured_snapshot 8 项全绿。
+**判级**：patch（dependencies 跟随）。
+
+### v4.21.9 — 2026-10-26 06:5x（取证 CLI 坏在静默处根治批·ggs Loop 交接卡 H-4·皮叔令「彻底根治处理」）
+
+**动因**：2026-10-26 good-good-study 评估轮取证时发现 `python3 scripts/evidence_guard.py <断言> <源> [min]` **每次必抛 `NameError: regex_dump`**——该函数定义位于 `if __name__ == "__main__"` 之后，CLI 支在使用点尚未绑定。门禁14 走 import 路径不受影响，故缺陷藏在静默处 20 天（2026-09-06 建档至今），只有命令行取证口每次都崩且无人报警。
+**根治**：①`regex_dump` 定义上移到 `__main__` 之前（纯位置修，判据零变）；②新增 `--self-test` 三例（合法断言判绿 / 行号造假必须逮红 / **CLI 真取证支必须可执行**）并登记 `scripts/run.sh` 常链（原十一闸→现含本项的冒烟族）；③`references/machine-acceptance.md` 判定列同批同步。
+**变异自证两轮（探针先自证有效）**：第一轮自测当场暴露两处自身缺陷——(a) 忘 import os 直接崩；(b) C3 哨兵用「无参 usage 支」判可执行，把 regex_dump 挪回文件尾照样判绿＝**没牙哨兵**。改判「跑真取证支且 stdout 含取证读数」后：真实件 exit 0，变异件（regex_dump 移到尾部）exit 1 被逮。此形态与同日 内部记录（自写哨兵只查段头不查明细）同族，已互认。
+**验收**：`bash scripts/run.sh` 十二闸全绿（含新增 PASS evidence_guard --self-test）·AST OK·`python3 -m unittest test_evidence_guard`（须在 scripts/ 目录内跑·父目录跑会因导入路径报 error=假红，本端实测 12 tests OK）既有回归不破。
+**级联**：全树 grep 下游对 clock-loop 的版本声明位＝0（skill-forge 只按路径调用不锁版本），无需跟随升版。
+- 版本 4.21.8→4.21.9（patch·取证 CLI 可用性修复 + 自测件，评估判据与打分面零变更）
+
+### v4.21.8 — 2026-10-25 23:5x（级联第四轮·triwich v4.12.15 声明位跟随）
+
+**动因**：同窗 D-1/D-2 收口把 triwich 抬到 v4.12.15（修本工具自造假绿 + 跟踪断言升双向）。
+**改动**：dependencies triwich 4.12.14→4.12.15；frontmatter 4.21.7→4.21.8。
+**⚠️ 本条记账更正两处**：①首版误写"4.21.7→4.21.7"（未真抬版＝假陈述）；②当时 CHANGELOG 顶部已有他窗所写 `### v4.21.7`（记的是 4.21.5→4.21.6），我另起一条同号＝对账件双本账；现把本条改号 4.21.8 消除同号，⛔不动他窗条目内容。
+**验证**：skill_eval --check-only honest_flags 空；check_cured_snapshot 8 项全绿。
+**判级**：patch（dependencies 跟随）。
+
+### v4.21.7 — 2026-10-25（GB42根治轮·评估器双判据手术·你用户批准通道）
+
+- **驱动**：growth-box 42项评估轮挂账两案，皮叔令「去根治处理吧」（=考题修改三授权通道之①用户批准成立·登记于此）。
+- **落地**：①`_check_eval_set_count` 增「单一来源指针形态」消费分支——被评件无数字声明但有指针措辞（eval-set邻接唯一真源/动态对账·双向regex）时改比对 eval-set 头部声明vs实盘双口径自洽（不自洽照样红·有牙），na不再惩罚C-085型正确演进；②`eval_file_clutter` pyc判据分家——pyc版本戳≠评估链版本=环境责任（宿主hermes gateway python3.14 -I巡查import·PYTHONDONTWRITEBYTECODE免疫）→ℹ️advisory显形不扣分；自家戳/混版本/空目录从严照扣。归责实证：布控轮询3.9秒抓现行（ps快照唯一3.14进程=hermes gateway·`-I`隐含忽略env为免疫根因）。
+- **回归**：test_skill_eval.py 191 tests OK；自举=旧版snapshot(sha 572b07c41c26)vs新版对clock-loop自身双跑 99→99不降（passed false→true系clutter归责修正·正向）；负例对拍 D1指针净增+1/6·D2无声明不计·N2内部真失配红·clutter四态(P2/N4/N5/N6)全合判据。施工自曝两坑（globals跨调用污染→改局部·set存Match对象==恒False→group(1)）——均在交付前被自测逮住未流出，如实记账。
+- 版本 4.21.6→4.21.7（patch·判据精度修正·评分维度/权重/考题结构未动——GB侧效果 98→100 属误判解除非加分）
+
+### v4.21.6 — 2026-10-25 23:5x（级联收口第三轮·triwich v4.12.14 声明位跟随）
+
+**动因**：同窗挂账清零轮把 triwich 抬到 v4.12.14（anchor_reach v1.4 前缀回退匹配 + clutter_check v1.1 审计链跟踪第二查）。
+**改动**：dependencies triwich 4.12.13→4.12.14；frontmatter 4.21.5→4.21.6。
+**验证**：skill_eval --check-only honest_flags 空；check_cured_snapshot 8 项全绿；test_skill_eval 全绿。
+**判级**：patch（dependencies 跟随·无判定能力变更）。
+
+### v4.21.5 — 2026-10-25 23:1x（级联收口第二轮·triwich v4.12.13 声明位跟随）
+
+**动因**：本窗 22:1x 刚把 triwich 抬到 v4.12.13（挂账清零批：锚闸合法锚补定义+扫描域 11→24 件+
+编排闸 9 例常驻负例+git 索引名实），升版方=本窗，按 v4.18.7 铁律同批跟随下游声明位。
+**改动**：dependencies triwich `4.12.12`→`4.12.13`；frontmatter 4.21.4→4.21.5。
+**并发纪律**：写前记两文件 mtime+sha8、写后回读校验（他窗 22:17 那轮 v4.21.4 的改动完整保留在 CHANGELOG 第2条）。
+**验证**：`skill_eval --check-only SKILL.md` honest_flags 由 `[依赖声明漂移×1(triwich)]` 转空；
+`check_cured_snapshot.py` 8 项全绿；`test_skill_eval.py` 191 例全绿。
+**判级**：patch（dependencies 跟随，无判定能力变更）。
+### v4.21.4 — 2026-10-25 22:17（triwich 二次并发漂移 4.12.11→4.12.12 声明位跟随·固化件他窗已重固·本窗只补最后声明格+记账）
+
+- dependencies triwich 4.12.11→4.12.12；固化件 triwich-integration.md=4.12.12（他窗21:38批已重固）；test_clock_loop_score 转绿后再入提交锚。
+- 本条与上条 v4.21.3 同属"升版级联责任归升版方"的下游补位实录（一天两跳·并发活跃期，锚定此账供月报回看频率）。
+
+### v4.21.3 — 2026-10-25 21:10（升版级联收口·代清并发漏位）
+
+- dependencies triwich 声明位 4.12.10→4.12.11：并发会话已抬 triwich 源与其在本树的固化件（triwich-integration.md=4.12.11），唯本声明位未跟——test_clock_loop_score 因 honest_flags「依赖声明漂移×1」红。按 v4.18.7 级联律补齐最后一格；开工前已按 C07 #184 读 CHANGELOG+跑回归确认基线。
+
+### v4.21.2 — 2026-10-25 20:43（双盲第19次整改批·盲审员发现 N-01~07 中评估器侧5项全采纳）
+
+- C2a 精化：回退取种面与 merged 域口径互认（changelog不分大小写/沿革/台账文件名排除；normative_vocab+source双全规范件排除；FU卡≥3运行台账排除）；os.walk 递归补子目录形态（N-03）；sunk_files 口径=进取种面且含🔌锚件（N-02）；注释如实声明「示例性字段块」残余风险=Known Limitation（N-01）。
+- N-06 补弹：test_skill_eval.py 新增 test_c2a_sunk_fallback_and_exclusions / test_c1_template_path_dirlevel 两条回归——191→193 passed。
+- 连带：SL reconcile_overview.py normalize_groups docstring v1.2 旧口径追码 v1.3 建组再搬（N-07·被治病灶同体复发的当场清偿）。
+- 回滚点：记忆琥珀/技能升级备份/20261025_201752-clockloop评估器C1C2/skill_eval.py.bak（C1C2前原态）。
+
+### v4.21.1 — 2026-10-25 20:28（评估器检测面盲区反哺 C1+C2a·system-logger v3.19.7 评估轮·用户授权「按愿景最优解推进」）
+
+- C2a eval_fuse_mechanism：主文无🔌锚点且提供 skill_dir 时定向回退扫 references/*.md（排除 CHANGELOG），命中如实标 sunk_files——本体下沉件住熔断器不再被 normative_vocab 排除误伤成 0/5 假红（system-logger 3.19.7 实证 91→96）。不放宽任何判据，只补回丢失的检测面。
+- C1 eval_declared_existence：大写时间戳模板路径（YYYY-MM/HH:MM 类）降目录级核验——父目录存在=声明成立，⛔再对模板名本身报缺（月蒸_YYYY-MM.md 假红根治）。
+- 中立化闸存量红清偿：report-template.md「你终审」→「用户终审」（该闸本轮 run.sh 唯一 FAIL·顺手收口）。
+- 回归实录：test_skill_eval.py 191 passed；基线三件不降分（clock-loop 99/triwich 98/daily-buddy 92 改前后同值）；snapshot=记忆琥珀/技能升级备份/20261025_201752-clockloop评估器C1C2/。回滚点=该 bak。
+
+### v4.20.7 — 2026-10-25 18:45（规范反哺四条入库 + 报告改「决策三问」）
+
+- **规范侧**（Skill架构规范 v6.2.4→v6.2.5·同批）：pages/05 反模式表新增 **D10 名实错位** / **D11 开关式豁免** / **D12 隐式取源** / **E10 修复自伤**，均带实证锚；规范集 13 件版本同批对齐；`spec_gate --check` ok=true（内核 181 行·9 页）。
+- **固化投影**：skill-arch-standard.md 机械投影四条（从源逐字抽取，⛔手抄）·头部 version/source_version→v6.2.5；`check_cured_snapshot` 8/8 全绿。
+- **报告调整**（皮叔问「报告会更明确吗」）：report-template v1.3.1→v1.4.0——新增「一页结论·决策三问」（能用吗/最怕什么/下一步，下一步必须指到文件字段）；「扣分项分析」增「补救动作」列（分数的尽头是动作，⛔空写「加强X」）。
+- **依赖**：dependencies skill-arch-standard 6.2.4→6.2.5。
+- 判级 patch（规范同步 + 报告字段扩展·评分维度与权重零变更）。
+
+### v4.20.6 — 2026-10-25 18:28（F8 彻底修：三个名不副实的宏维度按内容更名）
+
+- **动因**：你质证「另一半做完了有什么用·大工程我也能做」。实测影响面后确认：旧判断「动全链」＝未取证就下结论（实测 grep：本端他 Skill 零命中，引用全在 clock-loop 自身 4 个文件）。
+- **更名**：逻辑一致性 → **防误与一致性**（Poka-Yoke 防误层占 17/29）；文档完整性 → **表述与产出**（装产出物定义）；测试覆盖 → **熔断与触发覆盖**（装 fuse_mechanism）。保留原意的三个不动：开发规范 / 指令准确性 / 哲学评估。
+- **同步面**（18 处）：`MACRO_DIMENSIONS` 3 键 + `YAML_WEIGHT_MAP` 3 值 + 映射注释 + `test_skill_eval.py` 2 处 + `confidence-evidence.md` 维度串与旧名对照注 + `evaluation-framework.md` 5 处。
+- **历史可读性**：旧名→新名对照写入 confidence-evidence.md，历史报告/台账用旧名仍可检索，⛔未改历史 CHANGELOG。
+- **验证**：`verify_dimension_consistency()` ok=True（6 宏→19 微，权重完全对应）；191 tests OK；自评 passed=True / total 99。
+
+### v4.20.5 — 2026-10-25 18:15（挂账 5 条清零 + 存量报告封口改「日期大赦」）
+
+- **N3 豁免面扩**（存量封口主线）：门禁14 从「仅 0 条断言可豁免」改为三分支——应急强制豁免(env) > **存量日期大赦**（`LEGACY_EVIDENCE_CUTOFF=2026-10-25`·留痕 `evidence_legacy_waived=true`）> 新报告硬卡 FAIL；「断言不足阈值」分支同享大赦；⛔ 行号漂移（造假/漂移）不属大赦面。设计取舍：大赦判据用报告日期而非环境变量——环境变量靠人记得设 = 纪律衰减面。
+- **N4 取证源隔离**：`--source` 显式绑定被评 Skill，实测 `.phaseX_last_run.json` target 指向他处时仍按 source 判定（valid=80 / passed=True / source_ok=True）。
+- **N5 advisory 进 Markdown**：五级分级计数与缺失级同时输出到 Markdown 报告（旧版只进 JSON = advisory 无消费方）。
+- **F8 维度命名错位**：`MACRO_DIMENSIONS` 增唯一映射注释，如实声明「宏名为历史沿用、与内容不同名」并逐条列出内容构成；⛔ 不改键名（连带报告/台账/下游对账全链漂移）。
+- **F9 eval-set 编号**：补 16/17 墓碑注记（编号保留不重用·防上游引用错位）。
+- **存量报告封口口径写进模板**：日期早于 2026-10-25 自动大赦，⛔不需人工逐份补断言。
+- **验证**：`test_skill_eval.py` 191 tests OK；自评 passed=True / total 99 / capped 94。
+
+### v4.20.4 — 2026-10-25 13:51（轮2：两条 P1 判据补牙 + 四条 P2 清悬空·独立审查驱动）
+
+- **P1#1 五级标注**：`eval_five_level_annotations` 语义归正为「密度判据·非覆盖判据」（docstring 写明 5 个 ⛔DO NOT 即可满分的失真边界）；新增 `five_level_coverage()` 与 `five_level_counts` 结果字段，使分级计数永久可见（可抽检）；缺失级生成 `five_level_coverage_advisory` 显形（不扣分·不制造假扣分）。
+- **P1#2 取证锁**：`report-template.md` 新增「断言实录」必填段（四格格式 + 阈值 80 + 不验 judgment 对错）；`finalize_report.py` 门禁14 把「无断言行」从默认 N/A 放行改为**默认 FAIL**，存量报告仅当显式设 `CLOCKLOOP_ALLOW_LEGACY_NO_ASSERT=1` 时豁免并留痕。测试夹具同步生成 80 条真断言（⛔不给测试开豁免开关）。
+- **P2×4**：阶段0 定值串补路径位（`· {路径}` 必填·消除与路径声明互斥）；删未定义的 F 路径引用；`finalize` 两处「SKILL.md 门禁③」悬空指针改指 `check_selfimprove_gate overdue_n≥2`；新增「运行时产物不入包」边界声明（__pycache__/.pytest_cache/.phaseX_last_run.json/.advisory_history.jsonl/.finalize_last_run.json）。
+- **复审追加两条 P1（同一轮内闭）**：①取证源脱钩——`--check-evidence` 新增 `--source`，`finalize` 显式绑定被评 Skill，不再回落 `.phaseX_last_run.json` 单一 target（旧行为：批量封口除一份外全假红/同文时假绿）；②模板自带假红——断言示例从 Markdown 表格改为顶格四格代码块（旧表格形态=解析器 0 命中=照模板填必 FAIL）。
+- **验证**：`test_skill_eval.py` **191 tests OK**（含修改后回归）；无断言报告负例实测 `passed=False / valid=0 / min=80`；自评 raw 99 / capped 94 / honest_flags 空。
+- 判级 minor（新增 advisory 字段 + 判据语义补牙，⛔不动评分维度与权重）。
+
+### v4.20.3 — 2026-10-25 13:26（尺子同步第二轮：skill-arch-standard v6.2.4·负例族补两维 + 声明清红）
+
+- 源 v6.2.3→v6.2.4（pages/09 补 R-20261025-01 变异自证律 + R-20261025-02 运行时副作用负例）。
+- 固化件重固化：机检判据节补两维（按源 v6.2.0 立项的「机检判据面变更 ⇒ 投影重固化」规则，⛔非纯升号）；头部 version/source_version 6.2.3→6.2.4；v6.2.3 增量落 Skill标准规范 §6.3/6.5/6.7 与 skill-rehab 评估器，本投影面零增量（已如实记入 date 注释）。
+- 同轮清红：dependencies triwich 4.12.9→4.12.10（源与本端实盘均 4.12.10）；skill-arch-standard 6.2.3→6.2.4。
+- 判级 patch（尺子同步 + 声明对齐·评分维度/权重/考题零变更）。
+
+### v4.20.2 — 2026-10-24 23:20（尺子再同步：skill-arch-standard v6.2.3·评分口径 百分制不变量）
+
+- 源规范 v6.2.2→v6.2.3（对外主分恒为百分制 100·权重和是实现细节·多实现登记·⛔跨实现比较绝对分）。
+- 固化件同步 v6.2.3：§11.19 新增评分口径统一条款；dependencies 声明 6.2.2→6.2.3。
+- 同轮级联：meta-aletheia 3.10.0→3.11.0（并发方已升源+固化件·声明位跟随）；check_cured_snapshot 8 项全绿；koujing 固化件口径 6.2.3/6.2.3·0 红。
+- 判级 patch（尺子同步·评分维度/权重/考题零变更）。
+
+### v4.20.1 — 2026-10-24 22:03（收尾措辞·作者侧工具链边界）
+
+- SKILL 两处 run.sh 引用明标「作者侧·发布包不携带」（防装机端断指；instrument 不随包）。
+- 包面裁剪 `clock_loop_strip.py` 增 R14：删除多路径启动声明表的 G 行（v4.20.0 新结构，mirror-sync 实弹残留 loop 安装包/布洛陀包）。
+- 判级 patch（措辞/包面边界·评分维度/权重/考题零变更）。十二闸口径不变（详见 v4.20.0 条）。
+
+### v4.20.0 — 2026-10-24 21:31（编排律结构革命＋尺子同步＋附件全身体检·T0 任务卡 2026-10-24）
+
+**结构（T2-A）**：19 节重排——指路牌 18 节常驻首因（10.2%）／铁律 14.9%+T5 留守头部／参考件中段／四层契约 70.1%＋执行流程 72.5%＋判断标准 90.6%＋禁止行为 92.5% 迁终位；执行流程 131→89 行（细则已全量住在 references/phase*.md，删的是重复叙述不是合同）；新增「多路径启动声明」硬约束1 三路径（E/G/H）；正文内嵌版本史清理（v2.0/v2.7/v2.8/v3.19/v3.43 等纯史标记归本账）；G 路径 canonical 包名 `布洛陀-安装包`→`布洛陀-全平台安装包`（活文档 6 处）。
+**尺子（T2-B）**：skill-arch-standard 固化副本 v6.2.0→v6.2.2（+分层边界/并发对账/四新条/R-03 自证锚/十连+字符集边界）；dependencies 三点对齐 triwich 4.12.9／meta-aletheia 3.10.0／skill-arch-standard 6.2.2；skill_eval 新增 `eval_orchestration_advisory`（编排五判据·advisory 不计分）+12 回归用例（191/191；含小件行号锚/顿号锚两修）。
+**体检（T3）**：附件 32md+4yaml+json／19py+1sh／tests2／golden2／steps4 全量体检；新建 `scripts/run.sh` 十二闸（结构/合同完整性/引用/语法/索引/依赖/级联/计数/自举/回归/变异/中立化）+ `scripts/contract_gate.py`（T5/禁令/熔断器/阶段/📦/四层清单存在性·selftest 正例+11负例）；沙箱 ditto 副本 rc=0；GS-1 97S／GS-2 76B 断言过；finalize_report 17 道正负例。
+**复核整改**：独立复核首轮 partial——B1 内容级掏空零响应→新增合同完整性闸并接入第 2 闸（临时副本删阶段2/T5/禁令/熔断器全红）；W1 级联 0 下游改 SKIP；W2 中立化补 --references（1→34 md）；W3/W4 行号锚全局化+顿号锚不截断；W5 铁律压至 14.9%；W6 A1/A2/A3 出处回补。
+**判级**：minor（结构重排+评估器新增 advisory+附件修复·评分维度/权重/既有考题零变更；新考题经用户任务卡授权通道入）。
+**回滚点**：`记忆琥珀/技能升级备份/clock-loop_{SKILL,skill_eval,skill-arch-standard}_261024_2112.bak` + git HEAD 9668ef4fb。
+
+### v4.19.12 — 2026-10-24（references 用户称谓中立化：执行细则人名统一为「用户」·语义零变更）
+
+### v4.19.11 — 2026-10-24（用户称谓中立化：执行文本人名统一为「用户」·语义零变更）
+
 ### v4.19.10 — 2026-10-22 15:0x（triwich 4.10.7 检查⑩跨平台根治·级联收口·Case A）
 
 triwich 升 4.10.7（flow-agent-b.md /tmp 字面量→{tmpdir} 运行时派生 + result-block-examples.md 补平台声明行·D5 检查⑩ 6 处清零；固化对象 4 层正文零改动 ⇒ Case A）。本端跟随：dependencies 4.10.6→4.10.7 + 固化件链首 Case A 同步 + check_cured_snapshot 复验。判级 patch 记账条·功能零变更。
@@ -38,7 +189,7 @@ clock-loop Loop 开工基线轮（水位同步 C07 #184）回归 179 例逮出 1
 - **references 路径修正**：kb-checkup.md/machine-acceptance.md 中「开发工具/知识联邦引擎」→「脚本中心/知识联邦引擎」(F-02)，对齐 10-17 引擎迁移实盘
 - **矛盾清单骨架**：脚本中心/知识联邦引擎/矛盾清单.md 创建空文件(F-03)，与 kb_concept_lint.py 的 graceful handle 对齐文档声明
 - **依赖版本同步**：triwich 依赖声明 4.7.1 与盘上实值一致(F-07误报撤销)
-- 扫描器精度教训：naive regex 取首个 version: 4.10.7
+- 扫描器精度教训：naive regex 取首个 version: 4.12.17
 
 ## v4.19.1 — 2026-10-21 11:5x（G路径 Step B1.5g 孪生件形状对账·安装包哲学条文68承接批·皮叔令「做；批」）
 
@@ -2311,3 +2462,9 @@ references/新增3文件：
 - task-standards.json：同类任务自动复用历史标准
 - progress.md：每轮执行日志持久化
 - 19个测试用例覆盖应触发/不应触发/运行时行为/标准收集复用/文件异常容错
+
+### v4.12.17 — 2026-10-26 15:51（机检件归属声明批·皮叔令「改补就补·充分授权」）
+
+- 包面已按 `author-qa-exclude.json` 剔除作者侧 QA 机检件（不随安装包分发），本件「修改后自检」节同步补**归属声明**一行，防端用户照文档敲不存在的命令。
+- 判据联动：platform_compat 承诺路径可达性该项零红；结构闸/引用闸不受影响（仅加行，⛔不改节名集合）。
+

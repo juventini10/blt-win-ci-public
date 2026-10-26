@@ -201,11 +201,11 @@ paths = cap.get("system_file_paths") or {}
 #   声明值两形态：绝对路径（~ 展开判 isfile+锚点 grep）/ platform://（判 MERGED=平台面信任源）。
 if plat == "zwork":
     _ANCHORS = {
-        "SOUL.md": ("~/个人AI档案/AutoClaw/SOUL.md", "把沉淀当资产"),
-        "IDENTITY.md": ("~/个人AI档案/AutoClaw/AGENTS.md", "端身份与边界"),
+        "SOUL.md": ("[记忆共享中心]/AutoClaw/SOUL.md", "把沉淀当资产"),
+        "IDENTITY.md": ("[记忆共享中心]/AutoClaw/AGENTS.md", "端身份与边界"),
         "USER.md": (None, "平台 Memory 用户卡（Run 级注入·机制级·平台内不可文件检=信任源）"),
         "MEMORY.md": (None, "平台 Memory 记忆层（Run 级注入·机制级·平台内不可文件检=信任源）"),
-        "自定义指令": ("~/个人AI档案/AutoClaw/AGENTS.md", "buluotuo:execution-guidelines-v1"),
+        "自定义指令": ("[记忆共享中心]/AutoClaw/AGENTS.md", "buluotuo:execution-guidelines-v1"),
     }
     for name, (fp, anchor) in _ANCHORS.items():
         if fp is None:
@@ -311,18 +311,19 @@ else:
     # 端注册面按 plat 分发（此前硬编码 zcode config.json ⇒ 他端恒读不到 ⇒ 恒判 ADV）
     #   zcode 形态 A → ~/.zcode/cli/config.json
     #   Hermes 形态 B → ~/.hermes/plugins/*/plugin.yaml 的 provides_hooks
-    #   Trae Work 形态 C → ~/Library/LaunchAgents/com.buluotuo.traework.patrol.plist
-    #                      + <MC>/开发工具/Skill路由引擎/scripts/route_traework_patrol.sh 的 ROSTER
-    #                      （2026-10-03 补·本端无 config.json 注册面＝第三形态：无钩子事件面·launchd 拉模式）
+    #   Trae CN 形态 D → ~/.trae-cn/hooks.json（标准 hook 端·2026-10-25 补；此前无分支
+    #                    ⇒ 落到末尾 else 读 zcode config.json ⇒ 本端 7 件恒判 MISS 假红）
+    #   ⛔ Trae Work 形态 C 已退役（2026-10-25 裁决 A 新增 traecn + traework 退役）——
+    #      plist/patrol ROSTER 分支随之移除，⛔勿按旧注释恢复。
     reg, reg_kind = "", "script"
     if plat == "zwork":
         # zwork 形态 E（平台托管型·2026-10-08）：无 config.json/settings.json/plist/openclaw.json——
         # 注册面证据=端实体锚点串集合（K2 标记对+对账器+规格书指针）。零钩子件=诚实空集交付面。
         _parts = []
-        for _fp, _anchor in (("~/个人AI档案/数字分身/童灵·人格规格书.md", "Doenglingz"),
-                             ("~/个人AI档案/AutoClaw/AGENTS.md", "buluotuo:execution-guidelines-v1"),
-                             ("~/个人AI档案/AutoClaw/AGENTS.md", "K2 core_slice 开始"),
-                             ("~/个人AI档案/数字分身/K2切片蒸馏/slices/core_slice.md", "运行时注入声明")):
+        for _fp, _anchor in (("[记忆共享中心]/数字分身/童灵·人格规格书.md", "Doenglingz"),
+                             ("[记忆共享中心]/AutoClaw/AGENTS.md", "buluotuo:execution-guidelines-v1"),
+                             ("[记忆共享中心]/AutoClaw/AGENTS.md", "K2 core_slice 开始"),
+                             ("[记忆共享中心]/数字分身/K2切片蒸馏/slices/core_slice.md", "运行时注入声明")):
             _full = os.path.expanduser(_fp)
             if os.path.isfile(_full):
                 try:
@@ -348,21 +349,28 @@ else:
                 except Exception:
                     pass
             reg = json.dumps({"plugins": sorted(names), "with_hooks": sorted(evs)}, ensure_ascii=False)
-    elif plat == "traework":
+    elif plat == "minimaxcode":
+        # MiniMax Code 形态 F（Plugin Hook 端·2026-10-25 入包·第 6 种注册面）：
+        #   注册面 = ~/.minimax/plugins/bulutuo-guards/hooks/hooks.json
+        #   （由插件 manifest .minimax-plugin/plugin.json 的 "hooks" 数组声明装载）
+        #   与 install_scripts.py / platform_adaptation_check 同源口径（同一文件即注册面）。
+        #   ⚠️ 插件 manifest 也纳入注册证据——宿主按 "hooks" 数组装载挂点，
+        #      manifest 缺声明 = 插件装了不派发 = 假绿。
+        _mj = os.path.expanduser("~/.minimax/plugins/bulutuo-guards")
         _parts = []
-        _plist = os.path.expanduser("~/Library/LaunchAgents/com.buluotuo.traework.patrol.plist")
-        if os.path.isfile(_plist):
-            try: _parts.append(open(_plist, encoding="utf-8", errors="ignore").read())
-            except Exception: pass
-        if mc:
-            for _rel in (os.path.join("开发工具", "Skill路由引擎", "scripts", "route_traework_patrol.sh"),
-                         os.path.join("脚本中心", "route_traework_patrol.sh")):
-                _p = os.path.join(mc, _rel)
-                if os.path.isfile(_p):
-                    try: _parts.append(open(_p, encoding="utf-8", errors="ignore").read())
-                    except Exception: pass
-                    break
+        for _f in (os.path.join(_mj, "hooks", "hooks.json"),
+                   os.path.join(_mj, ".minimax-plugin", "plugin.json")):
+            if os.path.isfile(_f):
+                try: _parts.append(open(_f, encoding="utf-8", errors="ignore").read())
+                except Exception: pass
         reg = "\n".join(_parts)
+    elif plat == "traecn":
+        # Trae CN 形态 D（标准 hook 端·2026-10-25 入包）：注册面=~/.trae-cn/hooks.json
+        # 与 install_scripts.py / platform_adaptation_check 同源口径（同一文件即注册面）。
+        _hj = os.path.expanduser("~/.trae-cn/hooks.json")
+        if os.path.isfile(_hj):
+            try: reg = open(_hj, encoding="utf-8", errors="ignore").read()
+            except Exception: reg = ""
     elif plat == "lobsterai":
         # 本端注册面=宿主插件表（openclaw.json）+ 插件源码 ROSTER（无 config.json 注册面・第四形态）
         _parts = []
@@ -853,7 +861,7 @@ _INST_SUM="$MC/记忆规则/用户基本规则-摘要版.md"
 if [ -n "$PY" ] && [ -f "$PKG_ROOT/references/scripts/verify_pair_checks.py" ] && [ -f "$_TPL" ]; then
   _st=$("$PY" "$PKG_ROOT/references/scripts/verify_pair_checks.py" summary-tables "$_TPL" "$_INST_SUM" 2>&1); _strc=$?
   if [ $_strc -eq 2 ] || printf '%s' "$_st" | grep -q '^INSTRUMENT='; then
-    no "模板纯净: python 腿未跑（仪器未跑·$_st·⛔此为仪器故障非包污染）"
+    no "模板纯净: python 腿未跑（仪器未跑·${_st}·⛔此为仪器故障非包污染）"
   else
     _rows=$(printf '%s' "$_st" | sed -n 's/.*ROWS=\([0-9]*\).*/\1/p')
     _bad=$(printf '%s' "$_st" | sed -n 's/.*BAD=\([^ ]*\).*/\1/p')
@@ -872,8 +880,46 @@ if [ -n "$PY" ] && [ -f "$PKG_ROOT/references/scripts/verify_pair_checks.py" ] &
     fi
   fi
 elif [ ! -f "$_TPL" ]; then
-  no "模板纯净: 模板缺失 $_TPL（包结构异常）"
+  no "模板纯净: 模板缺失 ${_TPL}（包结构异常）"
 else no "模板纯净: 仪器未跑（python/verify_pair_checks 不可用·⛔失明期间不得判通过）"; fi
+
+# 4.8) 守护服务成功痕迹（zhangyan#4·2026-10-26·判据=不问"在运行"，问"成功过几次"）
+#      三态分账：已注册+有痕迹=ok；已注册+零痕迹=no（真失败）；未安装=pend（不算故障）
+#      痕迹判据：日志（[日志中心] 新路径优先·兼容旧路径）尾 100 行有完成标记 或 非零体积
+if [ "$(uname)" = "Darwin" ]; then
+  _lc_log="$HOME/Library/Logs/buluotuo"
+  _svc_check() { # $1=label  $2=新日志名（[日志中心]下）  $3=旧日志绝对路径（兼容·可空）  $4=完成标记（可空）
+    local label="$1" newlog="$2" oldlog="$3" mark="$4" reg=0 lf hit=0
+    [ -f "$HOME/Library/LaunchAgents/$label.plist" ] && reg=1
+    launchctl list "$label" >/dev/null 2>&1 && reg=1
+    if [ "$reg" = 0 ]; then
+      pend "守护 $label 未安装（不算故障·安装守护后重跑 verify）"
+      return
+    fi
+    for lf in "$_lc_log/$newlog" "$oldlog"; do
+      [ -n "$lf" ] && [ -f "$lf" ] || continue
+      if [ -s "$lf" ]; then hit=1; break; fi                       # 非零体积=痕迹
+      if [ -n "$mark" ] && tail -n 100 "$lf" 2>/dev/null | grep -q "$mark"; then hit=1; break; fi
+    done
+    if [ "$hit" = 1 ]; then
+      ok "守护 $label 已注册且有成功痕迹"
+    else
+      no "守护 $label 已注册但零成功痕迹（真失败·查 $_lc_log/ 与旧路径日志）"
+    fi
+  }
+  _svc_check "com.doenglingz.slice-watch"      "slice-watch.out.log"        "$MC/脚本中心/logs/slice-watch.out.log" ""
+  _svc_check "com.buluotuo.awaken-patrol"      "awaken_patrol_launchd.out.log" "$MC/脚本中心/logs/awaken_patrol_launchd.out.log" ""
+  _svc_check "com.buluotuo.distill-scheduler"  "distill-scheduler.out.log"  "$MC/脚本中心/logs/distill-scheduler.out.log" ""
+  _svc_check "com.memoryamber.backup"          "amber-fswatch.out.log"      "$MC/记忆琥珀/engine/logs/amber.log" "记忆琥珀备份结束"
+  # 附（zhangyan#8）：超 5MB 守护日志报告（信息性·轮转由 amber_backup/wrapper 启动截断承担）
+  for lf in "$_lc_log"/*.log; do
+    [ -f "$lf" ] || continue
+    _sz=$(stat -f%z "$lf" 2>/dev/null || echo 0)
+    [ "${_sz:-0}" -gt 5242880 ] && echo -e "${C}  [i] 守护日志偏大(>5MB·建议查轮转): $lf (${_sz} 字节)${N}"
+  done
+else
+  pend "守护成功痕迹检查: 非 macOS 跳过（launchd 不适用）"
+fi
 
 # 5) 版本锚点（不计分·信息）
 BV=$(cat "$MC/.install/version" 2>/dev/null || echo "未知(未完成安装或无锚点)")

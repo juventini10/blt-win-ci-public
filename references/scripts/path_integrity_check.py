@@ -31,15 +31,45 @@ BAD_CALL = re.compile(
 )
 # 2026-10-21 反哺(上游反馈Bug1·李生Win)：{{X_ROOT}} 填充值已含模板后缀→装机产物 "A/B/A/B" 段重复双拼。   # PATH-INTEGRITY-EXEMPT 判据自形/病形引用行，非装机产物
 #   区别于运行时双拼(BAD_CALL·expanduser/波浪号形)。限产物面判，--pkg-template 跳过(模板层无重复+prose病形示例不误报)。
-REPEAT_SEG = re.compile(r"([^/\s]+/[^/\s]+)/\1")   # PATH-INTEGRITY-EXEMPT 判据自形/病形引用行，非装机产物
-REPEAT_EXT = {".py", ".sh", ".ps1", ".json", ".yaml", ".yml", ".html", ".md"}
+# 2026-10-25 根治（Trae CN 入包轮·「段重复」类假红 42 件实证）：原式只要求"任一含斜杠的两段串重复"，
+#   实测把 HTML 标记（`div></div>`×N、`{{VAL}}</td><td>{{VAL}}`）与相对路径 `../../..` 一并判成
+#   "路径段重复" ⇒ 判据名（路径段）与实测量域（任意文本）不相交（假红逼人改文案＝比漏报更坏）。
+#   收紧为「路径段字符集」：段内 ⛔ 空白/尖括号/花括号/圆括号/方括号/引号/反引号/斜杠/等号/反斜杠；
+#   `..`/`.` 纯点段（合法相对路径）不计病形。⛔ 未动 CHANGELOG 例外、未动扫描域、未动 EXEMPT 机制。
+_SEGCH = r"[^\s<>{}()\[\]\"'`/=\\]"   # 路径段字符集（单一处定义）
+REPEAT_SEG = re.compile(r"(" + _SEGCH + r"+/" + _SEGCH + r"+)/\1")   # PATH-INTEGRITY-EXEMPT 判据自形/病形引用行，非装机产物
+# 2026-10-25 域修正（承 2026-10-12 `double` 类「⛔不判 .md/.json prose」先例·条文19 声明式域）：
+#   段重复病形的实物侧＝**值/调用形**（py/sh/ps1/json/yaml/html）；`.md` 里写 `A/B/A/B` 是   # PATH-INTEGRITY-EXEMPT 病形引用行
+#   叙述/示例（系统日志、任务卡、设计规范 13 件实测），属记录面而非装机产物 ⇒ 移出判据域。
+#   ⛔ 不是"正则改窄凑绿"：判据式未动，只声明它管哪类文件（与 CHANGELOG 例外同一理由的推广）。
+REPEAT_EXT = {".py", ".sh", ".ps1", ".json", ".yaml", ".yml", ".html"}
 EXEMPT = "PATH-INTEGRITY-EXEMPT"                          # 行级显式豁免标记
 TEXT_EXT = {".md", ".py", ".sh", ".ps1", ".yaml", ".yml", ".json", ".txt", ".html"}
 # .venv/venv/node_modules=第三方依赖（site-packages 自带病形引用·非装机产物）；
+# .venv-st=知识联邦引擎自带 site-packages（2026-10-25 Trae CN 入包轮：fill_syntax_scan 早已豁免它，
+#   本器漏列＝同族不一致 ⇒ 42 件里有 4 件来自第三方依赖源码·非装机产物）
 # _wip=端用户暂存区（2026-10-23 V2.2.9 Win 反馈 P2-5：实测 _wip 单项 844 件噪声掩盖真命中）
 SKIP_DIRS = {".git", "__pycache__", ".package-lock", "记忆琥珀", "logs", "_archive",
              ".snapshots", ".guard", ".patrol",
-             ".venv", "venv", "_wip", "node_modules"}
+             ".venv", ".venv-st", "venv", "_wip", "node_modules"}
+
+
+def _is_disease_repeat(line):
+    """段重复病形判定：命中且重复段非纯点段 ⇒ 病形（`../../..` 是合法相对路径，不是双拼）。"""
+    m = REPEAT_SEG.search(line)
+    if not m:
+        return False
+    a, b = m.group(1).split("/")
+    return a.strip(".") != "" and b.strip(".") != ""
+
+
+def _is_skipped_dir(name):
+    """目录豁免判定：常量表命中，或 `.venv` 族（.venv/.venv-st/.venv-semantic…＝第三方依赖）。
+
+    2026-10-25 Trae CN 入包轮：原实现只列 `.venv`/`.venv-st` 两个**具体名**，实测 MC 里还有
+    `.venv-semantic` ⇒ 按名穷举必漏（同族第 N 次）⇒ 改按**族前缀**判，一次断根。
+    """
+    return name in SKIP_DIRS or name.startswith(".venv")
 
 
 def scan(root, only_dirs=None, ph_files=None):
@@ -47,8 +77,8 @@ def scan(root, only_dirs=None, ph_files=None):
     for dp, dn, fn in os.walk(root):
         _rel = os.path.relpath(dp, root)
         parts = set(dp.replace("\\", "/").split("/"))
-        if parts & SKIP_DIRS:
-            dn[:] = [d for d in dn if d not in SKIP_DIRS]
+        if parts & SKIP_DIRS or any(_is_skipped_dir(x) for x in parts):
+            dn[:] = [d for d in dn if d not in SKIP_DIRS and not _is_skipped_dir(d)]
             continue
         if only_dirs and not any(_rel == d or _rel.startswith(d + os.sep) for d in only_dirs):
             # 声明域=「只扫这些 root 子目录」（2026-10-12 域修正·条文19 实现=声明）：
@@ -84,14 +114,14 @@ def scan(root, only_dirs=None, ph_files=None):
                     if TILDE_PREFIXED in _ln and EXEMPT not in _ln:
                         hits["tilde_prefixed"].append(rel)
                         break
-            # CHANGELOG 是历史文本：引用历史病形（如「曾渲染出 A/B/A/B 双段」）是记录本身，
+            # CHANGELOG 是历史文本：引用历史病形（如「曾渲染出 A/B/A/B 双段」）是记录本身，   # PATH-INTEGRITY-EXEMPT 病形引用行
             # 不是当前产物里的路径重复（2026-10-23 V2.2.10 Win 真机 T15/T16 误报实证：
             # daily-buddy CHANGELOG L61 描述 $DIARY 双段渲染被 REPEAT_SEG 误判）。
             if os.path.splitext(f)[1].lower() in REPEAT_EXT and f.lower() != "changelog.md":
                 for _ln in t.splitlines():
                     if EXEMPT in _ln:
                         continue
-                    if REPEAT_SEG.search(_ln):
+                    if _is_disease_repeat(_ln):
                         hits["repeat"].append(rel)
                         break
     return hits

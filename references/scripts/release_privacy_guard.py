@@ -211,7 +211,7 @@ def selftest():
     res.append(("T8 干净成就骨架不误报", all("成就系统" not in x["path"] for x in rc), "red=%d" % len(rc)))
     open(os.path.join(ad, "阅读成就.md"), "w", encoding="utf-8").write(
         "---\ncreated: 2026-08-08\n---\n\n# 阅读成就系统\n\n| **阅读总量** | 9 本 | 《卢浮宫的猫》 |\n"
-        "| �� 萌芽 | 1 本 | ✅ 已完成 |\n" + ("正文补充避免长度判模板。" * 30) + "\n")
+        "| 🌱 萌芽 | 1 本 | ✅ 已完成 |\n" + ("正文补充避免长度判模板。" * 30) + "\n")
     rd, _ = scan(pkg)
     res.append(("T9 脏成就(书名/已完成)必 RED", any("成就系统" in x["path"] for x in rd), "red=%d" % len(rd)))
     shutil.rmtree(ad, ignore_errors=True)

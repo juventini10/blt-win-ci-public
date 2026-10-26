@@ -4,7 +4,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 # 读书助手 — 评估集 (eval-set)
 
-> 创建：2026-07-03 | v3.2.0 → v4.9.0 → **v4.10.0（2026-09-06 Loop审查刷新：头标升 v4.10.0 对齐 SKILL.md ·新增 R20 显式覆盖 build_note_frontmatter / build_quizbank_frontmatter 往返恒等 + validate_note / validate_quizbank 通过 ·R5 已覆盖 verify_index 泛化 ·R14 仍仅覆盖 reading-card 路径·R20 补全 note/quizbank 路径）**
+> 创建：2026-07-03 | v3.2.0 → v4.9.0 → **v4.10.0（2026-09-06 Loop审查刷新：头标升 v4.10.0 对齐 SKILL.md ·新增 R20 显式覆盖 build_note_frontmatter / build_quizbank_frontmatter 往返恒等 + validate_note / validate_quizbank 通过 ·R5 已覆盖 verify_index 泛化 ·R14 仍仅覆盖 reading-card 路径·R20 补全 note/quizbank 路径）** → **v4.16.0（2026-10-23 架构迁移：执行本体迁 `references/flow-read.md`；用例编号/行为口径不变，G2 载体仍为 `test_sucair` 11 例）** → **v4.17.0（2026-10-25 Loop 修复批收口：G4 归一口径锚点+author 中立默认值 3 用例入载体，G2 例数刷拍 `test_sucair` 14 例）**
 
 ## 应触发场景（11条）
 

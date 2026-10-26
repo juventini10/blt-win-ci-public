@@ -1,0 +1,119 @@
+# Trae CN 能力矩阵（2026-10-25 入包·双端合并单端·Trae Work 退役）
+# 端形态：标准 hook 端——注册面 = <配置根>/hooks.json（非 settings.json、非 cli/config.json）
+# ⚠️ hooks.json 的写点唯一 = 本端 setup.sh（安装器 ③ 跳过，防双写）；安装器 ② 照常部署 hooks 副本
+platform: traecn
+config_root: "~/.trae-cn"
+display_name: "Trae CN"
+emoji: "💡"
+# ── 注册面声明（顶层键·与 autoclaw/lobsterai 同约定·⛔不嵌进 capabilities）──
+hooks_registration_face: "hooks_json"  # 注册面分派键（⛔按 settings.json 判＝全件假红）
+hooks_registration: "setup"            # 安装器 ③ 跳过·由本端 setup.sh 写 hooks.json（单一写点·防双写）
+capabilities:
+  rules_inject: true        # rules/ 常驻注入（~/.trae-cn/user_rules/ 实读目录·alwaysApply）
+  agents_full_inject: false # 无 AGENTS.md 全文注入通道
+  hooks_event: true         # hooks.json 6 事件实挂（SessionStart/UserPromptSubmit/PreToolUse/PostToolUse/Stop/Notification）
+  hook_stdout_inject: true  # UserPromptSubmit stdout → 注入本轮（--hook-protocol=text）
+  settings_json: false      # ⛔ 本端无 settings.json 注册面——注册面是 hooks.json
+  awareness: true           # 有转录/会话记忆落点（traecn_transcript_adapter.py 解析）
+  skill_symlink: true       # 通用 skills/ 软链 <MC>/技能配置；童灵专属 2 件实体直落（⛔不进共享源·防串端）
+  custom_directive: true    # 执行准则走 rules/ 通道（trae_solo_rules.md）
+  install_entry: "setup.sh"
+
+# ─── 五系统文件端自适配声明（条文32·承载名≠注入名·名映射由 setup.sh [1/6] 承担）───
+system_file_paths:
+  SOUL.md: "user_rules/SOUL.md"
+  IDENTITY.md: "user_rules/IDENTITY.md"
+  USER.md: "user_rules/USER.md"
+  MEMORY.md: "user_rules/MEMORY.md"
+  自定义指令: "user_rules/trae_solo_rules.md"
+
+# ── 缺失语义（install_receipt.py 唯一输入·按键声明·⛔不做跨端模板）────────────
+missing_semantics:
+  rules_inject: required
+  agents_full_inject: optional
+  hooks_event: optional
+  hook_stdout_inject: optional
+  settings_json: optional
+  awareness: optional
+  skill_symlink: optional
+  custom_directive: required
+  launchd_patrol: n_a       # 端产品无内置定时器；适配检查 plist 属作者侧发版门禁（⛔不随包）
+
+# ─── 条文33 · 端侧功能面映射声明（2026-10-25 实盘盘点·25 条功能钩子）───
+# 口径：31 条命令 = 25 功能 + 6 probe.sh 探针（探针属作者侧观测面·⛔不进包、不计接入率分子）
+# src 分派：references/scripts（脚本中心投影）/ references/digital-twin/devtools（分身 devtools 投影）
+hooks_surface:
+  delivered:
+    # —— SessionStart ——
+    - {script: host_identity_hook.sh, event: SessionStart, src: references/scripts}
+    # —— UserPromptSubmit（10 条）——
+    - {script: host_identity_hook.sh, event: UserPromptSubmit, src: references/scripts}
+    - {script: traecode_title_namer.py, event: UserPromptSubmit, src: references/scripts, note: 遗留旧名（欠账2·改名须全引用面迁移）}
+    - {script: secret_key_guard.py, event: UserPromptSubmit, src: references/scripts}
+    - {script: doenglingz_inject_prompt.py, event: UserPromptSubmit, src: references/digital-twin/devtools, component: twin}
+    - {script: tsl_echo_hook.py, event: UserPromptSubmit, src: references/scripts}
+    - {script: traecn_transcript_adapter.py, event: UserPromptSubmit, src: references/scripts, note: 端专属·转录解析}
+    - {script: route_inject_prompt.py, event: UserPromptSubmit, src: references/scripts}
+    - {script: route_miss_feeder.py, event: UserPromptSubmit, src: references/scripts}
+    - {script: kb_inject_prompt.py, event: UserPromptSubmit, src: references/scripts}
+    - {script: rule_fragment_inject.py, event: UserPromptSubmit, src: references/scripts, note: 铁律硬墙}
+    # —— PreToolUse（2 条）——
+    - {script: traecn_pretool_guard.py, event: PreToolUse, src: references/scripts, note: 端专属}
+    - {script: doenglingz_skill_onduty_tier_promote.py, event: PreToolUse, src: references/digital-twin/devtools, component: twin}
+    # —— Stop（12 条·其中 6 条经 traecn_transcript_adapter --run 委派）——
+    - {script: route_unknown_unknown.py, event: Stop, src: references/scripts}
+    - {script: traecn_transcript_adapter.py, event: Stop, src: references/scripts}
+    - {script: route_audit.py, event: Stop, src: references/scripts, wrapper: traecn_transcript_adapter.py}
+    - {script: route_guard_audit.py, event: Stop, src: references/scripts, wrapper: traecn_transcript_adapter.py}
+    - {script: audit_search_kb.py, event: Stop, src: references/scripts, wrapper: traecn_transcript_adapter.py}
+    - {script: feedback_detect.py, event: Stop, src: references/scripts, wrapper: traecn_transcript_adapter.py}
+    - {script: rule_three_layer_guard.py, event: Stop, src: references/scripts, wrapper: traecn_transcript_adapter.py}
+    - {script: card_id_guard.py, event: Stop, src: references/scripts}
+    - {script: doenglingz_guard.py, event: Stop, src: references/scripts, component: twin}
+    - {script: doenglingz_level_declare_guard.py, event: Stop, src: references/scripts, component: twin}
+    - {script: tsl_closeout_guard.py, event: Stop, src: references/scripts, wrapper: traecn_transcript_adapter.py, component: twin}
+    - {script: tsl_tree_hook.py, event: Stop, src: references/scripts, component: twin}
+  gaps: []                  # 包内三件欠账已同轮入包（traecn_transcript_adapter/traecn_pretool_guard·mirror 登记两件）
+
+# ─── 端专属钩子登记（安装器 ② 部署 + ③ 由 setup 注册·两处同源）───
+# 格式沿用 ROSTER 五元组：[event, loc, srcdir, main, deps]
+extra_hooks:
+  - ["SessionStart", ".", "references/scripts", "host_identity_hook.sh", []]
+  - ["UserPromptSubmit", ".", "references/scripts", "host_identity_hook.sh", []]
+  - ["UserPromptSubmit", ".", "references/scripts", "traecode_title_namer.py", ["session_title_utils.py"]]
+  - ["UserPromptSubmit", ".", "references/scripts", "tsl_echo_hook.py", ["hook_protocol.py"]]
+  - ["UserPromptSubmit", ".", "references/scripts", "traecn_transcript_adapter.py", []]
+  - ["PreToolUse", ".", "references/scripts", "traecn_pretool_guard.py", []]
+  - ["PreToolUse", ".", "references/digital-twin/devtools", "doenglingz_skill_onduty_tier_promote.py", []]
+  - ["Stop", ".", "references/scripts", "traecn_transcript_adapter.py", []]
+  - ["Stop", ".", "references/scripts", "doenglingz_guard.py", []]
+  - ["Stop", ".", "references/scripts", "doenglingz_level_declare_guard.py", []]
+  - ["Stop", ".", "references/scripts", "tsl_closeout_guard.py", []]
+  - ["Stop", ".", "references/scripts", "tsl_tree_hook.py", []]
+
+# ─── 数字分身功能面映射（可选组件但"可选≠缺声明"·条文16 降级不阻塞）───
+twin_surface:
+  injection:
+    - {what: K2 core_slice + L6 恒驻核, carrier: "~/.trae-cn/user_rules/doenglingz-core.md（alwaysApply 常驻）"}
+    - {what: 域切片 L2-L5 按需装载, carrier: Skill doenglingz-slice-nav（~/.trae-cn/skills/布洛陀-童灵切片导航·实体直落）}
+    - {what: W1 上岗注入, hook: doenglingz_inject_prompt.py（UserPromptSubmit）}
+  guards:
+    - {what: 守护三查（8要素/试金石/切片新鲜度）, carrier: "Skill doenglingz-guard（~/.trae-cn/skills/布洛陀-童灵守护·实体直落）+ Stop 钩子 doenglingz_guard.py"}
+    - {what: 档位声明守卫, hook: doenglingz_level_declare_guard.py}
+  tsl:
+    - {what: TSL 清单注入, hook: tsl_echo_hook.py}
+    - {what: TSL 收口, hook: tsl_closeout_guard.py}
+    - {what: TSL 产树, hook: tsl_tree_hook.py}
+  reach:
+    - {what: 岗位3触达, hook: doenglingz_skill_onduty_tier_promote.py}
+  gaps: []
+
+# ─── 钩子路由（SSOT 指向·不复制矩阵内容·防双本账漂移）───
+hooks_ssot: "[记忆共享中心]/记忆蓝图/04_系统文件设计/布洛陀脚本架构设计哲学/01-脚本架构设计通用规范.md#二·七"
+hooks_validator: "install_scripts.py --verify --platform traecn"
+
+post_install_message: |
+  ✅ Trae CN 安装完成。
+  · 规则/分身核/Skill 由端 setup 落盘；钩子副本由安装器部署，注册面 = ~/.trae-cn/hooks.json（由端 setup 写入）。
+  · 若提示 hooks.json 注册跳过：重启 Trae CN 后生效（钩子清单按 6 事件读取）。
+  · 校验命令：python3 install_scripts.py --verify --platform traecn "<记忆共享中心>"

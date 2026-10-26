@@ -741,8 +741,8 @@ def selftest():
         # 它本身即 53 次假红的源头，旧版把假红抗体当"正例"=**测试固化了错误行为**；
         # 现已在 bad 列表以 C7 嵌套引号用例覆盖。
         'test ! -f "[记忆共享中心]/脚本中心/content-gate.py"',
-        '! grep -q -- \'/-卡片\\[\' "[记忆共享中心]/脚本中心/changelog-guard/kb_index_guard.sh"',
-        "grep -q 'len(int' \"[记忆共享中心]/脚本中心/changelog-guard/kb_index_sync.py\"",
+        '! grep -q -- \'/-卡片\\[\' "[记忆共享中心]/脚本中心/kb_index_guard.sh"',
+        "grep -q 'os, re, sys' \"[记忆共享中心]/脚本中心/kb_index_sync.py\"",
         'bash -c \'for f in $(find "[记忆共享中心]/脚本中心" -maxdepth 1 -name "*.sh"); do bash -n "$f" || exit 0; done; exit 1\'',
         '! diff <(ls "[记忆共享中心]/发布库/A") <(ls "[记忆共享中心]/发布库/B") >/dev/null',
         # C9 的两侧正例（防"见 learnings 就拦"的过宽实现）：

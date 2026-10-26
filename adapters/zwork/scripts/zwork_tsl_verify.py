@@ -13,7 +13,7 @@ zwork_tsl_verify.py — Zwork 端（AutoClaw 新客户端）童灵TSL（会话�
   不接受AI自填✅。脚本只校验"基础设施在位性"和"产出物存在性/新鲜度"。
 
 与豆包/Trae Work 的关系（§八·七 同构第三实例）：
-  恒驻核落点不同：Zwork = ~/个人AI档案/AutoClaw/AGENTS.md 标记区段
+  恒驻核落点不同：Zwork = [记忆共享中心]/AutoClaw/AGENTS.md 标记区段
   （core_slice+L6 成对标记·W2 doenglingz_slice_watch 自动同步）——非 USER.md / doenglingz-core.md。
   L6 自愈=W2 watcher（心跳文件判活·非 launchd）。
 

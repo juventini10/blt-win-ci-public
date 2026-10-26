@@ -20,7 +20,7 @@
 #   label            — launchd任务标签（如 com.buluotuo.my-task）
 #   script_path      — 要执行的脚本绝对路径
 #   interval_seconds — 运行间隔（秒），如 86400=每天, 21600=每6小时
-#   log_path         — （可选）日志文件路径，默认 [记忆共享中心]/数字分身/scripts/<label>.log
+#   log_path         — （可选）日志文件路径，默认 [日志中心]/<label>.log（守护日志统一落 [日志中心]·2026-10-26）
 #
 set -eo pipefail
 
@@ -34,7 +34,7 @@ fi
 LABEL="$1"
 SCRIPT_PATH="$2"
 INTERVAL="$3"
-LOG_PATH="${4:-[记忆共享中心]/数字分身/scripts/${LABEL}.log}"
+LOG_PATH="${4:-[日志中心]/${LABEL}.log}"
 ERR_LOG="${LOG_PATH%.log}_err.log"
 PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
 

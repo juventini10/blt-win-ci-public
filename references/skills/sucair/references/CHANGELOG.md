@@ -3,7 +3,62 @@ name: CHANGELOG
 description: 历史版本变更记录。当前版本信息在 SKILL.md 头部。
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 ---
+### v4.17.0 — 2026-10-25 21:45（clock-loop Loop 修复批·轮1审查 P1×1+FAIL×2+P2×6 清偿）
 
+- 动因：2026-10-25 Loop 评估（标准26项·基线刷新 4.10.3→4.16.4 你批准）轮1自查+独立审查。自查漏 P1=LESSON-007 同型，审查实测抓出。
+- R2 依赖级联：dependencies shall-we-talk 1.7.6→1.7.7 对齐实盘（v4.18.7 级联律收口）。
+- R3 author 三方统一：note_validator builder 默认 author "皮叔"→"用户"（v4.16.1-2 中立化批只改表述面未联检生产者码——LESSON-006 同型；存量 2199 卡按演化契约"存量旧笔记不动"不回填）。
+- R4 G4 归一假验收更正：dedup-merge-gate ⓪验收用例"三写法必须同集"被实测证伪（"agent memory"≠"Agent记忆"·normalize 无中英映射）→改"同语言变体同集+跨语言 Known Limitation+EMPTY 中英双查"；test_sucair 新增 3 锚点用例（11→14 例），防口径与实盘再脱钩；别名表设计挂账。
+- R5 tests 版本戳 4.14.2→4.17.0 跟主（v4.16.3 负例对账批漏抬戳·模式F）。
+- R6 SKILL.md 定值式数字源口径统一（L120 与 L118 反向清偿：常量=机检真源·config=人读投影）。
+- R7 body 完整性锁措辞诚实化：物理拒绝→frontmatter 机检/body 步序阻断两级（无机检载体不宣称物理级·挂账补强）。
+- R8 杂项口径：flow-read 卡模板 version v1.0.1→v1.0.0 对齐 builder+实盘；validator 文档头 schema v1.3.1→v1.3.4；dedup L60 机检命令 python→python3+补路径参数；flow-read python→python3 ×2；flow_read_gate 自测文案"四锚"→"六锚"（v4.16.3 锚集补全后文案未跟）；SKILL.md 附件索引补 ocr_scan.py/ocr_vision.swift/ocr-corrections.json/test_sucair.py 四行。
+- R9 config：转图格式行加"仅 A2 路"限定（A/B 路 PNG 合法——审查"三方矛盾"根因=config 限定缺失）；ocr_vision.py 幽灵引用→ocr_vision 二进制。
+- R10 assign_kb_no 支持 OBSIDIAN_VAULT/SUCAIR_MAP_DIR env 覆盖（对齐 platform-paths 占位约定）；删重复 import sys；CHANGELOG 中部孤立 H1 清除。
+- 同类扫描核销（纪律②）：全树 grep "皮叔" 非署名面残留=0；`python ` 旧命令形态=0；v1.0.1 残留=0；"四锚"=0；下游 grep `name: sucair` 依赖声明位=除本体外零命中（无级联义务）。
+- 收口复审批（同轮清偿）：flow-read L264 完整性锁笼统句按两级口径改写（复审员抓出的同类扫描漏网·预存文案非新引入）；eval-set 历史链 G2 例数 11→14 刷拍；核销 grep 面补「两者任一缺失都触发」=0。
+- 回滚点：记忆琥珀/技能升级备份/sucair_4.17.0_20261025_212x/（11 件全量 .bak）。
+
+### v4.16.4 — 2026-10-25 00:22（用户面清理：作者侧 orchestration_check 移出附件索引）
+
+- `scripts/orchestration_check.sh` 为作者侧施工质检入口，不随发布包；从 SKILL 附件索引表移除。
+- 源侧脚本保留；判级 patch（文档层清理·功能零变更）。
+
+### v4.16.3 — 2026-10-24（沙箱测试根治批：schema版本归一 P1 + 熔断器锚集补全/守卫副本同步/负例集对账母本 P2×3 + 六项 P3）
+
+起因=2026-10-24 ZCode 端整套沙箱测试（8闸3守卫+2变异探针·记忆档 project-sucair-sandbox-test-20261024），皮叔令「彻底根治所有问题」。改动逐项：
+
+1. **P1 schema 版本两本账归一**：池内实跑 927 张卡已盖 `读书卡片schema v1.3.4`（v1.3.0×1207/v1.3.1×65/v1.3.4×927/v1.3.3×0），v1.3.4 由 v4.16.0 批（git e879eb2d8）经 note_validator.CARD_SCHEMA_VERSION 有意引入，schema 文件台账漏记 → 变异探针实证"按权威现行版 v1.3.3 盖章的卡被自家机检拒收"。修法=**schema 侧补账**（读书卡片schema.md frontmatter v1.3.3→v1.3.4 + 台账补 v1.3.4 补账条目），SKILL.md schema 版本声明 v1.3.1→v1.3.4 三处归一；note_validator 零改动。
+2. **P2① 熔断器锚集补全**：flow_read_gate.py MARKERS 增 `### Step 2`/`### Step 2.0`（生成知识包=本体最重段此前无结构锚，丢段后仍>8000B 放行）→ 六锚；__version__ v1.1，诚实边界措辞同步。
+3. **P2② anchor_reach 副本同步母本 v1.1**：中文字符类（PATH/ANCHOR_PAT 补 `\u4e00-\u9fa5·`）+ --selftest 内嵌（正例+ASCII死锚/中文死锚/死路径三类负例）；diff 验证副本≡母本零差异。
+4. **P2③ wrapper 负例集对账母本十连**：orchestration_check.sh --negative 六变异→十变异（补：重复节/正文引导词行号锚/正文文件指针行号锚/正文规范词行号锚·变异形态对照母本 v1.4 三个 RE 判据设计）。
+5. **P3① 称谓中立补漏（.yaml + scripts 面）**：config.yaml L32「或你明示」→「或用户明示」、L83「停下报告你」→「停下报告用户」；note_validator.py 6 处「你」去主语化/改「用户」——背景：skill_neutrality_check v1.2（14:18 并行会话收编）扩扫描面至 scripts/*.py|.sh 后本件新落闸内判红。**builder 两处 author 默认值裁决记录：`"你"`→`"用户"`（本批）→`"皮叔"`（同日你二次裁决·author=维护者署名=皮叔，增量笔记/卡片 frontmatter 随之·存量卡不动）**。
+6. **P3② frontmatter 补标准规范 §1 必填字段**：`emoji: 📖` + `trigger:`（触发词清单从 description 提取）。
+7. **P3③ 内嵌历史批注清理**：SKILL.md 正文版本号/日期/批号批注 11 处删除（v4.7.0/v3.2.8/v3.3.1/v4.5.2/v3.2.9/v4.2.0/2026-08-17/Loop评估#2/#16/改造文件§十一死指针）；CHANGELOG 载荷先核对（v3.2.8/v3.3.1/v4.6.0=08-17 均在载）；合同值（模板 complies_with/version 示例值）与 CHANGELOG 一行指针（Alternatives→v4.1.0 条目）按规范保留。
+8. **P3④ wrapper 头注释陈旧自引用刷新**：「通用件 v1.0·§13.3」「§1.5」→ 通用件 v1.4·pages/09·pages/05 现行坐标。
+9. **P3⑥（判定不修·挂账守卫族）**：anchor_reach advisory 双计（已验证 path#§ 锚重复落 advisory 名单）——判据真源在通用件母本，副本单独改=制造第四形态分叉，挂账母本下轮演进批。
+
+遗留声明：skill_neutrality_check.py 扫描面不含 .yaml（本批以人工补齐 sucair 侧；守卫族扫描面扩展影响全库 yaml，须按 D9 正例对照流程单独批）。
+
+10. **skill_eval honest_flags 清零（ dependencies 版本漂移归一）**：frontmatter 依赖声明 shall-we-talk 1.6.2→1.7.6、daily-buddy 3.52.5→3.54.0（对齐两 Skill 实盘 frontmatter·skill_eval raw_pass=true 但 honest_flags 拉passed=false 暴露的存量漂移）。
+
+### v4.16.2 — 2026-10-24（references 用户称谓中立化：执行细则人名统一为「用户」·语义零变更）
+
+### v4.16.1 — 2026-10-24（用户称谓中立化：执行文本人名统一为「用户」·语义零变更）
+
+### v4.16.0 — 2026-10-23（架构革命·双刀下沉：四区骨架 + 容量治理一次走完·712→342 行）
+
+起因=皮叔 2026-10-23 令「以发布安装包里面10个Skill为标准……优先度怎么排？」「不要再像我们刚才一样浪费那么多时间了」——sucair 712 行居 D5 危险区，为包内最厚件。范式全复制 system-logger 当日已验证链（四区骨架+容量治理），⛔未新造。
+
+本批改动（minor·结构迁移，行为零变更）：
+1. **刀一（位置）**：新增 `## 🧭 指路牌`（17 节全覆盖·节名锚·禁行号）；T5 十一条（43 行）逐字迁入既有 `references/t5-defense-assessment.md`，主件留 3 行指针+效力声明；对话面呈现模板（5分钟精华 / Step 4 确认）迁 `## 📦 蒸馏输出模板` 终位（L2 在场律·模板@85%）。
+2. **刀二（容量）**：执行本体（Step1-4 + 自检清单 + 文件产物模板）逐字沉 `references/flow-read.md`（380 行），主件留「执行流程」熔断器+步骤路由。**712→342 行（-370·-52%）**，D5 由危险区入安全区（≤400）。
+3. **熔断器先行**：新增 `scripts/flow_read_gate.py`（自测 P1/N1缺件/N2空壳/N3半覆盖/N4截断残件/MUT-a长度/MUT-b锚集全过；真实 check rc=0 才拆主件）；新增 `scripts/orchestration_check.sh`（母本=脚本中心/守卫/orchestration_gate.py·`--negative` 缺节/幽灵节/模板前移/行号锚/分区词/超行六连全红）+ `scripts/anchor_reach_check.py`（通用件副本）。
+4. **判耦同步**：`dedup-merge-gate.md`×3、`config.yaml`×2、`note-template.md`×3 的旧锚（SKILL.md Step/§）改指 flow-read.md；`references/` 索引增 flow-read.md + 三脚本行。⛔知识池落盘格式/摘要命名/引擎逻辑零触碰。
+5. **守恒**：执行本体 370 行逐字在场 + 2 处自引用刷新（模板位置/reading_status 表位）如实登记；K1/K2 模板字节一致（K1 1 行自引用刷新）；T5 11 条逐条在场。附件全检 16 件（references 9 + scripts 7）逐件三值判定落任务卡。
+6. **自引用刷新（复审补）**：`config.yaml` 头标 v4.10.3→v4.16.0；`t5-defense-assessment.md`「本体位置」→「迁移来源」（迁入后本体在此，旧措辞会误导回主件找）；`eval-set.md` 头标补 v4.16.0 迁移注（用例编号/行为口径不变）。
+
+判级：minor（结构迁移非功能新增）。回滚点：SKILL.md / references/flow-read.md（删）/ references/t5-defense-assessment.md（删 §T5 声明段）/ references/dedup-merge-gate.md / config.yaml / note-template.md / scripts/{flow_read_gate.py,orchestration_check.sh,anchor_reach_check.py}（删）。
 
 ### v4.15.5 — 2026-10-23（daily-buddy 依赖声明跟至 3.52.5·升版级联收口）
 
@@ -80,7 +135,6 @@ clock-loop 完整Loop（串行队列 B-3·脱节跨度最大项 4.10.3→4.14.0�
 ## 2026-10-03 · None：SKILL.md v4.10.1→v4.10.2
 > **变更**：commit `946c705c`「hermes: 修正两处账实脱节·awaken 8.3.0→8.3.1 + sucair 依赖声明对齐」——依赖声明账实对齐。
 > ⚠️ **守卫口径校准留痕**：本轮销账时我一度用「frontmatter 首个 version 行」解析得 `1.6.2` 并判「守卫解析错」——**是我错**。该文件 frontmatter 含**多段**（`---` 出现在 0/33/42 行·0-based 计数·1-based 为 1/34/43 行）·`1.6.2` 是 `dependencies` 内的依赖版本·真版本是 line29（0-based·1-based=line30）的 `4.10.2`。**判据沉淀：解析 frontmatter 版本⛔ 不得假设 `---` 只包裹一段**。
-# 变更日志
 
 ### v4.11.0 — 2026-10-03（G2自动回归载体落地·Y级·F13销账·皮叔令「按符合愿景的最优解处理」）
 

@@ -3,7 +3,8 @@
 <!-- com.doenglingz.slice-watch — 分身同步周期守护（Q3路线C装机对等件·2026-10-19）
      等价 Windows 侧 slice-watch-install-task.ps1；执行体同一份平台中性 python（单一真源⛔ps1副本）。
      结构承 com.buluotuo.doenglingz-slice-watch（作者机活件·StartInterval+WatchPaths规格书）。
-     装机渲染：[记忆共享中心]→<MC>绝对路径（与 drift-check-remind 模板同惯例）。 -->
+     装机渲染：[记忆共享中心]→<MC>绝对路径（与 drift-check-remind 模板同惯例）；
+     [日志中心]→[日志中心] 绝对路径（launchd 不展开 ~，守护日志不落记忆中心=运行态与证据同穴根治 2026-10-26）。 -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
@@ -12,8 +13,8 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>-lc</string>
-        <string>"/usr/bin/env python3 '[记忆共享中心]/脚本中心/doenglingz_slice_watch.py'; /usr/bin/env python3 '[记忆共享中心]/数字分身/scripts/state_bus_sync.py' --update"</string>
+        <string>-c</string>
+        <string>/usr/bin/env python3 '[记忆共享中心]/脚本中心/doenglingz_slice_watch.py'; /usr/bin/env python3 '[记忆共享中心]/数字分身/scripts/state_bus_sync.py' --update</string>
     </array>
 
     <key>StartInterval</key>
@@ -26,8 +27,8 @@
     </array>
 
     <key>StandardOutPath</key>
-    <string>[记忆共享中心]/脚本中心/logs/slice-watch.out.log</string>
+    <string>[日志中心]/slice-watch.out.log</string>
     <key>StandardErrorPath</key>
-    <string>[记忆共享中心]/脚本中心/logs/slice-watch.err.log</string>
+    <string>[日志中心]/slice-watch.err.log</string>
 </dict>
 </plist>

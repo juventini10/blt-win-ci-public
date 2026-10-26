@@ -87,11 +87,17 @@ def scan_pending(ledger: Path) -> list[dict]:
 
 
 def scan_merge_operations() -> list[dict]:
-    """v1.1 扫描合并台账，找"确认人=童灵"的合并操作（童灵做的判定，需你抽查）。
-    合并台账格式=去重/融合机制#8定义的9字段Markdown表格：
-    | 合并ID | 日期 | 主卡号 | 次卡号 | 合并原因 | 确认人 | 主卡版本变化 | 次卡归档路径 | 备注 |
-    split("|")后索引：0='' 1=合并ID 2=日期 3=主卡 4=次卡 5=原因 6=确认人 7=主卡版本 8=次卡归档 9=备注 10=''
-    合并台账不存在=返回空列表（该分层静默跳过·不影响现有功能·向后兼容）。"""
+    """v1.2 扫描合并台账，取"判定人=童灵"的行供你抽查（含 M- 合并操作与 V- 验收判定两段）。
+
+    索引口径与实现对齐（v1.2 修·2026-10-26 clock-loop 评估轮 H-1）：本函数用
+    `line.strip("|").split("|")`（先剥首尾竖线），故 M- 行索引为 0=合并ID 1=日期
+    2=主卡 3=次卡 4=原因 5=确认人 6=主卡版本 7=归档 8=备注；旧文档写的"split("|")后
+    0=''"是另一套剥法，两处曾互相指认对方错位——现以本式为准。
+    V- 行（8 字段）：0=判定ID 1=日期 2=被验卡 3=对照卡 4=四维度一致度 5=判定 6=依据 7=记录人。
+    谓词容忍（根治数据填法漂移面）：确认人/记录人历史实填存在括注形态（如
+    `你（本窗✓第二组·2026-10-17）`），台账口径要求裸名；精确等值会把合法判定整族
+    静默丢掉，故此处按"裸名或裸名+括注"前缀匹配，同时在抽样结果里显形非裸名行。
+    合并台账不存在=返回空列表（该分层静默跳过·向后兼容）。"""
     if not MERGE_LEDGER.exists():
         return []
     ops: list[dict] = []
@@ -102,9 +108,18 @@ def scan_merge_operations() -> list[dict]:
         cells = [c.strip() for c in line.strip("|").split("|")]
         if len(cells) < 7:
             continue
-        if cells[0] == "合并ID" or cells[5] == "确认人":  # 跳过表头
+        if cells[0] in ("合并ID", "判定ID") or cells[5] in ("确认人", "判定"):  # 跳过表头
             continue
-        if cells[5] != "童灵":  # 只抽童灵判定的（你确认的不需要再抽查）
+        who = cells[5] if not cells[0].startswith("M-") else cells[5]
+        is_m, is_v = cells[0].startswith("M-"), cells[0].startswith("V-")
+        if not (is_m or is_v):
+            continue
+        # 判定人位：M- 在第 6 列（索引 5）；V- 是 8 字段行，记录人落在末列（索引 7）
+        judge_col = 5 if is_m else (len(cells) - 1)
+        if judge_col >= len(cells):
+            continue
+        who = cells[judge_col]
+        if not who.startswith("童灵"):  # 只抽童灵判定的（你确认的不需要再抽查）
             continue
         try:
             d = datetime.strptime(cells[1], "%Y-%m-%d").date()
@@ -113,7 +128,11 @@ def scan_merge_operations() -> list[dict]:
         ops.append({
             "line": lineno, "merge_id": cells[0], "date": d,
             "primary": cells[2], "secondary": cells[3],
-            "reason": cells[4], "version_change": cells[6] if len(cells) > 6 else "",
+            "reason": cells[4], "version_change": cells[6] if (is_m and len(cells) > 6) else "",
+            "kind": "M-" if is_m else "V-",
+            "verdict": cells[5] if is_v else "",
+            "judge_raw": who,
+            "non_bare_name": who != "童灵",  # 显形：非裸名填法（数据口径漂移·不改旧行只显形）
         })
     return ops
 

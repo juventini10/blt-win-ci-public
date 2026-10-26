@@ -1,22 +1,22 @@
 {
- "package_version": "2.2.10",
- "as_of": "2026-10-23",
+ "package_version": "2.2.11",
+ "as_of": "2026-10-27",
  "components": {
-  "system_rules": "v8.38",
+  "system_rules": "v8.45",
   "skills": {
-   "awaken-memory-system": "8.4.0",
-   "clock-loop": "4.19.10",
-   "daily-buddy": "3.51.12",
-   "good-good-study": "1.1.18",
-   "growth-box": "4.12.15",
-   "meta-aletheia": "3.6.0",
-   "shall-we-talk": "1.6.2",
-   "sucair": "4.15.5",
-   "system-logger": "3.17.9",
-   "triwich": "4.12.5"
+   "awaken-memory-system": "8.5.3",
+   "clock-loop": "4.21.11",
+   "daily-buddy": "3.54.1",
+   "good-good-study": "1.2.15",
+   "growth-box": "4.15.6",
+   "meta-aletheia": "3.11.1",
+   "shall-we-talk": "1.7.9",
+   "sucair": "4.17.0",
+   "system-logger": "3.19.9",
+   "triwich": "4.12.17"
   },
   "script_system": {
-   "files": 290,
+   "files": 298,
    "version": "1.0.0"
   },
   "digital_twin": {
@@ -41,7 +41,8 @@
  "platform_support": {
   "workbuddy": true,
   "qodercn": true,
-  "traework": true,
+  "traecn": true,
+  "minimaxcode": true,
   "zcode": true,
   "doubaowork": true,
   "autoclaw": false,
@@ -55,7 +56,7 @@
  ],
  "_note": "platform_support 仅计入已支持端（adapters/<端>/capability.yaml 存在）；planned_platforms 为规划中占位端，不计入支持数。新增端确认进包时，同步更新本文件 + INSTALL.md Step -0.9 平台表 + README.md 平台说明。",
  "platform_support_notes": {
-  "as_of": "2026-10-08",
+  "as_of": "2026-10-25",
   "why": "状态表的诚实标注与 INSTALL.md 同步（⛔ 不在此处发明新口径）",
   "ends": {
    "workbuddy": {
@@ -70,11 +71,17 @@
     "manual": false,
     "note": "同上（install_scripts 承载）"
    },
-   "traework": {
-    "status": "进包ᵗ",
-    "get": "规则三文件+launchd巡检30min",
+   "traecn": {
+    "status": "完整",
+    "get": "五系统文件+6 类事件钩子（25 功能件·6 探针）",
     "manual": false,
-    "note": "⚠️ 无 hooks 事件（产品门禁）⇒ patrol 拉模式·非事件派发"
+    "note": "标准 hook 端（注册面 ~/.trae-cn/hooks.json·6 事件 31 条命令）；2026-10-25 裁决 A「新增 traecn + traework 退役」入包，判据=verify.sh --platform traecn + platform_adaptation_check --src traecn 双绿"
+   },
+   "minimaxcode": {
+    "status": "完整",
+    "get": "五系统文件三合一（AGENTS.md + user.md + MEMORY.md）+3 事件钩子（17 条命令·Stop 走 JSON 契约适配器）",
+    "manual": false,
+    "note": "Plugin Hook 端（注册面 ~/.minimax/plugins/bulutuo-guards/hooks/hooks.json·由插件 manifest .minimax-plugin/plugin.json 的 hooks 数组声明装载·包内第 6 种注册面形态）；3 事件 17 条命令（UPS 6 + Stop 8 + SessionStart 3）·Stop 的 8 条必裹 JSON 契约适配器（宿主要求 stdout 为单个 JSON 对象·裸挂共享守卫会被判 HOOK_INVALID_OUTPUT 丢弃＝挂载在而产出不到＝假绿）；五系统文件单文件三合一（SOUL+IDENTITY+自定义指令同处 AGENTS.md·平台 MUST 拼接块）；Skill 走实体复制通道（⛔非软链）；⚠️ 长期记忆通道只对内置默认会话开放（选自定义 agent 会话拿不到长期记忆与用户画像·平台机制非本包缺陷）；分身域 5 件本端未实挂（宿主事件面无对应挂点证据）⇒ 已登记 twin_surface.gaps·⛔ 不谎称已支持。2026-10-25 MiniMax Code 端入包轮（判据=verify.sh --platform minimaxcode 32 项全过 rc=0 + install_scripts --verify 17/17 rc=0 + platform_adaptation_check --src minimaxcode 12/12 无漂移 + pkg_cleanliness PASS 四绿）"
    },
    "zcode": {
     "status": "完整",

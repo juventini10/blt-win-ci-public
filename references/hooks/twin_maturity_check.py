@@ -66,20 +66,20 @@ SLICES_DIR = os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "数�
 # 各端特定检测路径（机制无关原则——只检测"效果"，不关心"用什么技术"）
 END_SPECIFIC_PATHS = {
     "workbuddy": {
-        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_inject_prompt.py"),
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
         "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "分身", "doenglingz_guard.sh"),
         "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",
         "has_hooks": True,
     },
     "workbuddyai": {  # 2026-09-11 第18端：与国内版同代码双发行版（数据根 ~/.workbuddy-ai/）
-        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_inject_prompt.py"),
-        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_guard.py"),
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
+        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_guard.py"),
         "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",
         "has_hooks": True,
     },
     "dsh": {
         "plugin_file": os.path.join(HOME, ".dsh", "profiles", "web", "node_modules", "five-layer-memory", "src", "index.js"),
-        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_inject_prompt.py"),
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
         "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "分身", "doenglingz_guard_dsh.py"),
         "w2_launchd_label": None,  # 插件直读，不需要launchd守望
         "has_hooks": False,  # 插件原生事件通道
@@ -95,13 +95,24 @@ END_SPECIFIC_PATHS = {
         "has_hooks": True,
     },
     "qodercn": {
-        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_inject_prompt.py"),
-        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_guard.py"),
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
+        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_guard.py"),
+        "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",
+        "has_hooks": True,
+    },
+    "qoderdesktop": {  # 2026-10-24 Qoder Desktop 端接入（UPS W1/W3 + Stop guard + rules K2）
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
+        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_guard.py"),
+        "settings": os.path.join(HOME, ".qoder", "settings.json"),
+        "hooks_json": os.path.join(HOME, ".qoder", "settings.json"),
+        "k2_core": os.path.join(HOME, ".qoder", "rules", "doenglingz-core.md"),
+        "inject_state": os.path.join(HOME, ".qoder", "doenglingz_inject_state.json"),
+        "guard_state": os.path.join(HOME, ".qoder", "doenglingz_guard_state_qoderdesktop.json"),
         "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",
         "has_hooks": True,
     },
     "autoclaw": {
-        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_inject_prompt.py"),
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
         "guard_plugin": os.path.join(HOME, ".openclaw-autoclaw", "extensions", "autoclaw-doenglingz-guard"),
         "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",  # 2026-09-05 确认：MARKED_HOMES 覆盖 AutoClaw USER.md（v1.19）
         "has_hooks": True,  # agent_end typed hook + before_prompt_build 转发（buluotuo-route-inject v0.4）
@@ -113,13 +124,13 @@ END_SPECIFIC_PATHS = {
         "has_hooks": False,
     },
     "zcode": {
-        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_guard.py"),  # 2026-10-06 SSOT归一：共脚本 v1.2（分叉 guard_zcode 退役留置）
-        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_inject_prompt.py"),
+        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_guard.py"),  # 2026-10-06 SSOT归一：共脚本 v1.2（分叉 guard_zcode 退役留置）
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
         "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",
         "has_hooks": True,
     },
     "lobsterai": {
-        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "开发工具", "doenglingz_inject_prompt.py"),
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
         "guard_plugin": os.path.join(HOME, "Library", "Application Support", "LobsterAI", "third-party-extensions", "lobsterai-doenglingz"),
         "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",
         "has_hooks": True,  # before_prompt_build 转发 + agent_end 守护五查（lobsterai-doenglingz v1.0）
@@ -130,6 +141,17 @@ END_SPECIFIC_PATHS = {
         "w2_launchd_label": None,  # scheduler定时任务代W2
         "has_hooks": False,
     },
+    "minimaxcode": {  # 2026-10-23 MiniMax Code 端接入（桌面端·插件 bulutuo-guards 五事件钩子）
+        # ⚠️ 路径真源=脚本中心/ 下的软链（→分身/ 真身）·与 guard.py 既有范式同构
+        #   软链位=脚本中心/ 时 hook_protocol.py 同目录可导入·协议留痕真写（分身/ 直跑则 import 失败→降级不留痕）
+        "w1_inject_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_inject_prompt.py"),
+        "guard_script": os.path.join(os.path.expanduser("~"), "[记忆共享中心]", "脚本中心", "doenglingz_guard.py"),
+        "hooks_json": os.path.join(HOME, ".minimax", "plugins", "bulutuo-guards", "hooks", "hooks.json"),
+        "inject_state": os.path.join(HOME, ".minimax", "doenglingz_inject_state.json"),
+        "guard_state": os.path.join(HOME, ".minimax", "doenglingz_guard_state_minimaxcode.json"),
+        "w2_launchd_label": "com.buluotuo.doenglingz-slice-watch",  # 全局 W2 守望·覆盖 MARKED_HOMES（已纳本端）
+        "has_hooks": True,
+    },
 }
 
 
@@ -138,6 +160,7 @@ MANUAL_TABLE_NAMES = {
     "workbuddy": "WorkBuddy",
     "workbuddyai": "WorkBuddy AI（国际版·第18端）",
     "qodercn": "Qoder CN",
+    "qoderdesktop": "Qoder Desktop",
     "zcode": "ZCode",
     "autoclaw": "AutoClaw",
     "lobsterai": "LobsterAI",
@@ -145,6 +168,7 @@ MANUAL_TABLE_NAMES = {
     "doubaowork": "豆包办公",
     "traework": "Trae CN（原 Trae Work·2026-10-09 合并·2026-10-21 复检补登）",
     "teleagent": "TeleAgent",
+    "minimaxcode": "MiniMax Code（桌面端·布洛陀人格端·2026-10-23 入驻）",
 }
 
 
@@ -192,7 +216,8 @@ def l7_evidence(tool_name, days=30):
         if r.returncode != 0:
             return None
         data = _j.loads(r.stdout.decode("utf-8", "replace"))
-        return {c["ch"][0]: c["num"] for c in data.get("channels", [])}  # 键=①..⑤首字符
+        return {c["ch"][0]: (c.get("num", 0), c.get("own", c.get("num", 0)))
+                for c in data.get("channels", [])}  # 键=①..⑤首字符·值=(num全局池, own本端可归因)
     except Exception:
         return None
 
@@ -589,17 +614,27 @@ def evaluate_end(end_def: dict) -> dict:
         l7["反思--reflection分流蒸馏"] = "🟡待人工确认"
     else:
         # 2026-10-21：L7 审计按「系统日志 ## 段名」取证；本端日志段=Trae CN（非 traework）
-        _log_tool = {"traework": "Trae CN"}.get(end_id, end_id)
+        # 2026-10-23：MiniMax Code 端——日志段名用**规范名**「MiniMax Code」（normalize_tool ALLOWLIST 归一后的段名），
+        #   非 end_id「minimaxcode」；⛔端名不匹配则本端真实证据取不到（证据在别处≠本端已通）
+        _log_tool = {"traework": "Trae CN", "minimaxcode": "MiniMax Code", "qoderdesktop": "Qoder Desktop"}.get(end_id, end_id)
         _ev = l7_evidence(_log_tool) if _log_tool else None
         _keys = ["错误→成长箱记录", "铁律反哺进化", "立场卡反哺蒸馏", "系统日志自动记", "反思--reflection分流蒸馏"]
         _chmap = ["①", "②", "③", "④", "⑤"]
         for _k, _c in zip(_keys, _chmap):
             if _ev is None:
                 l7[_k] = "🟡待人工确认"
-            elif _ev.get(_c, 0) > 0:
-                l7[_k] = "✅证据在(%d)" % _ev[_c]  # 线1：证据存在≠裁决（L7 全证据制+ratify 才升）
             else:
-                l7[_k] = "🟡待人工确认·证据零"
+                _n, _o = _ev.get(_c, (0, 0))
+                if _o > 0:
+                    l7[_k] = "✅证据在(%d)" % _o  # 线1：证据存在≠裁决（L7 全证据制+ratify 才升）
+                elif _n > 0:
+                    # 2026-10-23 三态化（反哺 R-20261023-01）：证据在跨端共享池、但本端不可归因
+                    #   （条目无端归属标记 ⇒ 他端产物可代偿本端达标）
+                    #   ⛔不截断：截断=把「归因不可判定」当「本端没做到」=假红（违 031③ 计数写账前复测·首测 pattern 可能漏形态）
+                    #   ⛔不记 ✅：记 ✅=把共享池充成本端证据=假绿（本条病灶本体）
+                    l7[_k] = "🟠共享池·本端不可自证(%d·归因不可判定·待本端补产物)" % _n
+                else:
+                    l7[_k] = "🟡待人工确认·证据零"
     checks["L7"] = l7
 
     # 计算机械推导等级（v1.1.0 截断制——🟡不冒充通过）：

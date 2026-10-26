@@ -94,7 +94,7 @@ for f in YYYY-MM/*.md; do grep "^rating:" "$f" | head -1; done  # 全量评级
 | 维度 | 指标 | 数据来源 |
 |------|------|---------|
 | ① 完整率 | 写了X天/总天数，断更天数，最长连续断更 | 当月日记文件列表 |
-| ② Section完整率 | 含齐12个SECTION的日记比例，缺Section频次分布 | 各日记`<!-- SECTION: -->`标签扫描 |
+| ② Section完整率 | 含齐日常 11 个 SECTION（有里程碑日 12）的日记比例，缺Section频次分布 | 各日记`<!-- SECTION: -->`标签扫描 |
 | ③ 含金量评级分布 | S/A/B/C/N各X篇，异常评级（低含金量却高评级） | 各日记YAML `rating:` 字段统计 |
 | ④ 感悟深度 | 空感悟N篇/一句话≤20字N篇/中等N篇/深度N篇 | `<!-- SECTION: INSIGHTS -->`内容量 |
 | ⑤ 数据准确性 | 番茄总和≠各任务加总的篇数，睡眠数据缺失篇数 | 日记数据段与累加交叉验证 |
@@ -280,7 +280,7 @@ for f in YYYY-MM/*.md; do grep "^rating:" "$f" | head -1; done  # 全量评级
 ### 5.1 文件格式铁律（强制 · 对齐文件格式规范 v2.2.0 分层）
 
 - ✅DO 月总结报告文件**必须含 YAML Frontmatter**（分层·检索必留 + 合规建议 + 按特性）：
-  - 必留（检索+合规）：`type` / `date` / `summary` / `source` / `complies_with: 文件格式规范 v2.2.0` / `author: 皮叔`（默认，⛔DO NOT 写「你」）
+  - 必留（检索+合规）：`type` / `date` / `summary` / `source` / `complies_with: 文件格式规范 v2.2.0` / `author: 皮叔`（默认，⛔DO NOT 写「用户」）
   - 按特性保留（月报有迭代史/修订可能）：`title` / `status`（active）/ `version`（语义版本·校准回流迭代）/ `tags`
   - 可省（已查无消费者）：`area` / `related`
   - ⛔DO NOT 正文数据塞 YAML——YAML 是检索索引非内容副本（正文已有评级依据/统计不重复入 YAML=双本账教训）
@@ -321,4 +321,4 @@ for f in YYYY-MM/*.md; do grep "^rating:" "$f" | head -1; done  # 全量评级
 - v2.1 (2026-08-01)：新增模块排序铁律（8️⃣9️⃣🔟 置底）+ 下月3件事格式规范。
 - v2.2 (2026-08-01)：新增 §5 报告呈现规范（双声部/本月快照/进度条/YAML 铁律），将用户双声部排版决策（F2–F9）入模板；对齐文件格式规范 v2.0.0 的 YAML 强制要求。
 - v2.3 (2026-08-01)：新增 ⚓ 北极星对齐模块（战略指南针·dashboard后/高光前·免置底）+ 北极星对齐模块规范小节 + 三腿模型 + 净位移铁律 + lineage 铁律（dashboard/下月三件事加北极星腿标注）；质性强化月报北极星锚定，纠正战略层<战术层倒置。
-- v2.4 (2026-08-01)：§5.1 YAML 从"必填 7 一刀切"改分层（对齐文件格式规范 v2.2.0）：必留 type/date/summary/source/complies_with/author（皮叔）+ 按特性保留 title/status/version/tags；删 area/related（已查无消费者）；⛔DO NOT 正文数据塞 YAML（双本账教训）。author 统一皮叔（你指令）。
+- v2.4 (2026-08-01)：§5.1 YAML 从"必填 7 一刀切"改分层（对齐文件格式规范 v2.2.0）：必留 type/date/summary/source/complies_with/author（皮叔）+ 按特性保留 title/status/version/tags；删 area/related（已查无消费者）；⛔DO NOT 正文数据塞 YAML（双本账教训）。author 统一皮叔（用户指令）。

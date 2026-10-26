@@ -41,6 +41,7 @@ from skill_eval import (
     verify_dimension_consistency,
     _check_refs_index_section,
     eval_direction_gate_advisory,
+    eval_orchestration_advisory,
 )
 
 
@@ -515,9 +516,9 @@ class TestDimensionConsistency(unittest.TestCase):
         import skill_eval
         original = dict(skill_eval.MACRO_DIMENSIONS)
         try:
-            micros = list(skill_eval.MACRO_DIMENSIONS['测试覆盖'][1])
+            micros = list(skill_eval.MACRO_DIMENSIONS['熔断与触发覆盖'][1])
             micros.append('causal_chain')  # 故意把causal_chain也归到测试覆盖
-            skill_eval.MACRO_DIMENSIONS['测试覆盖'] = (12, micros)
+            skill_eval.MACRO_DIMENSIONS['熔断与触发覆盖'] = (12, micros)
             ok, detail = verify_dimension_consistency()
             self.assertFalse(ok)
             self.assertTrue(any('重复归属' in d for d in detail))
@@ -863,6 +864,19 @@ class TestFinalizeReport(unittest.TestCase):
             '🧭 你待决（治理层·不改变上述结论）\n'
             '本轮无挂起项\n'
         )
+        # v4.21.0：门禁14 无断言行默认 FAIL → 合成报告自动生成 80 条真断言（行真+原文真）
+        # ⛔不给测试开豁免开关：豁免只留给存量历史报告，新报告必须带断言
+        with open(skill, encoding='utf-8') as _sf:
+            _src_lines = _sf.read().splitlines()
+        _ev_rows, _ev_idx = [], 0
+        for _ln_no, _ln_text in enumerate(_src_lines, 1):
+            if not _ln_text.strip() or ']' in _ln_text:
+                continue
+            _ev_rows.append(f'[syn{_ev_idx}][{_ln_no}][{_ln_text}][✅]')
+            _ev_idx += 1
+            if _ev_idx >= 80:
+                break
+        report_body += '## 断言实录\n' + '\n'.join(_ev_rows) + '\n\n'
         with tempfile.TemporaryDirectory() as d:
             report = os.path.join(d, '合成Skill_v9.9.9_评估报告_2026-07-30.md')
             with open(report, 'w', encoding='utf-8') as f:
@@ -2578,6 +2592,104 @@ class TestDirectionGateAdvisory(unittest.TestCase):
         self.assertNotIn('carrier', checks['A2'], '⛔ 不得借本批给 A2/A3 乱加字段')
 
 
+class TestOrchestrationAdvisory(unittest.TestCase):
+    """编排律结构 advisory 回归（v4.20.0·T2-B 尺子同步·2026-10-24）。
+
+    判据形态=Skill架构规范 pages/09（四律/指路牌三纪律/机检律）。
+    负例必须红：缺指路牌/漏列/分区词/行号锚/多路径缺声明/死锚；正例必须静默（含小件不噪声）。
+    """
+
+    SECS = ["触发条件", "铁律声明", "执行流程", "判断标准", "禁止行为",
+            "references/ 目录索引", "行动倾向", "平台兼容"]
+
+    def _mk(self, signpost=True, omit=None, extra_body="", headings=None, files=None):
+        d = tempfile.mkdtemp(prefix='orchfix_')
+        self.addCleanup(shutil.rmtree, d, True)
+        heads = headings if headings is not None else list(self.SECS)
+        lines = ["# T", ""]
+        if signpost:
+            lines += ["## 📍 指路牌（按节名指路）", "", "| 你要干什么 | 看哪节 |", "|:--|:--|"]
+            for h in heads:
+                if omit and h == omit:
+                    continue
+                lines.append("| 用 %s | `## %s` |" % (h, h))
+            lines.append("")
+        for h in heads:
+            lines += ["## %s" % h, "", "正文占位。", ""]
+        body = "\n".join(lines) + extra_body
+        with open(os.path.join(d, 'SKILL.md'), 'w', encoding='utf-8') as f:
+            f.write(body)
+        for name, content in (files or {}).items():
+            fp = os.path.join(d, name)
+            os.makedirs(os.path.dirname(fp), exist_ok=True)
+            with open(fp, 'w', encoding='utf-8') as f:
+                f.write(content)
+        return eval_orchestration_advisory(d)
+
+    # ---- 正例 ----
+    def test_01_compliant_silent(self):
+        self.assertIsNone(self._mk(), '合规夹具必须静默')
+
+    def test_02_small_skill_without_signpost_silent(self):
+        out = self._mk(signpost=False, headings=["触发条件", "执行流程", "行动倾向"])
+        self.assertIsNone(out, '小件(<8节)无指路牌不报警（防全库噪声）')
+
+    def test_03_self_compliant_silent(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.assertIsNone(eval_orchestration_advisory(root), 'clock-loop 自身必须静默')
+
+    def test_04_legal_level_terms_not_misfire(self):
+        out = self._mk(extra_body="\n三明智 L1/L2/L3 与图表码 L1-L15 是术语，不是行号锚。\n")
+        self.assertIsNone(out, '层级术语/图表码不得被行号锚误咬')
+
+    # ---- 负例 ----
+    def test_05_missing_signpost_detected(self):
+        out = self._mk(signpost=False)
+        self.assertIsNotNone(out)
+        self.assertIn('缺指路牌', out)
+
+    def test_06_signpost_omission_detected(self):
+        out = self._mk(omit="执行流程")
+        self.assertIsNotNone(out)
+        self.assertIn('漏列', out)
+
+    def test_07_zone_word_detected(self):
+        out = self._mk(headings=["触发条件", "参考区", "执行流程", "判断标准",
+                                 "禁止行为", "references/ 目录索引", "行动倾向", "平台兼容"])
+        self.assertIsNotNone(out)
+        self.assertIn('分区词', out)
+
+    def test_08_line_anchor_detected(self):
+        out = self._mk(extra_body="\n历史沿革详见 L12。\n")
+        self.assertIsNotNone(out)
+        self.assertIn('行号锚', out)
+
+    def test_09_multi_path_declaration_missing_detected(self):
+        out = self._mk(extra_body="\n### G路径\n\nG 发布包路径已启动\n\n### H路径\n")
+        self.assertIsNotNone(out)
+        self.assertIn('H路径缺', out)
+
+    def test_10_dead_anchor_detected(self):
+        out = self._mk(extra_body="\n见 `references/x.md#§不存在节`。\n",
+                       files={"references/x.md": "# x\n\n## 存在节\n"})
+        self.assertIsNotNone(out)
+        self.assertIn('节名不存在', out)
+
+    def test_11_small_skill_line_anchor_detected(self):
+        """W3 回归：小件（<8节·无指路牌）正文行号锚也必须拦"""
+        out = self._mk(signpost=False, headings=["触发条件", "执行流程", "行动倾向"],
+                       extra_body="\n历史详见 L12。\n")
+        self.assertIsNotNone(out)
+        self.assertIn('行号锚', out)
+
+    def test_12_anchor_with_dunhao_not_truncated(self):
+        """W4 回归：`#§十一、不存在节` 不得被顿号截断成「十一」放行"""
+        out = self._mk(extra_body="\n见 `references/x.md#§十一、不存在节`。\n",
+                       files={"references/x.md": "# x\n\n## 十一、存在节\n"})
+        self.assertIsNotNone(out)
+        self.assertIn('节名不存在', out)
+
+
 class TestDerivedStalenessAdvisory(unittest.TestCase):
     """派生态无锚裸奔 advisory 回归（v4.15.0 L3反哺T1·2026-10-03 你令落地）。
 
@@ -2643,3 +2755,51 @@ class TestDerivedStalenessAdvisory(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main(verbosity=2)
 
+
+
+# ── 双盲第19次 N-06 补弹：C2a/C1 回归负例组（2026-10-25）──
+def test_c2a_sunk_fallback_and_exclusions():
+    """C2a：主文无锚→回退命中真件；CHANGELOG/沿革/规范件/台账/子目录口径正确。"""
+    import tempfile, os as _os
+    import skill_eval as se
+    d = tempfile.mkdtemp()
+    refs = _os.path.join(d, 'references')
+    sub = _os.path.join(refs, 'l1')
+    _os.makedirs(sub)
+    good = '\n'.join([
+        '---', 'normative_vocab: "x"', '---', '# flow', '步骤外部调用：',
+        '🔌 熔断器', '├─ 成功条件：脚本 exit 0', '├─ 失败处理：中止',
+        '├─ 可修正参数：路径', '├─ 重试次数：1',
+        '└─ 降级方案：Read references/alt.md 后继续'])
+    _os.makedirs(_os.path.join(d), exist_ok=True)
+    open(_os.path.join(d, 'SKILL.md'), 'w').write('---\nname: t\n---\n# t\n仅指针见 flow-x.md\n')
+    open(_os.path.join(sub, 'flow-x.md'), 'w').write(good)               # 子目录真件（N-03）
+    open(_os.path.join(refs, 'CHANGELOG.md'), 'w').write(good)           # 历史排除
+    open(_os.path.join(refs, '沿革与依赖存档.md'), 'w').write(good)        # 沿革排除
+    open(_os.path.join(refs, '规范件.md'), 'w').write(
+        '---\nnormative_vocab: "x"\nsource: 某规范\n---\n' + good)        # vocab+source 双全排除
+    open(_os.path.join(refs, '台账件.md'), 'w').write(
+        '# 台账\n## FU-1 卡\na\n## FU-2 卡\nb\n## FU-3 卡\nc\n' + good)    # FU台账排除
+    ratio, detail = se.eval_fuse_mechanism(open(_os.path.join(d, 'SKILL.md')).read(),
+                                           skill_dir=d)
+    assert ratio >= 0.9, detail
+    assert detail.get('sunk_files') == [_os.path.join('l1', 'flow-x.md')], detail
+
+
+def test_c1_template_path_dirlevel():
+    """C1：模板路径父目录存在=不报缺；父目录缺失=记 missing(模板父目录缺失)。"""
+    import tempfile, os as _os
+    import skill_eval as se
+    # eval_declared_existence 只采 ~/ 前缀正文引用——用真实 home 下临时目录测
+    base = _os.path.join(_os.path.expanduser('~'), '.cache', 'c1_tpl_test_20261025')
+    okdir = _os.path.join(base, '工作日志', '系统日志月度蒸馏')
+    _os.makedirs(okdir, exist_ok=True)
+    open(_os.path.join(okdir, '系统日志月度蒸馏_2026-09.md'), 'w').write('x')
+    tpl_ok = '~/​.cache/c1_tpl_test_20261025/工作日志/系统日志月度蒸馏/系统日志月度蒸馏_YYYY-MM.md'.replace('​','')
+    tpl_bad = '~/​.cache/c1_tpl_test_20261025/不存在目录/报告_YYYY-MM.md'.replace('​','')
+    content = '正文引用 %s 与 %s\n' % (tpl_ok, tpl_bad)
+    r = se.eval_declared_existence(_os.path.join(base, 'SKILL.md'), content)
+    assert not any('月度蒸馏_YYYY-MM.md' in m for m in r['missing']), r
+    assert any('不存在目录' in m for m in r['missing']), r
+    import shutil as _sh2
+    _sh2.rmtree(base, ignore_errors=True)

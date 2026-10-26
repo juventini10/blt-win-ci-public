@@ -34,6 +34,47 @@
 > 实测一处后缀制造 5 处门禁红＋归档名污染（`V2.0.0-dev.zip`），已于 2026-10-01 废除并上门禁。
 
 <!-- LAST-PUBLISHED: 2.2.10 (GitHub release v2.2.10 · 2026-10-23 · 判据源=分发仓 Five-layer-memory-system 的 GitHub release 列表（Latest 标记为准·发布侧实查 `gh release list --repo <分发仓>`）。仓名此前未写进本行，2026-10-23 补入——实证：只写「GitHub 分发仓」会让发布侧查错仓、把「查不到 release」误判成分布缺失。⛔ 本行不得写账户名（隐私门禁按个人标识判红）。本行由发布侧每次对外发布时上移（写发布 Loop 封口清单·G 路径报告必核与 GitHub 实况一致，不一致=红）。消费方=INSTALL Step -0.9 第6点「本次更新了什么」抽取区间：本行版本段(不含)→顶段(含)。） -->
+
+## [2.2.11] — 2026-10-26
+### 系统文件同步（零版本变更·2026-10-26·Zwork 端·作者令「改包不升版本号·只记更新文件」）
+
+- **5.5 检索与卡号纪律补齐 ×5**：autoclaw/doubaowork（09-22 版）/qodercn（10-01 版）/traecn（09-22 版）/lobsterai templates 缺上游 2026-10-07 新增段（zwork 10-08 版已在）——按 zwork v1.0-generic 脱敏措辞补插于第 5 条后；各文件 frontmatter 版本随手随动（包版本号不动）。
+- **lobsterai core-soul v1.5**：补「把沉淀当资产」段+行为印证硬路牌行（与 qodercn/hermes/traecn/doubaowork 同条款对齐·此前漏同步）。
+- **zwork capability.yaml 注记**（仅注释·声明键不变）：①agents_full_inject 注释订正（10-26 dist 实证平台每 Run 装配 ~/.pi/agent/AGENTS.md pi-user priority1+工作区链·M1 归因订正=真源不在扫描面·桥=软链）②skills 装载注记补插（外部根直读+审批表·10-26 锁协议排队项清账）。
+- **裁定依据**：回复格式铁律行在包=2026-09-23 用户裁决（lobsterai templates 头注「执行闭环自验格式非审美偏好·原脱敏评估两处误判已纠」）——本轮零删除；表格控宽数值仍按指针化模式（hermes 行/zwork 通用版先例）。
+- **⚠️ 待裁决登记**：Zwork AGENTS.md 标记节「私人偏好边界」注记称回复格式铁律「安装包通用版剥离」与 09-23 包内裁决（进包）冲突——标记节=上游逐字域 ⛔本端不擅改，提请作者裁（上游 customPrompt 归 WB 端）；adapters/execution-guidelines-脱敏评估.md 与包根副本均不在盘（hermes/zwork AGENTS.md 指针失效·疑退役入 存档包/脱敏门禁）。
+- hermes execution-guidelines=指针文档（真身在其端 SOUL·防双本账）·无需补插。
+- **[未发版] 续·装机完整性轮（同日·作者问「用户能完整体验我这边的功能吗」→实答=此前三缺）**：①`adapters/zwork/setup.sh` v0.1→**v0.2**——新增 **[4/4] 装载通道三步**（全部幂等·DRY 支持）：[4a] AGENTS.md 机械桥（~/.pi/agent/AGENTS.md 软链→端真源·三态判定：在位跳过/改指/普通文件 fail-loud ⛔不覆盖用户文件）；[4b] 技能根声明（~/.pi/agent/settings.json skills 幂等 JSON 合并·python3）；[4c] 审批腿（runtime.sqlite declarative_resource_root_approvals INSERT OR IGNORE·owner_id 自发现四级回退：identity_personal_principals→principals→owners→既有审批行·失败显形引导⛔不盲写）。②capability.yaml v0.1→**v0.2**（settings_json 注释澄清：hooks 面仍无·pi-agent settings 仅技能根声明）。**验证**：bash -n ✓＋DRY=1 只看不写 ✓＋本机自装态真跑全幂等跳过 ✓＋settings.json 内容不变 ✓。**诚实边界⏳**：全新机全链首装实测未做；端实体（[MC]/AutoClaw SOUL/AGENTS.md）模板交付缺位=全新机结构性缺口（[2/4] 会 fail-loud 报缺·桥依赖端真源在场）——**待立项**。
+- **[未发版] 续·立项执行（同日·作者令「去做·确保用户完整享受所有功能」）**：①**端实体模板交付落地**——`adapters/zwork/templates/{SOUL,AGENTS}.md` 生成（源=端真源 v1.3/v2.5 程序化脱敏：作者×63→你·薛/皮叔→作者/体系·表格控宽数值→指针化·路径→[记忆共享中心] 占位符·9+9 项自检全绿含标记对 4/4 与署名行端化）；②setup.sh v0.2→**v0.3**：[2/4] 增**首装交付腿**（缺则模板落位·[记忆共享中心]→真 MC·在场=对账 ⛔覆盖·条文48）；③**沙箱全新机全链实测（setup 级）**：隔离 HOME+隔离 MC 实跑——首装交付 ✓（占位符落位·标记对×3·5.5 在场）＋TSL 校验器部署 ✓＋桥已建且指向沙箱真源（内容作者=0）✓＋技能根合并 +2 ✓＋审批腿 🟡 引导路径 ✓（沙箱无 DB=预期）＋二次运行全幂等 ✓；exit ✅。**遗留⏳**：install_scripts.py 全件链+真新机实机实测；K2 切片库/W2 心跳=M7 域随数字分身完整版单装。
+- **[未发版] 续·清零令轮（同日·作者斥「怎么老是遗留？能不能做完」）**：①**孪生台账 §4.8 登记解阻塞**——sh_only 附 basis（launchd 专属·Windows 无守护形态·段内 Darwin/else 自处）；⚠️首改包内投影件 references/twin-sections.json 被 mirror-sync 按源覆盖（投影件纪律再实证）→改源 `脚本中心/守卫/twin-sections.json`＋mirror-sync --force --only scripts-twin-sections-json 推送。②**create_launchd_task 三目录同名异内容根治**（安装器拒装第二阻断）：源 `脚本中心/安装发布/create_launchd_task.sh` 升日志中心默认（$HOME/Library/Logs/buluotuo·与 zhangyan#2/§4.8 同设计）＋manifest 补登 scripts-create-launchd-task-sh（同源双投影）＋--force --only 双推送→两副本一致 ✓。③**安装器全件链沙箱 exit 0**（隔离 HOME+MC）：公共资产部署＋端 setup 委派收口；清单 ❌ 项（数字分身已造芯/Skill 0 个）＝用户 AI 引导步骤设计内非缺陷。④**桥注入验收**＝定时任务真新会话机械探针（已排程·判据=新会话上下文现「🔴 本文件在 Zwork」）。**遗留清零声明**：install_scripts 全件链+沙箱全新机=已做；真新机实机=物理边界（需一台真机·事实非任务）；造芯/Skill 安装=用户引导流程（设计内）；W2 心跳/切片库=M7 设计域（用户机由完整版单装/引导流程建立）。
+- **[未发版] 续·裁决执行（同日）**：①`adapters/execution-guidelines-脱敏评估.md` v2.0 复位重建（现行脱敏规则唯一真源·裁定链+进包/剥离清单+副本治理·脱敏自查无私人数值·原 v1.x 误判版确认不在盘）②hermes eg 指针修（包根→adapters 路径）③各端 AGENTS.md 边界注记订正（「铁律剥离」→「按 09-23 裁决进包」·指针复活·范围=Zwork+旧客户端主 workspace+旧客户端 agents/* workspace·同文替换逐字全等保持）。
+
+### 童灵 D2 收敛同步（零版本变更·2026-10-26·WB 端）
+
+- **童灵 D2 收敛（WB 端·与 Qoder CN 端对齐）**：源注入器 `doenglingz_inject_prompt.py` v1.28→**v1.29**、源守卫 `d_tier_exclusivity_dryrun.py` v1.2→**v1.3**；D2 切片命中由「整本切片正文灌入」收敛为「仅层标题声明（【童灵域切片命中·L_N】·与 D1 标签同构）」，结构统一「声明→③档位产物边界→⑤立场卡检索义务」；守卫 16/16 通过。
+- **哲学回流（包外记忆蓝图侧·已落地）**：`06-跨端适配规范.md` v1.171→**v1.172**（§1.6 三态表 D1/D2/D3 行同步·D2 收敛记插入）＋`数字分身设计哲学/CHANGELOG.md` 续记（2026-10-26 WB 端 D2 收敛回流）。
+- **同步状态⏳**：包内三向副本（devtools/hooks/scripts）待源仓 `个人AI档案` commit 后由 `mirror-sync.py --only <6 条目>` 传播——当前 C37 源脏跳件门禁静默拦住（源码未提交·fail-silent 假绿已识破），**尚未实际同步入包**。
+- **诚实边界**：本记录仅登记变更动作，包版本号不动（作者令「改包不升版本号·只记更新文件」）；待作者在终端跑 `脚本中心/守卫/git_commit_safe.sh` 提交源码后，由我执行 mirror-sync 完成三副本入包，届时回填「同步状态」为真。
+- **触发语**：安装包设计哲学 `02-发版执行手册.md` §十·五 实操记录已记本轮闭环（改源→守卫验证→版本随动→mirror-sync 定向→哲学回流→系统日志）。
+
+
+> 驱动：两位真实用户反馈根治（afeng·技能面 6 缺陷 + zhangyan·安装/守护面 8 缺陷）。主矛盾=验收停在「文件在位」没走到「产物可用」、发布停在「打包完成」没走到「机械门禁」。
+
+### Fixed（用户可感知）
+
+- **macOS 守护必死缺陷修复**（zhangyan#1·P0）：slice-watch 与 awaken-patrol 两个 launchd 模板的 `-lc`+外层引号写法实测 exit 127（launchd 不做 shell 解析），改为 `-c`+去引号；新增机械门禁使该类缺陷不可能再出厂。
+- **守护日志迁出记忆中心**（zhangyan#2+#8）：全部 macOS 守护的 launchd 日志统一落到 `~/Library/Logs/buluotuo/`（launchd 不展开 `~`，渲染为绝对路径；日志写入不再触发记忆中心的监听风暴）；amber 两个高频守护启动时自动截断超 5MB 日志（保留尾 1000 行），日志不再无界增长。
+- **服务可观测性**（zhangyan#4）：`verify.sh` 新增「守护成功痕迹」检查——不问"在运行"，问"成功过几次"；三态分账（已注册+有痕迹=过 / 已注册+零痕迹=真失败 / 未安装=待办不算故障），并顺带报告超 5MB 的守护日志。
+- **备份不再一损俱损**（zhangyan#5）：记忆琥珀备份脚本从"遇错全灭"改为逐文件容错——白名单里某个文件不可读时，其余文件照常备份，失败项逐条记录原因。
+- **版本锚点补全**（zhangyan#6）：装完现在会写 `.install/version` 单文件版本锚（一眼读版本，不必解析 JSON），并预创建守护日志目录。
+- **INSTALL.md 补权限陷阱**（zhangyan#3）：新增「macOS 权限陷阱与装完三问」——完全磁盘访问给系统 shell 授是无效操作（macOS 有意忽略），正确路径=给 Python framework 真身授权；装完三问（服务存在/成功执行过/产物最新）全过才算装完。
+- **运行台账升级保护**（afeng#2）：三明智概念碰撞台账（decision-room.md）列入升级保护名单——升级/重装永不覆盖你已积累的台账数据（包内保持空模板供首装）。
+
+### Added（机械门禁·防复发）
+
+- SKILL.md 正文门禁：出厂包每个 Skill 的 SKILL.md 去掉头部元信息后非空行 ≥50，缺正文的壳文件无法出厂（afeng#1 同型拦截）。
+- plist 参数门禁：全部 launchd 模板禁 `-lc`、禁首尾引号整串（zhangyan#1 同型拦截）。
+
 ## [2.2.10] — 2026-10-23
 
 > 驱动：Windows 11 真机装机反馈（WorkBuddy 端 · 记忆中心 `D:\SLcenter`）。13 条逐条回源核实：**采纳 9 + 修正证据后采纳 2 + 证伪撤回 1 + 环境限制 1（降级方案已落）**。证伪项与「不是缺陷」三条一并记入下方，防下轮重复误改。
@@ -125,7 +166,7 @@
 
 - **verify 双端同构缺腿根治+检查⑬孪生形状对账（安装包哲学条文68落地批）**：外部评估点破「verify.sh 有、verify.ps1 没有」——实查坐实 verify.ps1 缺 §3.0 三口径/§4.6 骨架非空/§4.7 三表闭环三面（Mac 10-03~10-15 逐个根治的判据 Win 端失明·ps1 §3 目录名直配仍在中文别名目录假红病下），且既有检测全为文件级配对（L1派生式/P1资产对称），段级同构零机检=校验器的校验器缺位。根治=①判据下沉 `references/scripts/verify_pair_checks.py`（verify.sh 三段改调用壳·行为零变更+仪器未跑分态显形；verify.ps1 补同名三段·Win 端从失明转在场）；②platform_compat 新检查⑬（数据面 references/twin-sections.json·三向判据：neutral缺席红/未登记新段红/空壳豁免红·仪器故障⛔当判据绿）；③loop 安装包 G 路径 Step B1.5g（clock-loop 4.19.1）每轮自动跑；④安装包哲学条文68「孪生同构律」（维护方批「做；批」·编号记：拟号67时并行窗先入册顺68）。检查⑬首跑精准报三缺腿零过报+9测夹具全绿（含三口径中文别名/空壳点名/未登记段/空basis/台账缺失）。真源=脚本中心/守卫×2+mirror-manifest 4条目。Win 真机腿随下次 loop 安装包（T22 并轮）。来源=2026-10-21-verify双端同构缺腿与孪生对账规则-任务卡。
 
-- **蒸馏调度器加「��️ 卡库体检」月拍（R6·闭合"产出无消费=死数据"）**：DISTILLATION_TYPES 新增卡库体检月拍（寄生调度器·⛔不新建 launchd·同资产体检/切片复检先例），执行体=童灵跑 kb_card_stats.py 出僵尸/热卡候选→维护方定归档，首拍 2026-11-01；调度器三落版（references/scripts·hooks·digital-twin/devtools）已 mirror-sync 投影、反向校验源≡包。
+- **蒸馏调度器加「📚 卡库体检」月拍（R6·闭合"产出无消费=死数据"）**：DISTILLATION_TYPES 新增卡库体检月拍（寄生调度器·⛔不新建 launchd·同资产体检/切片复检先例），执行体=童灵跑 kb_card_stats.py 出僵尸/热卡候选→维护方定归档，首拍 2026-11-01；调度器三落版（references/scripts·hooks·digital-twin/devtools）已 mirror-sync 投影、反向校验源≡包。
 - **蒸馏调度器 self-test E1 假红根治**：e2e 自测段原复用被 S 用例 reminder_record 污染过的 state 文件，因周档巧合签名相同致首跑 main 误判"已提醒"→写 0→E1 恒红（HEAD 既红·非生产 bug）。改 e2e 用独立干净 state，生产逻辑零改动，MUT 转 OK（变异测试仍抓到·非侥幸）。
 
 - **构建链 V9 三链接线补齐 + append_log 静默丢字段盲区根治（源面批·发布链两件）**：①generate_release.py 实接 build_strips.inject_console_guard（三写点全挂·幂等）——此前其注释声称「三链共用」而 generate 未接线=声明≠实现（条文68逮出的挂账项销账），实证=修复后真跑 generate 包内 awaken_patrol.py 的 V9 三流守卫存活（此前必被剥）+单元牙检3/3（无guard注入/幂等/非py不动）；②system-logger 3.17.8（源面已落）：append_log_entry 三级机械保证（无###标题层级矫正/字段注入去锚依赖/写前自证闸拒写兜底）根治「## 标题+非粗体条目」静默丢字段错组盲区，夹具 6/6 全绿（假 logdir 零污染）——包面投影按串行纪律由 system-logger 在批窗（v3.17.9 组）定稿时合并带出，本窗不夹带。来源=任务卡2026-10-21-append-log静默丢字段盲区+本窗三令收尾。
@@ -455,7 +496,7 @@
 - `adapters/qodercn/templates/MEMORY.md` v1.2→v1.3：硬路牌节新增「检索与卡号纪律」压缩版（{记忆共享中心} 占位口径随文件既有风格）
 - `capability.yaml`：SOUL/IDENTITY 字节注释按改后实测刷新（防注释与实盘脱钩）
 - **合法性判据**：`mirror-manifest.json` `package_only_files_v2` 实查登记本端 rules/core-soul.md、rules/core-identity.md、templates/MEMORY.md 三件 ⇒ 包=其自身真源，直接改包合法、无源投影不会被镜像冲回
-- **脱敏核验**：作者侧裸路径（/Users/…·~/个人AI档案）扫描 0 命中·FFFD=0·渲染仿真（setup.sh 同式 sed [记忆共享中心]/{}记忆共享中心 → /tmp）占位符替换正常，残留占位仅既有 {Q30} 类答题位（[待填]显形闸既定态）
+- **脱敏核验**：作者侧裸路径（家目录绝对路径·记忆中心名）扫描 0 命中·FFFD=0·渲染仿真（setup.sh 同式 sed [记忆共享中心]/{}记忆共享中心 → /tmp）占位符替换正常，残留占位仅既有 {Q30} 类答题位（[待填]显形闸既定态）
 - 边界：Hermes 端挂起（皮叔令先不管）·ZCode 端自认领中；本 F6 只动 qodercn 适配器与记账面，⛔未碰其他端
 
 ### F7 · ZCode 端检索引用防谎报条入包（作者端 v1.8 脱敏单向回流·单通道一件承载·收 F6 留下的"ZCode 端自认领中"尾巴）
@@ -465,7 +506,7 @@
 - 落位判据：红线段=本端单通道架构的正确承载（AGENTS.md 一件=五系统文件合一·capability.yaml system_file_paths 声明），性质同级（诚实操作硬约束）；措辞自端上 v1.8 条适配⛔逐字照抄——路径换端用户落点（`{记忆共享中心}/脚本中心/` 扁平口径·install_scripts.py:446 deploy_script_center 七端一致）·去版本号字样防漂移，其余纪律句逐字保留
 - 脚本面零重复劳动：`references/{scripts,hooks,digital-twin/devtools}` 三份 search_kb.py 已随 F5 同批 v0.3.14（本日实查三副本版本号一致），本条只动模板不碰脚本
 - 合法性判据：mirror-manifest `package_only_dirs_v2` 实查 `adapters/` 整目录=包独有包直持（2026-09-30 立册·目录前缀登记·新件免逐册）⇒ 直接改包合法、无源投影不冲回
-- 脱敏核验：作者侧裸路径（/Users/…·~/个人AI档案·机器名）扫描 0 命中·FFFD=0·渲染仿真（{记忆共享中心}→/tmp/mc_probe）替换正常，残留占位仅既有 {称呼} 答题位×2（F2 [待填]显形闸既定态）
+- 脱敏核验：作者侧裸路径（家目录绝对路径·记忆中心名·机器名）扫描 0 命中·FFFD=0·渲染仿真（{记忆共享中心}→/tmp/mc_probe）替换正常，残留占位仅既有 {称呼} 答题位×2（F2 [待填]显形闸既定态）
 - 验证：`install_scripts.py --verify --platform zcode` → 30/30 钩子落盘并注册全绿·规则层就位（模板改动不触碰钩子面与指纹册——integrity-fingerprints 实查 0 命中 AGENTS）
 
 ### F8 · 语义增强模型压缩全链配套（能兑现才对外提压缩·装/压两问独立·手册给粘贴即用提示词）
@@ -525,7 +566,7 @@
 
 ### 双实体清理（漂移根因）
 - `脚本中心/router.py` · `route_unknown_unknown.py`：旧实体 → 软链指本体（`Skill路由引擎/scripts/`）
-- 7 件分叉同步（根 → 对照侧）；`gate_runner.py` 对照侧含 `juventini` 绝对路径（不可移植）·根侧正确
+- 7 件分叉同步（根 → 对照侧）；`gate_runner.py` 对照侧含作者机绝对家目录路径（不可移植）·根侧正确
 
 ### 2026-10-05
 
@@ -534,7 +575,7 @@
 > 缘起：Trae Work 端完整性审计报告（`个人AI档案/布洛陀安装包-Trae Work端完整性审计报告-20261005.md`）——1 真实缺陷 + 3 声明级缺口 + 1 脱敏残留，综合完整度约 88%。本次按修复路线图逐条收口。
 
 - **P1-1 切片路径口径收敛（方案C·真实缺陷根治）**：K2/HEXACO 生成器输出**恒定落** `<数字分身>/K2切片蒸馏/slices/`（改 `OUT_DEFAULT`/`SLICES`，不论真身/部署态——真身 `K2切片蒸馏/` 与部署态 `k2-slice-generator/` 同构）；收拢 traework 适配器 5 处偏离引用（`setup.sh` / `README.md` / `templates/doenglingz-core-header.md` / 2 个端专属 Skill）到同一口径。**此前**部署态生成器输出落 `k2-slice-generator/slices`，而安装器 `_detect_existing_twin`、~15 个 hook、`plugin_path_rewrite.py`、端 Skill、《入门指南-通用版》读的**均为** `K2切片蒸馏/slices` ⇒ 跨端"已有分身"检测失效、引导路径指空。**方案C 取最小影响面**：不改 install_scripts/hooks（本就统一在 `K2切片蒸馏/slices`），只改少数偏离文件。四份生成器副本（包内 + 作者态×2）×2 逐字一致；模拟部署态端到端验证产物全部落 `K2切片蒸馏/slices`、无错落。
-- **P1-2 端专属 Skill 去"皮叔"脱敏**：`adapters/traework/skills/` 下 2 个 Skill frontmatter 4 处命中（`author: 皮叔体系`→`布洛陀体系`；`upstream: ...（皮叔 Skill 真源）`→去昵称）。回归 grep `皮叔`/`juventini`/`/Users/` 在 `adapters/traework/` 内**零命中**。
+- **P1-2 端专属 Skill 去"皮叔"脱敏**：`adapters/traework/skills/` 下 2 个 Skill frontmatter 4 处命中（`author: 皮叔体系`→`布洛陀体系`；`upstream: ...（皮叔 Skill 真源）`→去昵称）。回归 grep `皮叔`/`作者机用户名`/`作者机家目录绝对路径` 在 `adapters/traework/` 内**零命中**。
 - **P1-2 延伸·全端脱敏收口（回归新发现·跨端）**：`verify.sh --platform traework` 全包卫生门禁实测报红 2 件——`adapters/doubaowork/skills/` 下 `doenglingz-slice-nav-doubao` / `布洛陀-豆包办公规则` 的**版本变更行**含口语称谓裸词（`pkg_cleanliness_check.py` `PAT_PRIVATE_NAME` 判据命中）。根因：`adapters/` 为**包根直持资产·不经镜像 deident 变换**（`generate_release.py` 载明），须手工脱敏（与 P1-2 同性质，只是落在另一端）。按包内脱敏约定（「作者」，同 `作者令/作者质证` 先例）机械替换为「作者令」（口径=口语称谓裸词→公开署名，⛔本条自身不写真词以免复现同类泄漏）。
 - **P2-3 06 手册 F5-1 补「全量软链端」豁免**：实测全 8 端 capability.yaml 均无 `skills` 键（系统性声明缺口），但功能不缺失——traework 端 setup.sh 对 `<MC>/技能配置/*` 全量软链到 `~/.trae-cn/skills/`。F5-1 加口径订正：`skill_symlink: true` 端**豁免白名单**，改核软链声明+软链结果，⛔不因缺键报假红（铁律-002 不假红不假绿）。
 - **P2-4 05 总纲 F7 行口径消歧**：标注「**用户面**=升级+回滚+完整性校验｜**mirror-sync=发版侧工具（作者域·不随包）**」，消除清单口径与用户面定义的歧义。

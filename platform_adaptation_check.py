@@ -1,6 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""platform_adaptation_check.py v0.9 — 布洛陀脚本体系·平台接入率漂移校验（检测+自愈混合架构）
+"""platform_adaptation_check.py v0.9.4 — 布洛陀脚本体系·平台接入率漂移校验（检测+自愈混合架构）
+v0.9.5（2026-10-25·Zwork·第 19 端）：新增 --src zwork 机械校验腿（皮叔令「要机械」——
+  把 10-01 起挂账的「platform_adaptation_check zwork 键」收口）。本端=平台托管型软约束端，
+  无 hook 注册面（capability.yaml 端声明 hooks_event/hook_stdout_inject/settings_json=false）
+  ⇒ 12-Hook 分子=0 是「装不上」的平台边界如实读数，机械核验对象改为童灵包真接入承载：
+  安装回执 verdict/missing + 组件 5 件在盘 + K2 标记对 4 + 执行准则节 + SOUL 锚 +
+  切片新鲜度(src_hash) + W2 心跳 + 观测层 active + 无 hook 面(平台边界·出现即红)。
+  对账 SSOT §二·七 Zwork 列（col 14）：接入率 0/12 + 端承载 +8（panel_snapshot v0.9.14 extra 同源）。
+
+v0.9.4（2026-10-25·MiniMax Code·第 21 端）：新增 --src minimaxcode 机械校验腿。
+  病形：SSOT §二·七 本端 12 项矩阵列 + 接入率**早已登记**（2026-10-23），但①校验覆盖段
+  🟢机械校验名单无 minimaxcode ⇒ panel_snapshot 恒判「❔未登记」＝假红（同 Trae CN v1.8.15 族）；
+  ②校验器无 --src minimaxcode ⇒ 本端接入率无机械腿，只能自核 ⇒ 「机械校验」标记无从谈起。
+  修法：本端唯一真实挂载面（Plugin 包 hooks.json·本端无用户级 settings.json）直读 ⇒ 🟢 才诚实。
+  ⛔ 母本 ~/.workbuddy/settings.json 不算本端挂载面（那是 WorkBuddy 运行时·本端 Plugin 不读它）
+     ⇒ 原「rule_three_layer_guard ✅已挂（母本 Stop 链）」系假绿，本腿按 Plugin 实盘判。
+v0.9.3（2026-10-25·ZCode）：title_namer 族别名特判第五例补齐——QCN 适配器名 `qodercn_title_namer.py`（矩阵行 L209 ✅ 09-20 实挂 record-only）同病：无特判→校验器 ❌→SSOT 登记同错 11/12→「无漂移」=三面一致地错；--src qoder-cn 补认（AutoClaw/LobsterAI/Trae Work 的 ❌ 系矩阵行明记真缺·不特判）。
+v0.9.2（2026-10-25·ZCode）：title_namer 族别名特判第四例（前例 WBAI v1.3.179/QD v0.9.1）——ZCode 适配器名 `zcode_title_namer.py`（~/.zcode/cli/config.json UserPromptSubmit 实挂）不含 HOOKS 字面名「session_title_namer 族」→match_hooks 恒 ❌→面板 11/12 缺 1 假缺；--src zcode 分支按 HOOKS 注记补认，口径同 wbai/qoderdesktop。
 v0.9（2026-10-12·CSK卡内部台账/15 A4'/A4''落地）：check_hermes 新增层1.5=审计账本主判据+import式同源诊断(不复刻候选·降级=纯审计账本)+对偶完整性自证+不可观子空间声明。
 
 v0.7.1（2026-08-26·回滚 SSOT 动态解析·恢复硬编码清单）：
@@ -8,6 +25,7 @@ v0.7.1（2026-08-26·回滚 SSOT 动态解析·恢复硬编码清单）：
   - 恢复 v0.7.1 的硬编码 HOOKS 清单（简洁可靠）
   - reply_format_guard.py 已从清单移除（2026-08-26 皮叔令"完全删除"）
   - 各平台实际接入情况由 check_* 函数直接读取配置文件/运行时文件检测
+v0.9.1（2026-10-23·Qoder Desktop）：title_namer 族别名特判——适配器名 `qoderdesktop_title_namer.py` 不含 `session_title_namer` 字面串，按 HOOKS 注记补认，防「别名不匹配」被误判成「未接入」。
 v0.7.1（2026-08-22）：check_dsh 分母口径对齐哲学文件——DSH_EXCLUDED 增 reply_format_guard.py
 （皮叔 2026-08-13 决策·⛔合法停用排除分母·pre-step 预防式已覆盖·见 SSOT v1.3.14）·分母 12→11·
 根治校验器口径≠文档产生的"分子巧合相等误报无漂移"（对齐 v1.3.14 DSH 11/11）。
@@ -118,6 +136,22 @@ SSOT = os.path.expanduser(
 LOG = os.path.expanduser(
     "[记忆共享中心]/脚本中心/logs/platform_adaptation_check.log"
 )
+# 2026-10-25 MiniMax Code（第 21 端）机械校验腿：本端唯一真实挂载面。
+# ⛔ 本端无用户级 settings.json（母本式「改 settings.json 追一条」路径不存在）⇒ 真相源=Plugin 包 hooks.json。
+MINIMAX_PLUGIN_HOOKS = os.path.expanduser(
+    "~/.minimax/plugins/bulutuo-guards/hooks/hooks.json"
+)
+# 本端 12 项共享分母清单（与其他端同口径：跨端同源共享件 11 + title_namer 族本端适配器 1）。
+# ⛔ 排除三项不入分母：reply_format_guard（合法停用）/ l3_conclusion_guard（全端永久关闭）/
+#   session_memory_quality_guard（N/A·Trae Work 专属·本端无 session_memory 数据结构）。
+# title_namer 族本端适配器名 = minimaxcode_title_namer.py（对齐 zcode_title_namer / traecode_title_namer 先例）。
+MINIMAX_ITEMS = (
+    "crossend_guard.py", "route_inject_prompt.py", "route_miss_feeder.py",
+    "kb_inject_prompt.py", "route_unknown_unknown.py", "audit_search_kb.py",
+    "route_audit.py", "route_guard_audit.py", "feedback_detect.py",
+    "rule_three_layer_guard.py", "card_id_guard.py",
+    "minimaxcode_title_namer.py",
+)
 
 # 11-Hook 清单（SSOT §二·七 真相源·分母统一为 11·含 crossend_guard·2026-08-26 你拍板 12
 #   → 2026-09-12 起 11：l3_conclusion_guard 全端永久关闭移出清单，仿 reply_format_guard 全局移除先例）
@@ -141,7 +175,7 @@ HOOKS = [
     ("rule_three_layer_guard.py", "Stop", True, ""),
     ("card_id_guard.py", "Stop", True, "AI学习库立场卡编号防撞·hook 模式 exit 0 放行"),
     ("session_title_namer 族", "SessionStart/UserPromptSubmit/pre-step", True,
-     "2026-10-09 自实验区转正（门槛①7端落地+你令）·各端适配器名:session_title_namer(WB)/dsh_title_namer(DSH)/traecode_title_namer(TraeCN)/qodercn_title_namer(QCN)/zcode_title_namer(ZCode)/wbai_title_namer(WBAI)/buluotuo-session-title-hook(Hermes插件)·已落地端的分子计法由各端 check 函数按其适配器名特判（未特判端分子暂少计1·回写期口径）"),
+     "2026-10-09 自实验区转正（门槛①7端落地+你令）·各端适配器名:session_title_namer(WB)/dsh_title_namer(DSH)/traecode_title_namer(TraeCN)/qodercn_title_namer(QCN)/qoderdesktop_title_namer(QD)/zcode_title_namer(ZCode)/wbai_title_namer(WBAI)/buluotuo-session-title-hook(Hermes插件)·已落地端的分子计法由各端 check 函数按其适配器名特判（未特判端分子暂少计1·回写期口径）"),
 ]
 
 # 平台级合法停用（⛔排除分母·端特例版·对齐 reply_format 全局移除先例）：
@@ -958,6 +992,243 @@ def check_traecn(fix=False):
     return 0
 
 
+def minimaxcode_actual_mounted():
+    """读 MiniMax Code 实盘：Plugin 包 hooks.json（~/.minimax/plugins/bulutuo-guards/hooks/hooks.json）。
+
+    真相源=配置文件本身（对齐 traecn/zcode/workbuddy 读配置先例·本端唯一挂载面）。
+    command 全文串含名即判挂载（含 adapter --run 的共脚本路径参数）。
+    读不到 → None（显形不静默·守卫规范 §3.5）。
+    """
+    try:
+        cfg = json.load(open(MINIMAX_PLUGIN_HOOKS, encoding="utf-8"))
+    except Exception:
+        return None
+    corpus = []
+    for groups in cfg.get("hooks", {}).values():
+        for g in groups:
+            for h in g.get("hooks", []):
+                corpus.append(h.get("command", ""))
+    blob = "\n".join(corpus)
+    return {n for n in MINIMAX_ITEMS if n in blob}
+
+
+def check_minimaxcode(fix=False):
+    """MiniMax Code 端 drift 校验（第 21 端机械校验腿·2026-10-25·皮叔令「全面更新·该登记登记」）。
+
+    分母=12（与其他端同口径）：
+      UPS 直挂：route_inject_prompt / route_miss_feeder / kb_inject_prompt / rule_fragment_inject
+      Stop 直挂：route_unknown_unknown / audit_search_kb / route_audit / route_guard_audit /
+                 feedback_detect / rule_three_layer_guard / card_id_guard
+      SessionStart：crossend_guard
+      title_namer 族端适配器：minimaxcode_title_namer（UPS）
+      ⛔ 排除三项：reply_format_guard 合法停用 / l3_conclusion_guard 全端永久关闭 /
+        session_memory_quality_guard N/A（Trae Work 专属·本端无该数据结构）
+    对账 SSOT §二·七 MiniMax Code 列（col 17）。
+    ⛔ 判定面只有本端 Plugin hooks.json——母本 ~/.workbuddy/settings.json 是 WorkBuddy 运行时，
+      本端 Plugin 不读它 ⇒ 不算本端挂载（治「靠母本挂载记本端已挂」的假绿）。
+    rc 恒 0（报告制·漂移只打印+日志，--fix 才动文档）。
+    """
+    mounted = minimaxcode_actual_mounted()
+    if mounted is None:
+        return report_source_missing(
+            "minimaxcode", "~/.minimax/plugins/bulutuo-guards/hooks/hooks.json",
+            MINIMAX_PLUGIN_HOOKS)
+    items = MINIMAX_ITEMS
+    denominator = 12
+    yes = sum(1 for n in items if n in mounted)
+    rate = f"{yes}/{denominator}"
+    doc = documented_rate(17)  # MiniMax Code 列 = 第 17 个平台列（表尾·2026-10-23 加列）
+    _df = documented_fraction(17)
+    if _df is not None and _df.split("/")[0] == str(yes) and _df.split("/")[1] != str(denominator):
+        _dm = (f"[DRIFT-DEN] minimaxcode 纯分母变更：文档 {_df} vs 计算 {yes}/{denominator}"
+               "（分子一致·分子门禁盲区·K007 分母触发腿）")
+        print(_dm); log_line(_dm)
+        if fix:
+            fix_ssot_rate("minimaxcode", yes, denominator, 17)
+    detail = " | ".join(f"{n}:{'✅' if n in mounted else '❌'}" for n in items)
+    if doc is None:
+        msg = f"[WARN] minimaxcode 文档列(col17)解析为空·无法对账——按实盘记录 {rate}（{detail}）"
+        print(msg); log_line(msg)
+        return 0
+    if doc != str(yes):
+        msg = (f"[DRIFT] minimaxcode 实测 {rate} ≠ 文档记录 {doc}/{denominator} —— "
+               f"SSOT §二·七 MiniMax Code 列与实盘脱节（幽灵挂载检查·{detail}）")
+        print(msg); log_line(msg)
+        if fix:
+            fix_ssot_rate("minimaxcode", yes, denominator, 17)
+            missing = [n for n in items if n not in mounted]
+            if missing:
+                print(f"[SUGGEST] minimaxcode 清单内未挂：{', '.join(missing)}"
+                      " —— 确认是停用(改文档注记)还是漏挂(补 Plugin hooks.json)")
+                log_line(f"[SUGGEST] minimaxcode 未挂 {missing}")
+    else:
+        _ok = f"[OK] minimaxcode 接入率 {rate} 无漂移（{detail}）"
+        print(_ok); log_line(_ok)
+    return 0
+
+
+ZWORK_RECEIPT = os.path.expanduser(
+    "~/Library/Application Support/AutoClaw-official/doenglingz/installed_manifest.json")
+ZWORK_AGENTS_MD = os.path.expanduser("[记忆共享中心]/AutoClaw/AGENTS.md")
+ZWORK_SOUL_MD = os.path.expanduser("[记忆共享中心]/AutoClaw/SOUL.md")
+ZWORK_SPEC = os.path.expanduser("[记忆共享中心]/数字分身/童灵·人格规格书.md")
+ZWORK_SLICES_MANIFEST = os.path.expanduser(
+    "[记忆共享中心]/数字分身/K2切片蒸馏/slices/manifest.json")
+ZWORK_W2_HEARTBEAT = os.path.expanduser(
+    "[记忆共享中心]/数字分身/scripts/last_run_doenglingz_slice_watch.ts")
+ZWORK_ROUTE_ENDPOINTS = os.path.expanduser(
+    "[记忆共享中心]/脚本中心/route_endpoints.json")
+ZWORK_CONFIG_ROOT = os.path.expanduser("~/Library/Application Support/AutoClaw-official")
+
+
+def check_zwork(fix=False):
+    """Zwork 端 drift 校验（第 19 端机械校验腿·2026-10-25·皮叔令「要机械」）。
+
+    本端=平台托管型软约束端（capability.yaml 端声明 hooks_event/hook_stdout_inject/
+    settings_json=false·10-25 配置根 find 复核无任何 hooks/settings 面）⇒ 12-Hook
+    分子=0 是「装不上」的平台边界如实读数（🔴待支持计入分母·对齐 SSOT 口径），⛔不是缺口。
+    机械核验对象=童灵包 v2.1.3 真接入承载（10-12 起在端·回执 install_receipt.py 产出
+    ⛔禁手写）：8 件承载逐项机械判（回执 verdict/missing + 组件在盘 + K2 标记对 +
+    准则节 + SOUL 锚 + 切片 src_hash + W2 心跳 + 观测层）+ 无 hook 面（出现即红=
+    漂移方向只许偏红）。
+    对账 SSOT §二·七 Zwork 列（col 14）：接入率 0/12 + 端承载 +8
+    （panel_snapshot v0.9.14 extra 同源·口径=installed capabilities+components+twin_core）。
+    rc 恒 0（报告制·漂移只打印+日志，--fix 才动文档）。
+    """
+    import hashlib
+    checks = []   # (承载件名, ok, detail)
+
+    # 1) 安装回执（机器产出·禁手写）
+    try:
+        man = json.load(open(ZWORK_RECEIPT, encoding="utf-8"))
+        ok = (man.get("verdict") == "ok"
+              and man.get("counts", {}).get("required_missing") == 0
+              and man.get("counts", {}).get("components_missing") == 0)
+        checks.append(("安装回执", ok,
+                       "v%s verdict=%s required_missing=%s" % (
+                           man.get("package_version"), man.get("verdict"),
+                           man.get("counts", {}).get("required_missing"))))
+    except Exception as e:
+        checks.append(("安装回执", False, "读取失败:%s" % e))
+        man = {}
+
+    # 2-6) 组件 5 件在盘（挂载态≠执行态·路径可达性是一等判据·v1.3.150）
+    comps = [c for c in (man.get("components") or {}).values()
+             if isinstance(c, dict) and c.get("status") == "installed" and c.get("path")]
+    for c in comps:
+        p = c["path"]
+        checks.append(("组件在盘:" + os.path.basename(p.rstrip("/")), os.path.exists(p), p))
+
+    # 7) K2 恒驻核标记对（awareness 承载·查①判据）
+    n = 0
+    try:
+        content = open(ZWORK_AGENTS_MD, encoding="utf-8", errors="ignore").read()
+        for marker in ("K2 core_slice 开始", "K2 core_slice 结束",
+                       "L6 反向约束 开始", "L6 反向约束 结束"):
+            if marker in content:
+                n += 1
+        gd = content.count("buluotuo:execution-guidelines-v1")
+    except Exception:
+        gd = -1
+    checks.append(("K2标记对(awareness)", n == 4, "%d/4" % n))
+    # 8) 执行准则节（custom_directive 承载）
+    checks.append(("执行准则节(custom_directive)", gd >= 2, "锚点%d" % gd))
+    # 9) SOUL 锚（端实体）
+    try:
+        soul = open(ZWORK_SOUL_MD, encoding="utf-8", errors="ignore").read()
+        sok = "把沉淀当资产" in soul
+    except Exception:
+        sok = False
+    checks.append(("SOUL锚(端实体)", sok, "在位" if sok else "缺失"))
+    # 10) 切片新鲜度（twin_core·查②判据）
+    try:
+        now = hashlib.sha256(open(ZWORK_SPEC, "rb").read()).hexdigest()[:12]
+        man_h = json.load(open(ZWORK_SLICES_MANIFEST, encoding="utf-8")).get("src_hash")
+        fresh = now == man_h
+        checks.append(("切片新鲜度(twin_core)", fresh,
+                       "FRESH" if fresh else "STALE now=%s manifest=%s" % (now, man_h)))
+    except Exception as e:
+        checks.append(("切片新鲜度(twin_core)", False, "读取失败:%s" % e))
+    # 11) W2 心跳（自愈同步·<25h 容忍）
+    try:
+        age_h = (__import__("time").time() - os.path.getmtime(ZWORK_W2_HEARTBEAT)) / 3600
+        checks.append(("W2心跳", age_h < 25, "%.1fh前" % age_h))
+    except Exception as e:
+        checks.append(("W2心跳", False, "读取失败:%s" % e))
+    # 12) 观测层 active
+    try:
+        row = json.load(open(ZWORK_ROUTE_ENDPOINTS, encoding="utf-8")).get("Zwork") or {}
+        checks.append(("观测层(route_endpoints)", row.get("status") == "active",
+                       "status=%s" % row.get("status")))
+    except Exception as e:
+        checks.append(("观测层(route_endpoints)", False, "读取失败:%s" % e))
+    # 13) 无 hook 注册面=平台边界（机械确认 0/12 的成因·出现 hook 面则偏红人工复核）
+    hook_face = [p for p in (
+        os.path.join(ZWORK_CONFIG_ROOT, "settings.json"),
+        os.path.join(ZWORK_CONFIG_ROOT, "hooks.json")) if os.path.exists(p)]
+    checks.append(("无hook面(平台边界)", not hook_face,
+                   "无注册面✅" if not hook_face else "出现%s→需人工复核" % hook_face))
+
+    # 端承载计数 = 与 panel_snapshot v0.9.14 extra 完全同口径（一读数两源律·同一机械源）：
+    # installed capabilities（实体判据通过才计）+ installed components（在盘才计）+ twin_core（FRESH 才计）
+    # 回执/SOUL锚/W2心跳/观测层/无hook面 = 护栏判据·⛔计入承载（否则两本账：判据项 12 ≠ 承载件 8）
+    cap_installed = [c for c in (man.get("capabilities") or [])
+                     if isinstance(c, dict) and c.get("status") == "installed"]
+    _chk = {name: ok for name, ok, _ in checks}
+    _cap_map = {"awareness": "K2标记对(awareness)",
+                "custom_directive": "执行准则节(custom_directive)"}
+    cap_ok = sum(1 for c in cap_installed if _chk.get(_cap_map.get(c.get("key"), ""), False))
+    comps_ok = sum(1 for c in comps if os.path.exists(c.get("path", "")))
+    twin_ok = 1 if _chk.get("切片新鲜度(twin_core)", False) else 0
+    承载_ok = cap_ok + comps_ok + twin_ok
+    detail = " | ".join("%s:%s(%s)" % (name, "✅" if ok else "❌", d)
+                        for name, ok, d in checks)
+
+    # SSOT 对账（col 14 = Zwork 列）
+    yes = 0            # 12-Hook 分子：无 hook 注册面 ⇒ 0（平台边界·非缺口）
+    denominator = 12
+    doc = documented_rate(14)
+    _df = documented_fraction(14)
+    if _df is not None and _df.split("/")[0] == str(yes) and _df.split("/")[1] != str(denominator):
+        _dm = ("[DRIFT-DEN] zwork 纯分母变更：文档 %s vs 计算 %d/%d（分子一致·分子门禁盲区）"
+               % (_df, yes, denominator))
+        print(_dm); log_line(_dm)
+        if fix:
+            fix_ssot_rate("zwork", yes, denominator, 14)
+    try:
+        cell = open(SSOT, encoding="utf-8").read()
+        zcell = ""
+        for line in cell.splitlines():
+            if line.strip().startswith("|") and line.strip().lstrip("|").strip().startswith("接入率"):
+                cells = [c.strip() for c in line.strip().strip("|").split("|")]
+                if 14 < len(cells):
+                    zcell = cells[14]
+                break
+        extra_in_doc = re.search(r"\+(\d+)", zcell)
+        extra_doc = int(extra_in_doc.group(1)) if extra_in_doc else None
+    except Exception:
+        extra_doc = None
+    if extra_doc is not None and extra_doc != 承载_ok:
+        _dm = ("[DRIFT-EXTRA] zwork 端承载：文档 +%d vs 机械核验 %d —— SSOT 与实盘脱节"
+               % (extra_doc, 承载_ok))
+        print(_dm); log_line(_dm)
+    if doc is None:
+        msg = ("[WARN] zwork 文档列(col14)解析为空·无法对账——按实盘记录 端承载 %d/8·"
+               "12-Hook 0/12 平台边界（%s）" % (承载_ok, detail))
+        print(msg); log_line(msg)
+        return 0
+    if doc != str(yes):
+        msg = ("[DRIFT] zwork 实测 12-Hook %d/%d(平台边界) ≠ 文档记录 %s/%d —— "
+               "SSOT §二·七 Zwork 列与实盘脱节（%s）" % (yes, denominator, doc, denominator, detail))
+        print(msg); log_line(msg)
+        if fix:
+            fix_ssot_rate("zwork", yes, denominator, 14)
+    else:
+        _ok = ("[OK] zwork 12-Hook 接入率 %d/%d 无漂移（平台边界·装不上非缺口）·"
+               "端承载机械核验 %d/8（%s）" % (yes, denominator, 承载_ok, detail))
+        print(_ok); log_line(_ok)
+    return 0
+
 
 def documented_fraction(col):
     """纯分母变更腿（2026-10-09·皮叔令「立项·按K007做完」·K007 v1.1 声明值对账固定项反哺缺口）。
@@ -1163,7 +1434,7 @@ def _load_retired_ledger(ledger_path=None, home=None):
         with open(ledger_path, encoding="utf-8") as f:
             return json.load(f), None, ""
     except FileNotFoundError:
-        author_side = os.path.isdir(PLACEHOLDER)
+        author_side = os.path.isdir(os.path.expanduser("[记忆共享中心]"))
         if author_side:
             return None, "red", ("🔴 禁设台账缺失——§二·廿一 法则1 失效面（源码读不到台账=禁设核查"
                                  "静默变零，比无台账更毒：消费者以为有闸）：%s" % ledger_path)
@@ -1302,7 +1573,7 @@ def _retired_selftest():
     tmp = tempfile.mkdtemp(prefix="retired-selftest-")
     try:
         home = os.path.join(tmp, "home")
-        arch = PLACEHOLDER
+        arch = os.path.expanduser("[记忆共享中心]")
         ledger = json.load(open(RETIRED_LEDGER, encoding="utf-8"))
         lg = os.path.join(tmp, "retired-hooks.json")
         json.dump(ledger, open(lg, "w", encoding="utf-8"))
@@ -1345,8 +1616,8 @@ def _retired_selftest():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default="workbuddy",
-                    choices=["workbuddy", "hermes", "qoder-desktop", "qoder-cn", "dsh", "zcode", "autoclaw", "lobsterai", "traework", "doubaowork", "workbuddyai", "traecn"],
-                    help="平台源：workbuddy=读 ~/.workbuddy/settings.json；hermes=读 config.yaml plugins.enabled；qoder-desktop=读 ~/.qoder/settings.json；qoder-cn=读 ~/.qoder-cn/settings.json；dsh=读插件 index.js 实盘（STOP_GUARDS+pre-step）；zcode=读 ~/.zcode/cli/config.json hooks.events 实盘；autoclaw=读 openclaw.json+patrol 实盘（2026-08-22 第7端）；lobsterai=读 openclaw.json plugins.allow+patrol+state/hooks 实盘（2026-08-22 第8端）；traework=读 route_traework_patrol.sh 实盘（2026-08-22 第9端·Trae Work 无 hooks 平台边界·守卫全挂 patrol 拉模式）；doubaowork=读 route_doubaowork_patrol.sh 实盘+心跳（2026-08-25 第10端·豆包办公无 hooks+无 session_memory·仅2文件级守卫可机械执行·执行证据校验路径不读配置文件）；workbuddyai=读 ~/.workbuddy-ai/settings.json（2026-09-11 第18端·WorkBuddy AI 国际版·与国内版同 schema 同代码双发行版）；traecn=读 ~/.trae-cn/hooks.json 实盘（2026-10-09 第20端·Trae CN 合并版·6事件命令式 Hook·分母11·crossend N/A·Stop 正文类经 traecn_transcript_adapter --run 承载）")
+                    choices=["workbuddy", "hermes", "qoder-desktop", "qoder-cn", "dsh", "zcode", "autoclaw", "lobsterai", "traework", "doubaowork", "workbuddyai", "traecn", "minimaxcode", "zwork"],
+                    help="平台源：workbuddy=读 ~/.workbuddy/settings.json；hermes=读 config.yaml plugins.enabled；qoder-desktop=读 ~/.qoder/settings.json；qoder-cn=读 ~/.qoder-cn/settings.json；dsh=读插件 index.js 实盘（STOP_GUARDS+pre-step）；zcode=读 ~/.zcode/cli/config.json hooks.events 实盘；autoclaw=读 openclaw.json+patrol 实盘（2026-08-22 第7端）；lobsterai=读 openclaw.json plugins.allow+patrol+state/hooks 实盘（2026-08-22 第8端）；traework=读 route_traework_patrol.sh 实盘（2026-08-22 第9端·Trae Work 无 hooks 平台边界·守卫全挂 patrol 拉模式）；doubaowork=读 route_doubaowork_patrol.sh 实盘+心跳（2026-08-25 第10端·豆包办公无 hooks+无 session_memory·仅2文件级守卫可机械执行·执行证据校验路径不读配置文件）；workbuddyai=读 ~/.workbuddy-ai/settings.json（2026-09-11 第18端·WorkBuddy AI 国际版·与国内版同 schema 同代码双发行版）；traecn=读 ~/.trae-cn/hooks.json 实盘（2026-10-09 第20端·Trae CN 合并版·6事件命令式 Hook·分母11·crossend N/A·Stop 正文类经 traecn_transcript_adapter --run 承载）；zwork=读童灵包安装回执+端实体机械核验（2026-10-25 第19端·平台托管型软约束端·无 hook 注册面=0/12 平台边界·承载 8 件逐项机械判）")
     ap.add_argument("--fix", action="store_true",
                     help="自动修复模式：实测接入率与SSOT文档不一致时自动同步文档（低风险）；settings.json 缺 Hook 仅报告建议（高风险）")
     ap.add_argument("--absorb", metavar="SRC", help="FU-79腿：本端缺项×别端已落地 只读显形（不计分子·不改文件）")
@@ -1382,6 +1653,10 @@ def main():
         return check_doubaowork(fix=args.fix)
     if args.src == "traecn":
         return check_traecn(fix=args.fix)
+    if args.src == "minimaxcode":
+        return check_minimaxcode(fix=args.fix)
+    if args.src == "zwork":
+        return check_zwork(fix=args.fix)
 
     # 平台参数：配置文件 / SSOT 列 / 分母是否含 crossend（Qoder Desktop/CN 专属适用）
     if args.src == "qoder-desktop":
@@ -1420,6 +1695,40 @@ def main():
                       any("ups_aggregator.py" in c for _, c in _u)
         if ups_mounted:
             mounted |= ups_carried
+    # 2026-10-23 童灵根治 国际版 title_namer 假缺 1：国际版适配器名=wbai_title_namer.py，
+    # 不含字面串 "session_title_namer"→match_hooks 恒 ❌（实证：本会话标题即由该钩子写入
+    # workbuddy.db sessions.custom_title）。按 HOOKS 清单第 140 行注记"各端适配器名特判"补认，
+    # 口径同 workbuddy 端 ups_carried——把「别名不匹配」误判成「未接入」= C-206 同族病。
+    if args.src == "workbuddyai":
+        _s2, _u2, _d2 = classify_entries(settings)
+        if any("wbai_title_namer" in c for _, c in _s2) or \
+           any("wbai_title_namer" in c for _, c in _u2):
+            mounted.add("session_title_namer 族")
+    # 2026-10-23 Qoder Desktop title_namer 适配器（qoderdesktop_title_namer.py）：
+    # 与 wbai 同族——适配器别名不含 "session_title_namer" 字面串，按 HOOKS 注记特判补认。
+    if args.src == "qoder-desktop":
+        _s3, _u3, _d3 = classify_entries(settings)
+        if any("qoderdesktop_title_namer" in c for _, c in _s3) or \
+           any("qoderdesktop_title_namer" in c for _, c in _u3):
+            mounted.add("session_title_namer 族")
+    # 2026-10-25 ZCode title_namer 适配器（zcode_title_namer.py·v0.9.2 同族第四例）：
+    # 与 wbai/qoderdesktop 同病——适配器别名不含 "session_title_namer" 字面串，match_hooks 恒 ❌
+    # →面板 11/12 缺 1 假缺（实证：zcode_title_namer.py 实挂 config.json UserPromptSubmit·
+    # 本会话标题即其产物）。按 HOOKS 注记"各端适配器名特判"补认，口径同 wbai/qoderdesktop。
+    if args.src == "zcode":
+        _s4, _u4, _d4 = classify_entries(settings)
+        if any("zcode_title_namer" in c for _, c in _s4) or \
+           any("zcode_title_namer" in c for _, c in _u4):
+            mounted.add("session_title_namer 族")
+    # 2026-10-25 Qoder CN title_namer 适配器（qodercn_title_namer.py·v0.9.3 同族第五例）：
+    # 同日全端排摸坐实——矩阵行 L209 QCN ✅（09-20 实挂 record-only）vs 校验器 ❌（无特判）
+    # vs SSOT 登记同错 11/12 =「无漂移」三面一致地错。补认口径同上。
+    # （AutoClaw/LobsterAI/Trae Work 的 title_namer ❌ 为矩阵行明记「未接·计入分母」=真缺非假缺·不特判）
+    if args.src == "qoder-cn":
+        _s5, _u5, _d5 = classify_entries(settings)
+        if any("qodercn_title_namer" in c for _, c in _s5) or \
+           any("qodercn_title_namer" in c for _, c in _u5):
+            mounted.add("session_title_namer 族")
     # 2026-08-26 你拍板：所有平台统一分母 = 12（含 crossend_guard）
     # crossend_guard 定位：跨工具中立守卫（多工具共居家目录均需）
     # 🔴待支持（因平台功能不支持）计入分母·N/A排除分母

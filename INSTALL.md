@@ -1,4 +1,4 @@
-# 🏮 布洛陀 2.2.10 — 多平台安装入口（7 端可装·第 8 端适配中·能力矩阵驱动）
+# 🏮 布洛陀 2.2.11 — 多平台安装入口（9 端可装·LobsterAI 适配收尾中·能力矩阵驱动）
 
 > 🔴 本文件是本安装包的**宪法级入口文件**。不是建议，是硬约束。不可跳过。  
 > 🔴 所有安装流程从这里开始。不管用户怎么说，第一个读的文件必须是这里。
@@ -60,6 +60,30 @@
 
 ---
 
+## 🔐 macOS 权限陷阱与装完三问（TCC·zhangyan#3 根治·2026-10-26）
+
+### 完全磁盘访问（FDA）前置
+
+七个 macOS 守护（slice-watch / awaken-patrol / distill-scheduler / drift-check-remind / 记忆琥珀三件等）依赖**完全磁盘访问**权限扫描记忆中心。装完守护不跑，第一嫌疑就是 TCC 没授。
+
+⛔ **无效操作**：给 `/bin/bash`、`/bin/sh`、`/bin/zsh` 授 FDA——macOS **有意忽略**系统 shell 的授权（防授权跳板），授了也白授。
+
+✅ **正确路径**：给 Python framework **真身**授权（系统设置 → 隐私与安全性 → 完全磁盘访问权限 → +）：
+
+- 文件选择器里 `/Library/Developer/CommandLineTools/usr/bin/python3` 是**符号链接，选不中**；
+- 真身在框架内：`/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.x/bin/python3.x`（3.x 按本机版本选）；
+- 用 Homebrew Python 的同理选 `.../Frameworks/Python.framework/...` 下的真身。
+
+### 装完三问（三问全过才算装完）
+
+1. **服务存在？** `launchctl list | grep com.buluotuo` / `grep com.doenglingz` 有记录；
+2. **成功执行过？** `~/Library/Logs/buluotuo/` 下对应日志非零体积（或尾 100 行有完成标记）——不问"在运行"，问"成功过几次"；
+3. **产物最新？** 守护输出目录最新文件的时间戳是当日。
+
+三问有任一不过 → 跑 `bash verify.sh` 看 4.8 段三态分账（已注册零痕迹=真失败；未安装=待办）。
+
+---
+
 ## Step -0.9：价值宣导与平台亮牌（v2.0 新增·用户两步法①）
 
 > 用户说"安装/装/执行安装"且 Step -1 命中"其他/全包安装"（非 Skill 名、非 upgrade）→ 本步最先执行。
@@ -80,6 +104,7 @@
 5. **支持的端（亮牌）**：⛔以下按纯文本行转述，不转成表格（部分端聊天框不渲染表格，竖线会露出生肉）。数字=装完后该端机器上实际生效的件数（装机自检输出对账，⛔话术不手改数）：
    · 🟡 WorkBuddy：系统文件四件+38 个自动值守钩子全自动；第 5 件「自定义指令」在设置框里，**你粘贴保存 1 步**（平台机制如此：装机器给文件，给不了你的设置框）
    · 🟢 Qoder CN：5 个系统文件 + 常驻注入面 + 5 类事件钩子
+   · 🟢 Trae CN（原 Trae Work 已合并为单端）：5 个系统文件 + 6 类事件钩子（25 个功能件，装完自检 25/25）
    · 🟢 ZCode：系统文件五份内容合并进 AGENTS.md 承载 + 7 类事件钩子
    · 🟢 Hermes：系统文件五份内容落位（IDENTITY 并入品格文件）+ 18 个插件
    · 🟢 Zwork（新版 AutoClaw）：系统文件内容由平台记忆机制吸收，安装验证已跑通
@@ -87,9 +112,9 @@
    · 🔴 LobsterAI：适配收尾中，暂不推荐安装
    一眼看懂：🟢=全自动，装上就用｜🟡=有一步需要你手动｜🔴=还没适配完，先别装
 
-   > ⛔ 以下两行为 AI 执行注记，不进用户屏：① 各端件数以装机回执/`--list` 自报为准，话术不手改数（38=ROSTER 实盘数，旧文 19 已于 2026-10-17 F2 根治对齐）；② Trae Work 暂不进用户面亮牌（2026-10-13 用户令：新版未适配完；包内适配层保留⛔不删，适配完成恢复列出）。
+   > ⛔ 以下两行为 AI 执行注记，不进用户屏：① 各端件数以装机回执/`--list` 自报为准，话术不手改数（38=ROSTER 实盘数，旧文 19 已于 2026-10-17 F2 根治对齐）；② Trae Work 端已退役（2026-10-25 裁决 A：新增 traecn + traework 退役），用户面亮牌由 Trae CN 单端承接，⛔勿按旧注记恢复 Trae Work 亮牌。
 
-6. **本次更新给你带来了什么（新老用户同播 · 本版 2.2.10）**：老用户读作"更新了什么"，新用户读作"要装上的新东西"。
+6. **本次更新给你带来了什么（新老用户同播 · 本版 2.2.11）**：老用户读作"更新了什么"，新用户读作"要装上的新东西"。
    【知识联邦引擎】
    · 两个模型，两个岗位：**Large 压缩版管检索**——问知识时用最聪明的大模型，压缩过所以普通笔记本也跑得动；**Base 管碰撞**——知识卡里互相打架的观点由它扫出来提示你合并，快且省内存、质量不降
    · 推荐都装上（两个岗都满）：检索有大模型、碰撞有 Base，各站各的岗；只装一个也能用，系统会如实告诉你哪一岗停摆
@@ -135,7 +160,8 @@
 |:---|:---|:---|:---|:---|
 | workbuddy | WorkBuddy | ✅完整 | 五系统文件（第5件自定义指令=设置框字段·装机器不代写）+38 钩子 | **粘贴 1 步** |
 | qodercn | Qoder CN（含 Qoder CN IDE） | ✅完整 | 五系统文件+rules/ 常驻注入面+AGENTS/MEMORY 模板+4 事件钩子（setup.sh 委派·自动注入） | 无 |
-| traework | Trae Work | ✅进包 ᵗ | 五系统文件+launchd 巡检（30min 自动） | 无 |
+| traecn | Trae CN | ✅完整 | 五系统文件+6 类事件钩子（25 功能件·31 条命令） | 无 |
+| minimaxcode | MiniMax Code | ✅完整 ᵐ | 五系统文件三合一（AGENTS.md + user.md + MEMORY.md）+3 事件钩子（17 条命令·Stop 走 JSON 契约适配器） | 无 ᵐ |
 | zcode | ZCode | ✅完整 | 五系统文件+7 事件钩子+2 项数据清理 | 无 |
 | doubaowork | 豆包办公 | ✅进包 ᵈ | **待粘贴文本**（脚本给不了·本端无规则目录） | **手动粘贴 1 步**ᵈ |
 | hermes | Hermes | ✅完整 | 五系统文件+**18 个插件**（人格注入·路由·守卫·台账） | 无 |
@@ -143,12 +169,18 @@
 | zwork | Zwork（AutoClaw 新客户端） | ✅完整 ᶻ | 五系统文件等价物对账（端实体+平台 Memory）+setup 对账器（对账吸收模式·零写入） | 无 ᶻ |
 
 
+> ⚪ **本表 9 行的口径**＝`component-versions.json` 的 `platform_support` 里 true 计数（9）·与 README「适配 **9 端**」同源。**包内 `adapters/autoclaw/`（旧 AutoClaw 客户端）在 cv 中为 `autoclaw: false`**——适配层仍在包内但**不计入支持数**（该端已由 Zwork 承接）·故**不在本表亮牌**；对账时见下方 ᶻ 注记，⛔ 勿把它当成漏行补进来。
+
 > **状态列语义**：「✅完整」= 该端**适配层完整进包**（有 `capability.yaml` + 端部署链 + 该端可用的验证），
 > ⛔非「端上功能与 WorkBuddy 逐项等价」。
 > **「装完你手上会有什么」这一列是给你判断用的**，状态标签只说"包全不全"，
 > 这一列说"**装完你的机器上会真的多出什么**"。两列不一致时，以这一列为准。
 >
-> ᵗ **Trae Work 边界（端用户态诚实标注·条文 24）**：① **无 hooks 事件**（产品门禁硬短路·平台边界）⇒ 守卫承载 = **launchd patrol 拉模式**（30min 定时巡检），非事件派发；② 端上 33题→文件合成流程为**按端待测**（能力矩阵该格 ⚠️待补）；③ 接入率自报走**端用户态口径**（可达 = 本机有守对象，作者机特有域件记 `EXCLUDED`·⛔不谎报可达）。
+> ᵗ **Trae CN 边界（端用户态诚实标注·条文 24）**：① 标准 hook 端——注册面=`~/.trae-cn/hooks.json`（6 事件 31 条命令=25 功能件+6 探针），安装器只部署文件、注册由本端 `setup.sh` 单点写入（⛔防双写）；② 接入率口径=12/12（adapter 喂食 5 件+直挂 7 件）；③ 本端日检属**作者侧发版门禁**，⛔不随包（`traecn/README` 已声明）。
+>
+> ᵐ **MiniMax Code 边界（端用户态诚实标注·条文 24）**：① **Plugin Hook 端**——注册面=`~/.minimax/plugins/bulutuo-guards/hooks/hooks.json`（由插件 manifest `.minimax-plugin/plugin.json` 的 `hooks` 数组声明装载·包内第 6 种注册面形态），安装器只部署副本、注册由本端 `setup.sh` 单点写入（⛔防双写）；② 3 事件 17 条命令（UPS 6 + Stop 8 + SessionStart 3），**Stop 的 8 条必裹 JSON 契约适配器**（宿主要求 stdout 为单个 JSON 对象，裸挂共享守卫会被判 `HOOK_INVALID_OUTPUT` 丢弃＝挂载在而产出不到＝假绿）；③ **五系统文件是单文件三合一**（SOUL+IDENTITY+自定义指令同处 `AGENTS.md`·平台 MUST 拼接块）；④ ⚠️ **请用默认会话**——长期记忆通道只对内置默认会话开放，选自定义 agent 会话拿不到长期记忆与用户画像（平台机制·非本包缺陷）；⑤ 本端 Skill 走**实体复制**通道（⛔非软链）。
+>
+> ᵗᵗ **Trae Work 已退役（2026-10-25 裁决 A）**：adapters/traework 与 launchd patrol 已下线并备份至记忆琥珀；用户面亮牌由 Trae CN 承接，⛔勿按旧文档恢复。
 >
 > ᶻ **Zwork 边界（平台托管型·第四型·06 规范 §2.7.2.1）**：本端无 hooks/无插件/无 cron/无 settings.json/无 rules 注入目录，唯一机制级注入位=**平台 Memory Run 级注入**；五系统文件等价物=端自有实体（档案层 AutoClaw/ 两件+平台 Memory 两面），安装=**对账吸收模式**（setup.sh 只读对账·⛔覆盖端实体·条文48 端自持有律原生成立）。**端分立铁律**：包内 `adapters/autoclaw/`＝旧客户端（`~/.openclaw-autoclaw`·OpenClaw gateway），⛔与本端混同；本机两配置根并存时探测双命中须 fail-loud 问询。
 > ᵈ **豆包办公边界**：本端**没有规则目录、没有 alwaysApply**，规则唯一通道是「设置 → 工作模式任务设置 → 工作任务偏好指令」文本框。
@@ -166,7 +198,7 @@
 
 ## Step -0.5：平台判定（v2.0 新增·能力矩阵驱动）
 
-> 本包合并 8 端适配层。**先定平台，再装对应端**——装错端=钩子注册到不存在的机制上，静默失效。
+> 本包合并 9 端适配层。**先定平台，再装对应端**——装错端=钩子注册到不存在的机制上，静默失效。
 
 **判定顺序（拿到即停，⛔不猜）**：
 
@@ -183,14 +215,14 @@ for cap in adapters/*/capability.yaml; do
 done
 ```
 
-3. **多命中/零命中 → 问用户一次**（列上表 8 端选单，⛔不让用户猜目录名）。
+3. **多命中/零命中 → 问用户一次**（列上表 9 端选单，⛔不让用户猜目录名）。
 
 **判定结果 → 安装路由**：
 
 | 平台判定 | 安装动作 |
 |---|---|
 | WorkBuddy | `python3 install_scripts.py "$MC"`（缺省=环境自证：盘上唯一命中 `.workbuddy` 即直装；WB 老机天然满足=行为兼容由探测兑现，不由猜兑现） |
-| 其余 7 端 | `python3 install_scripts.py --platform <端ID> "$MC"`（端ID=`adapters/` 目录名·显式值优先，与盘上探测冲突时打印⚠️证据行） |
+| 其余 8 端 | `python3 install_scripts.py --platform <端ID> "$MC"`（端ID=`adapters/` 目录名·显式值优先，与盘上探测冲突时打印⚠️证据行） |
 | **不传参数的任何端** | install_scripts.py 自动环境自证：**唯一命中→打印判定+直装；多命中/零命中→fail-loud 列候选转人，⛔不静默回落**（G2-2 走查根治·平台=机器环境事实，非调用者声明） |
 | 端 ID 无 `adapters/<端ID>/capability.yaml` | **该端未发布接入** → 明示"此端为占位（README-only），v2.0 未覆盖"，走 WorkBuddy 兼容分支需用户确认，⛔不静默降级 |
 
@@ -330,7 +362,7 @@ done
 
 ## 🗺️ 主线八段导航（M0~M7·2026-10-03 新增·多端合并包专用）
 
-> **为什么加这张表**：本包把 8 端合进一个包，⛔ 不能让端 AI 各自理解"流程"——
+> **为什么加这张表**：本包把 9 端合进一个包，⛔ 不能让端 AI 各自理解"流程"——
 > **主线一套，每段按本端 `capability.yaml` 变形**（装 / 变形 / 跳过三个出口）。
 > 本表是**导航**，⛔ 不替代下方各 Step 的执行细则——细则仍在原处，本表只告诉你「现在走到哪、这一段归谁做」。
 
@@ -510,7 +542,7 @@ find ~/ -maxdepth 4 -name "问卷答案汇总.md" 2>/dev/null | head -3
 ### 检测完成输出模板
 
 ```
-🏮 布洛陀 2.2.10 安装检测
+🏮 布洛陀 2.2.11 安装检测
 ├─ 用户类型：[全新 / 升级]
 ├─ 检测依据：[列出3项检测结果]
 │
@@ -685,7 +717,8 @@ $py = (Get-ChildItem "$env:USERPROFILE/.workbuddy/binaries/python/versions/*/pyt
 cp -r references/skills/"$SKILL"/* "$MC/技能配置/$SKILL/"
 
    # 替换占位符
-   find "$MC/技能配置/$SKILL/" \( -name "*.md" -o -name "*.py" -o -name "*.sh" \) -exec perl -i -pe "s|\[记忆共享中心\]|$MC|g" {} \;
+   find "$MC/技能配置/$SKILL/" \( -name "*.md" -o -name "*.py" -o -name "*.sh" \) -exec perl -i -pe "s|\[记忆共享中心\]|$MC|g; s|\[日志中心\]|$HOME/Library/Logs/buluotuo|g" {} \;
+   mkdir -p "$HOME/Library/Logs/buluotuo"
    find "$MC/技能配置/$SKILL/" -name "*.py" -exec perl -i -pe "s|\[日记仓库\]|$DIARY_VAULT|g" {} \;
    find "$MC/技能配置/$SKILL/" -name "*.py" -exec perl -i -pe "s|\[日记子目录\]|$DIARY_SUBDIR|g" {} \;
 
@@ -815,7 +848,8 @@ cp -r references/skills/"$SKILL"/* "$MC/技能配置/$SKILL/"
 
    ```bash
    MC="<记忆共享中心绝对路径>"
-   mkdir -p "$MC/记忆琥珀/engine/logs"
+   LOG_CENTER="$HOME/Library/Logs/buluotuo"     # 守护日志中心（[日志中心] 占位符渲染目标）
+   mkdir -p "$MC/记忆琥珀/engine/logs" "$LOG_CENTER"
 
    # 复制脚本
    cp references/记忆琥珀/scripts/amber_backup.sh "$MC/记忆琥珀/engine/"
@@ -823,7 +857,7 @@ cp -r references/skills/"$SKILL"/* "$MC/技能配置/$SKILL/"
    chmod +x "$MC/记忆琥珀/engine/"*.sh
 
    # 替换占位符
-   perl -i -pe "s|\[记忆共享中心\]|$MC|g" "$MC/记忆琥珀/engine/"*.sh
+   perl -i -pe "s|\[记忆共享中心\]|$MC|g; s|\[日志中心\]|$LOG_CENTER|g" "$MC/记忆琥珀/engine/"*.sh
 
    # 生成白名单（带记忆琥珀设计哲学 §4.6 白名单制说明）
    # 如果已有白名单，只追加不覆盖；如果是全新，从模板生成
@@ -834,7 +868,7 @@ cp -r references/skills/"$SKILL"/* "$MC/技能配置/$SKILL/"
 
    # 注册 launchd（macOS 后台守护）
    cp references/记忆琥珀/scripts/com.memoryamber.backup.plist.template ~/Library/LaunchAgents/com.memoryamber.backup.plist
-   perl -i -pe "s|\[记忆共享中心\]|$MC|g" ~/Library/LaunchAgents/com.memoryamber.backup.plist
+   perl -i -pe "s|\[记忆共享中心\]|$MC|g; s|\[日志中心\]|$LOG_CENTER|g" ~/Library/LaunchAgents/com.memoryamber.backup.plist
    launchctl load ~/Library/LaunchAgents/com.memoryamber.backup.plist
    ```
 
@@ -996,8 +1030,9 @@ Mac / Windows / Linux **三端通用，一样都不缺**。那 5 个 `.sh` 只�
 > # 前提：数字分身已部署（下文 [数字分身中心] = 你的数字分身目录，含 scripts/ 子目录）
 > cp references/digital-twin/scripts/com.doenglingz.drift-check-remind.plist.template \
 >    ~/Library/LaunchAgents/com.doenglingz.drift-check-remind.plist
-> perl -i -pe 's|\[数字分身中心\]|'"$DT"'|g' \
+> perl -i -pe 's|\[数字分身中心\]|'"$DT"'|g; s|\[日志中心\]|'"$HOME/Library/Logs/buluotuo"'|g' \
 >    ~/Library/LaunchAgents/com.doenglingz.drift-check-remind.plist   # $DT=你的数字分身目录绝对路径
+> mkdir -p ~/Library/Logs/buluotuo
 > cp references/digital-twin/scripts/doenglingz_drift_check_remind.py "$DT/scripts/"
 > launchctl load ~/Library/LaunchAgents/com.doenglingz.drift-check-remind.plist
 > launchctl kickstart -k gui/$(id -u)/com.doenglingz.drift-check-remind   # 首跑验证（应输出"未到期"或"state 未初始化"）
@@ -1011,7 +1046,8 @@ Mac / Windows / Linux **三端通用，一样都不缺**。那 5 个 `.sh` 只�
 > # macOS：$MC=你的记忆共享中心绝对路径
 > cp references/digital-twin/scripts/com.doenglingz.slice-watch.plist.template \
 >    ~/Library/LaunchAgents/com.doenglingz.slice-watch.plist
-> perl -i -pe 's|\[记忆共享中心\]|'"$MC"'|g' ~/Library/LaunchAgents/com.doenglingz.slice-watch.plist
+> perl -i -pe 's|\[记忆共享中心\]|'"$MC"'|g; s|\[日志中心\]|'"$HOME/Library/Logs/buluotuo"'|g' ~/Library/LaunchAgents/com.doenglingz.slice-watch.plist
+> mkdir -p ~/Library/Logs/buluotuo
 > launchctl load ~/Library/LaunchAgents/com.doenglingz.slice-watch.plist
 > launchctl kickstart -k gui/$(id -u)/com.doenglingz.slice-watch   # 首跑验证：数字分身/state_bus.json mtime 应被刷新
 > ```
@@ -1028,7 +1064,8 @@ Mac / Windows / Linux **三端通用，一样都不缺**。那 5 个 `.sh` 只�
 > # macOS：$MC=你的记忆共享中心绝对路径
 > cp references/digital-twin/scripts/com.buluotuo.distill-scheduler.plist.template \
 >    ~/Library/LaunchAgents/com.buluotuo.distill-scheduler.plist
-> perl -i -pe 's|\[记忆共享中心\]|'"$MC"'|g' ~/Library/LaunchAgents/com.buluotuo.distill-scheduler.plist
+> perl -i -pe 's|\[记忆共享中心\]|'"$MC"'|g; s|\[日志中心\]|'"$HOME/Library/Logs/buluotuo"'|g' ~/Library/LaunchAgents/com.buluotuo.distill-scheduler.plist
+> mkdir -p ~/Library/Logs/buluotuo
 > launchctl load ~/Library/LaunchAgents/com.buluotuo.distill-scheduler.plist
 > launchctl kickstart -k gui/$(id -u)/com.buluotuo.distill-scheduler   # 首跑验证：蒸馏中心标记区 mtime 应被刷新
 > ```

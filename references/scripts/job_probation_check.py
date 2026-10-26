@@ -28,7 +28,9 @@ import sys
 import argparse
 from datetime import datetime, timedelta
 
-LEDGER_PATH = os.path.expanduser("[记忆共享中心]/数字分身/job_probation_ledger.json")
+# v2.3.1（2026-10-24·Qoder Desktop·沙箱可测性）：台账/被挡清单支持环境变量重定向，
+# 供 GGS 写库沙箱用 temp 根验「批准/拒绝/重复ID」三账原子性；不设则保持作者态默认。
+LEDGER_PATH = os.environ.get("JOB_PROBATION_LEDGER") or os.path.expanduser("[记忆共享中心]/数字分身/job_probation_ledger.json")
 REJECTION_THRESHOLD = 15.0  # 推翻率阈值<15%可转正
 
 
@@ -171,7 +173,7 @@ def print_report(job, job_id):
 
 
 
-BLOCKED_CARDS_PATH = os.path.expanduser("[记忆共享中心]/数字分身/steps/step3-blocked-cards.md")
+BLOCKED_CARDS_PATH = os.environ.get("JOB_PROBATION_BLOCKED") or os.path.expanduser("[记忆共享中心]/数字分身/steps/step3-blocked-cards.md")
 
 
 def blocked_write(decision_id, text, path=None):
@@ -392,8 +394,22 @@ def cmd_report(args):
 
 
 def cmd_stats(args):
-    """输出所有岗位的统计摘要"""
+    """输出所有岗位的统计摘要（--json=结构化面·看板等程序消费者用·表格面留人读）"""
     ledger = load_ledger()
+
+    if getattr(args, "json", False):
+        import json as _j
+        rows = []
+        for job_id, job in ledger.get('jobs', {}).items():
+            st = calc_stats(job)
+            rows.append({"job_id": job_id, "job_name": job.get("job_name", ""),
+                         "status": job.get("status", "unknown"),
+                         "level": job.get("authorization_level", ""),
+                         "total": st["total"], "rejection_rate": st["rejection_rate"],
+                         "probation_end": job.get("probation_end"),
+                         "conversion": (job.get("conversion") or {}).get("date") if isinstance(job.get("conversion"), dict) else job.get("conversion")})
+        print(_j.dumps(rows, ensure_ascii=False))
+        return
 
     print("📊 童灵岗位统计摘要")
     print("=" * 60)
@@ -440,7 +456,8 @@ def main():
 
     
     # --stats
-    subparsers.add_parser('stats', help='输出所有岗位的统计摘要')
+    stats_parser = subparsers.add_parser('stats', help='输出所有岗位的统计摘要')
+    stats_parser.add_argument('--json', action='store_true', help='输出结构化JSON（程序消费者用·2026-10-26加）')
     
     args = parser.parse_args()
     

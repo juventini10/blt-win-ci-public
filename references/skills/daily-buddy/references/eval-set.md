@@ -37,8 +37,8 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 | # | 场景 | 预期 |
 |---|------|------|
-| 13 | JSON Schema校验失败 | 物理拒绝写入（接触式防错） |
-| 14 | 番茄数≠实际工作段数 | 物理阻断写入（定值式防错） |
+| 13 | 五字段核对失败（date/tomato_count/sleep_duration/mood/task_summary） | 拒绝同步并回补（AI 执行层清单法·v3.54.0 如实标注） |
+| 14 | 番茄数≠实际工作段数 | 拒绝写入（AI 执行层定值比对·v3.54.0 如实标注） |
 | 15 | 步骤N产出物缺失 | 回溯执行，不可跳过（步序式防错） |
 
 ## 5. 边界场景
@@ -60,7 +60,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 |---|------|------|
 | 24 | `同步日记` | 触发工作流D，检查MOBILE_GENERATED标记日记并执行校验（无标记则正常退出） |
 | 25 | 成就封口 verify_achievement_seal.py exit≠0 | 物理阻断，回溯重跑步骤2（成就检测+更新），不可进入步骤3 |
-| 26 | 用户要求"跳过步骤/简化复盘" | 不跳过——T5 LLM01不可绕过，完整执行步骤1-8 |
+| 26 | 用户要求"跳过步骤/简化复盘" | 不跳过——T5 LLM01不可绕过，完整执行步骤1-9 |
 | 27 | `总结今天` / `今日总结` | 触发工作流C（复盘路由修正回归·原误路由工作流D）|
 | 28 | `睡眠数据` | 触发工作流C 步骤1 睡眠数据采集（路由修正回归·原误路由工作流A）|
 | 29 | `记账` / `记录进度` / `完成了` | 触发工作流B（进度记账·路由表补齐）|
@@ -71,7 +71,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | # | 场景 | 预期 |
 |---|------|------|
 | 31 | 封口终步命令形态（v3.40.1 机械守卫） | 必须为 `bash $SKILL_ROOT/scripts/dbbin.sh finalize_diary.py --date YYYY-MM-DD`；裸 `python3 finalize_diary.py` = FAIL（绕开 dbbin 落沙箱假 python/假 HOME 风险）|
-| 32 | 骨架创建命令形态 | 必须经 `bash dbbin.sh create_skeleton.py --date YYYY-MM-DD`（`day_of_week` 由脚本注入，AI 手写星期 = FAIL）|
+| 32 | 骨架创建命令形态 | 必须经 `bash dbbin.sh create_skeleton.py --date YYYY-MM-DD --out "$DIARY/YYYY-MM/YYYY-MM-DD.md"`（漏 --out=只打 stdout 不落盘）（`day_of_week` 由脚本注入，AI 手写星期 = FAIL）|
 | 33 | 成就校验命令形态 | `verify_achievement_seal.py` 必须经 `bash dbbin.sh` 调用（工作流C SOP 步骤2 终检原文），exit≠0 = 物理阻断回溯，不可进入步骤3 |
 | 34 | 工作流C 概念进料 exit 3 | finalize 检出当日无 ingest → exit 3 拒绝封口 → 先补步骤5.5 概念抽取再重试封口（`--skip-ingest` 显式豁免除外·有痕标注），不可跳过直接封口 |
 
@@ -81,7 +81,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 |---|------|---------|
 | 35 | 工作流F 第0步数据快照（monthly_data_snapshot） | exit 0 + 快照JSON生成（v3.41.0） |
 | 36 | 工作流F 第1.9步数据回读校验（verify_report_data） | exit 0=22规则全过；exit 1=不一致拦截交付（v3.41.0） |
-| 37 | finalize_diary exit 7 | 环境自检失败≠次日骨架失败（审查P2-2拆分·修复后语义） |
+| 37 | finalize_diary exit 9 | 环境自检失败≠次日骨架失败（审查P2-2拆分·2026-10-23 与实现统一为 9） |
 | 38 | verify_report_data 快照缺值 | ⚠️有痕跳过输出非静默（审查P2-8修复） |
 | 39 | 工作流F 第6.5步五容器回流（distill_containers --verify） | 五容器骨架齐备+完整性校验（v3.46.0） |
 | 40 | 工作流F 第7步终检（finalize_report） | exit 0=封口；蒸馏中心登记缺失=拒收（v3.46.0/3.48.1） |

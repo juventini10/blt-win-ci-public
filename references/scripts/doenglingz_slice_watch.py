@@ -63,6 +63,7 @@ LOG = os.path.join(TWIN_HOME, "scripts/doenglingz_slice_watch.log")
 #     同构约定：core 开始标记 → [core 结束标记(ZCode/豆包/TeleAgent 有·AutoClaw 无)] → L6 开始/结束标记。
 HOMES = [
     os.path.expanduser("~/.qoder-cn/rules/doenglingz-core.md"),
+    os.path.expanduser("~/.qoder/rules/doenglingz-core.md"),  # 2026-10-24 Qoder Desktop 端（格式A·deploy_home）
     os.path.expanduser("~/.trae-cn/user_rules/doenglingz-core.md"),  # Trae Work 恒驻核（格式A·deploy_home）·2026-09-01 正名纳入自动同步
 ]
 MARKED_HOMES = [
@@ -82,6 +83,10 @@ MARKED_HOMES = [
     # 2026-09-12 纳端（WorkBuddy 国内版·本源端补挂）：童灵节在 USER.md，K2 标记对 2026-09-12 补齐
     #   （国际版标记对"复刻自国内版"但国内版本体此前无标记对、不在注册表——跨端提请自查后闭环）
     os.path.expanduser("~/.workbuddy/USER.md"),
+    # 2026-10-23 纳端（MiniMax Code 端·本端作者机接入）：童灵节在 AGENTS.md（全局强制层·平台 MUST 包裹·每轮常驻），
+    #   K2 标记对（core 开始/结束 + L6 开始/结束）由本端施工写入·格式 B·deploy_marked 自动部署+代写 src_hash。
+    #   ⚠️ 端根不硬编码死：MINIMAXCODE_HOME 可覆盖（换 profile 时用）·默认 ~/.minimax（与 activeDataDir 当前一致）。
+    os.path.expanduser((os.environ.get("MINIMAXCODE_HOME") or "~/.minimax") + "/AGENTS.md"),
     # 2026-09-09 纳端（LobsterAI 端·皮叔令「核实完就动手」）：童灵节在 workspace-main/USER.md，
     # 标记对已实测写入（core 开始/结束 + L6 开始/结束）。恒驻核随 Project Context 每轮注入。
     # 2026-10-11 任务1 补漏（WB端01:10收口三写对冲丢失件·本轮实跑仍报USER.md标记结构异常为证）：
@@ -106,6 +111,20 @@ def log_line(msg):
             f.write("%s %s\n" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
     except Exception:
         pass
+
+
+def truncate_log_if_huge(path=LOG, max_bytes=5242880, keep_lines=1000):
+    # 守护日志启动截断（zhangyan#8·2026-10-26）：超5MB保留尾1000行，防无界增长
+    try:
+        if os.path.isfile(path) and os.path.getsize(path) > max_bytes:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                tail = f.readlines()[-keep_lines:]
+            tmp = path + ".rot"
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.writelines(tail)
+            os.replace(tmp, path)
+    except Exception:
+        pass  # 截断失败不阻断主流程（同本脚本"异常放行"纪律）
 
 
 # 各端正文里的规格书 hash 戳记（两种历史句式）。
@@ -431,6 +450,7 @@ def main():
 
 if __name__ == "__main__":
     try:
+        truncate_log_if_huge()
         main()
     except Exception as e:
         log_line("⚠️ 异常放行: %s" % str(e)[:200])

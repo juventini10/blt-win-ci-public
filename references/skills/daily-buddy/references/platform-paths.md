@@ -47,5 +47,9 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | Qoder Desktop | 你的 Qoder Desktop 🖥️ | 🖥️ |
 | Qoder CN | 你的 Qoder CN 🔮 | 🔮 |
 | Qwen Work | 你的 Qwen Work 🐙 | 🐙 |
+| ZCode | 你的 ZCode 🧩 | 🧩 |
+| MiniMax Code | 你的 MiniMax Code 🐰 | 🐰 |
 
 > **署名格式**：`—— {署名}`（如 `—— 你的 豆包 🍵`），置于伙伴建议模块末尾。⛔DO NOT 用"每日伙伴"作为署名——每日伙伴是Skill名，不是执行端。
+>
+> 📌 **2026-10-23 P6a 实跑补录**：ZCode（历史周报 W39 已在用）与 MiniMax Code（本端执行）此前均未登记本表 → 署名铁律"从本表取"无法执行。补录后本表覆盖 12 端。新增端时同步在本表登记，避免再次出现"实际在用但表里没有"的断链。

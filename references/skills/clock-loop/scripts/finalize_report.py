@@ -182,12 +182,43 @@ def check_single_report(report_path):
     return True, 'ok'
 
 
-def run_check(mode, target):
+# ── 取证锁存量大赦阈值（v4.20.5·N3）───────────────────────
+# 设计取舍：存量报告是历史事实，不应用新判据追溯惩罚；但也不能静默放行。
+# 故用「报告日期 < 硬卡生效日」作大赦判据，封口时显式打 evidence_legacy_waived=true 留痕。
+# ⛔ 不用环境变量作主渠道——环境变量靠人记得设 = 纪律衰减面；只留作应急强制豁免。
+LEGACY_EVIDENCE_CUTOFF = '2026-10-25'
+
+
+def _report_is_legacy(report_path):
+    """报告是否早于取证锁硬卡生效日（判定顺序：frontmatter date → 文件名日期 → mtime）。"""
+    p = os.path.expanduser(report_path)
+    cands = []
+    try:
+        with open(p, encoding='utf-8', errors='replace') as f:
+            head = f.read(2000)
+    except OSError:
+        return False
+    m = re.search(r'^date:\s*["\']?(\d{4}-\d{2}-\d{2})', head, re.M)
+    if m:
+        cands.append(m.group(1))
+    m2 = re.search(r'(20\d{2})-?(\d{2})-?(\d{2})', os.path.basename(p))
+    if m2:
+        cands.append(f'{m2.group(1)}-{m2.group(2)}-{m2.group(3)}')
+    if cands:
+        return min(cands) < LEGACY_EVIDENCE_CUTOFF
+    try:
+        return datetime.fromtimestamp(os.path.getmtime(p)).strftime('%Y-%m-%d') < LEGACY_EVIDENCE_CUTOFF
+    except OSError:
+        return False
+
+
+def run_check(mode, target, extra=None):
     """subprocess调skill_eval既有CLI（JSON接口稳定·不import防副作用）。
+    extra：附加参数列表（v4.20.4：取证锁需 --source 显式绑定取证源）。
     Returns dict（解析失败→{'passed': False, 'error': ...}）"""
     try:
         proc = subprocess.run(
-            [sys.executable, SKILL_EVAL, mode, target],
+            [sys.executable, SKILL_EVAL, mode, target] + (extra or []),
             capture_output=True, text=True, timeout=120)
         return json.loads(proc.stdout)
     except Exception as e:  # 解析失败/超时=检查不可用=不放行（fail-closed）
@@ -225,7 +256,7 @@ def check_report_grade(report_path, mech_grade):
 
 def check_overdue_freeze(skill_path):
     """双盲欠账冻结门禁（v3.33.4新增·P2-1·QClaw双盲6th实锤：overdue_n≥2硬门禁原为prose级自觉）。
-    仅对被评对象=clock-loop 自身生效（SKILL.md门禁③语义：clock-loop 自升级交付前须清双盲欠账）——
+    仅对被评对象=clock-loop 自身生效（双盲欠账门禁语义：check_selfimprove_gate 的 overdue_n≥2 时冻结升级·真源=该脚本与 CHANGELOG v3.33.4；SKILL.md 正文无「门禁③」编号·v4.20.5 审查 P2 修正悬空指针）——
     其他 Skill 的评估封口不受 clock-loop 体系欠账牵连。overdue_n≥2 → 拒封口（物理阻断·非自觉）。"""
     if 'clock-loop' not in os.path.basename(os.path.dirname(os.path.abspath(skill_path))) and \
        'clock-loop' not in os.path.abspath(skill_path):
@@ -241,7 +272,7 @@ def check_overdue_freeze(skill_path):
         overdue = int(data.get('double_blind_overdue_n', 0))
         if overdue >= 2:
             return False, (f'🔴 双盲欠账{overdue}次≥2——clock-loop自身版本升级交付冻结：'
-                           f'须先清双盲欠账（SKILL.md门禁③·v3.33.4物理化）')
+                           f'须先清双盲欠账（check_selfimprove_gate overdue_n≥2 冻结·v3.33.4物理化）')
         return True, f'双盲欠账{overdue}次（<2·未触发冻结）'
     except Exception as e:
         return False, f'overdue_gate执行失败: {e}（fail-closed·不误放行）'
@@ -573,12 +604,26 @@ def finalize(skill, report, archive_root=DEFAULT_ARCHIVE_ROOT):
     detail.append(('promise_overdue_guard', po_ok, po_reason))
     # ── 硬门禁14：evidence_precondition（v4.9.0新增·取证锁 L1证据行+L2断言计数·物理约束与防误§七） ──
     # 证：最终判据=所有原生真相断言须能在源找得到；AI 自述取证的 locked 声明一律不采信（重跑取证）。
-    # 存量兼容：报告无任何断言行（旧格式）→ N/A 放行（防卡死历史报告）；有断言行才强制校验。
+    # v4.20.5：无断言不再默认 N/A 放行；存量报告改走「日期大赦」（非环境变量主渠道）。
+    #   独立审查 P1 实证：官方 report-template 旧版无断言行段 + 本门禁对「无断言行」
+    #   显式 N/A 放行 —— 两条叠在一起，用官方模板走一遭就天然绕开取证锁（声明-实现脱钩）。
+    #   三分支：应急强制豁免(env) > 存量日期大赦(留痕) > 新报告硬卡 FAIL。行号漂移不属大赦面。
     if exists:
-        ev = run_check('--check-evidence', report)
+        # v4.20.4：取证源显式绑定被评 Skill（独立审查 N1：不绑源=批量封口除一份外全假红）
+        ev = run_check('--check-evidence', report, ['--source', os.path.expanduser(skill)])
+        _legacy_waiver = os.environ.get('CLOCKLOOP_ALLOW_LEGACY_NO_ASSERT') == '1'
+        _is_legacy_report = _report_is_legacy(report)
         for d in (ev.get('detail') or []):
-            if '无任何' in d:  # 无断言行=该报告未带断言证据（旧格式）→ N/A
-                ev = {'passed': True, 'na': True, 'detail': [d]}
+            if '无任何' in d or '有效断言' in d:  # 无断言行 / 断言不足阈值
+                if _legacy_waiver:
+                    ev = {'passed': True, 'na': True, 'evidence_legacy_waived': True,
+                          'detail': [d + '（应急强制豁免 CLOCKLOOP_ALLOW_LEGACY_NO_ASSERT=1·留痕）']}
+                elif _is_legacy_report:
+                    ev = {'passed': True, 'na': True, 'evidence_legacy_waived': True,
+                          'detail': [d + f'（存量报告大赦：日期早于 {LEGACY_EVIDENCE_CUTOFF}·门禁14 降级 advisory·留痕 evidence_legacy_waived=true）']}
+                else:
+                    ev = {'passed': False, 'na': False,
+                          'detail': [d + f'（v4.20.5 起新报告默认 FAIL：需含 [check_id][行号][原文][✅❌] 断言行；日期早于 {LEGACY_EVIDENCE_CUTOFF} 的存量报告自动大赦并留痕）']}
                 break
         ev_ok = bool(ev.get('passed'))
     else:

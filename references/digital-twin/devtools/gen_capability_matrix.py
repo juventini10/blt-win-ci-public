@@ -151,7 +151,7 @@ def build(pkg: str) -> str:
          "> ✅=端声明支持 · ❌=端声明不支持 · `—<br>无声明`=**该端没有 capability.yaml**",
          "> （不是「不支持」，是**没测过**——两者混同会诱导端 AI 去修不存在的问题）",
          "",
-         f"生成时间口径：随包内 `capability.yaml` 变��即变·⛔ 不写死日期（避免二次漂移源）", "",
+         f"生成时间口径：随包内 `capability.yaml` 变更即变·⛔ 不写死日期（避免二次漂移源）", "",
          "## 一、能力矩阵（`capabilities` 段 × 各端）", ""]
     hdr = "| 能力 | " + " | ".join(data[e]["name"] for e in ends) + " |"
     sep = "|---|" + ":---:|" * len(ends)

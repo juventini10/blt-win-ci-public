@@ -33,8 +33,19 @@ def log_lock(logfile, timeout_s=10.0):
         return
     try:
         if os.name == "posix":
-            import fcntl
-            fcntl.flock(fd, fcntl.LOCK_EX)
+            import fcntl, time
+            # v3.19.6：POSIX 与 Win 对称超时——旧实现 LOCK_EX 无限阻塞，timeout_s 形参只对 Win
+            # 生效（docstring 声明"持不到超时则 best-effort 放行"但 POSIX 未实现）；
+            # 持锁进程若活着不放手=全端写入永久挂起。NB 轮询 + 超时放行，与 Win 同口径。
+            t0 = time.time()
+            while True:
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except OSError:
+                    if time.time() - t0 > timeout_s:
+                        break  # best-effort 放行（超时不 hang·仍可能竞态，与 Win 口径一致）
+                    time.sleep(0.05)
         elif sys.platform == "win32":
             import msvcrt, time
             msvcrt.setlkinfo = None

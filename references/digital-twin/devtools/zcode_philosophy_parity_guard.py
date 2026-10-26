@@ -68,7 +68,9 @@ def _ledger_top(text):
                 if e:
                     tops.append(e.group(1))  # 版本式标题仍是条目（守卫规范 ### v1.2.207（ 实证）
                     continue
-                in_sec = False  # 非版本标题=区段止
+                # v1.0.4：账区 append-only 至文件尾——区内非版本标题（内容节回插）不再断区段。
+                # 实证：守卫编写规范 L1422「## 仪器自证 · 报警文案即行动指令（v1.2.237…）」内容节标题
+                # 把 279/280/281 三条列表形态条目切出区段 ⇒ 顶条恒读 1.2.278=假两本账（2026-10-24 实测）。
                 continue
             continue
         if in_sec:
@@ -103,6 +105,14 @@ def _target_glob():
     return os.environ.get("ZCODE_PARITY_TARGET", TARGET_GLOB_DEFAULT)
 
 
+def _summary_top(text):
+    """v1.0.5 兜底：无「变更记录」区段的 summary 累积链型账目（INDEX.md 实证）——
+    frontmatter summary 以加粗链首=最新版本（**vX.Y.Z（date…）；前值 **vX.Y.Z…），
+    提取链首为顶条。仅当区段型解析返回 None 时启用。"""
+    m = re.search(r'summary:\s*"?\*{2}v?(\d+(?:\.\d+)+)\s*[（(]', text[:4000])
+    return m.group(1) if m else None
+
+
 def parse_version(p: Path):
     """返回 (frontmatter_version, ledger_top_version, mtime)·文件缺失→None。"""
     try:
@@ -111,7 +121,7 @@ def parse_version(p: Path):
     except OSError:
         return None
     fm = FM_RE.search(text[:2000])
-    led = _ledger_top(text)
+    led = _ledger_top(text) or _summary_top(text)
     return (fm.group(1) if fm else None,
             led,
             mtime)
@@ -215,10 +225,46 @@ def self_test():
         r7 = parse_version(td / "boldhalf.md")
         assert r7 and _norm(r7[1]) == "1.2.207", "T5c"
         ok += 1; print("✅ T5 实盘三格式（粘连/底部最新/加粗半角）全解析")
+        # T6 区段中途非版本标题不断链（v1.0.4·守卫规范 L1422「## 仪器自证…」实盘形态衍生：
+        #   append-only 账区内内容节标题回插，其后列表形态条目仍须被读作顶条——此前被切断=假两本账）
+        (td / "midsec.md").write_text(
+            "---\nversion: v2.0.1\n---\n正文\n## 变更记录\n- v2.0.0（2026-10-23）：a\n"
+            "## 仪器自证 · 某判据（v1.2.237 新增硬条目）\n正文小节\n- **v2.0.1（2026-10-24·x）**：b\n",
+            encoding="utf-8")
+        r8 = parse_version(td / "midsec.md")
+        assert r8 and _norm(r8[1]) == "2.0.1", "T6a"
+        ok += 1; print("✅ T6 区段中途非版本标题不断链（列表条目仍读作顶条）")
+        # T7 变异负例：顶条被切形态的旧判据行为已废——若新代码回退成「非版本标题断区段」须复红
+        (td / "midsec_bad.md").write_text(
+            "---\nversion: v3.0.9\n---\n正文\n## 变更记录\n- v3.0.8（2026-10-23）：a\n"
+            "## 仪器自证 · 某判据\n- **v3.0.9（2026-10-24·x）**：b\n", encoding="utf-8")
+        r9 = parse_version(td / "midsec_bad.md")
+        assert r9 and _norm(r9[0]) == "3.0.9" and _norm(r9[1]) == "3.0.9", "T7a"
+        # 两本账负例（frontmatter 超前账区顶条仍须检出）
+        (td / "midsec_bad2.md").write_text(
+            "---\nversion: v3.1.0\n---\n正文\n## 变更记录\n- v3.0.8（2026-10-23）：a\n"
+            "## 仪器自证 · 某判据\n- **v3.0.9（2026-10-24·x）**：b\n", encoding="utf-8")
+        r10 = parse_version(td / "midsec_bad2.md")
+        assert r10 and _norm(r10[0]) == "3.1.0" and _norm(r10[1]) == "3.0.9", "T7b"
+        ok += 1; print("✅ T7 变异负例（回退断链即失顶条·两本账仍检出）")
+        # T8 summary 累积链型兜底（v1.0.5·INDEX.md 实盘形态衍生：无变更记录区段·
+        #   frontmatter summary 加粗链首=最新——此前 ledger=None 恒⚪，现可判·账实一致须静默）
+        (td / "sumchain.md").write_text(
+            '---\nversion: v1.0.74\nsummary: "**v1.0.74（2026-10-24·x）：登记面追平**；前值 **v1.0.73（2026-10-24·y）：旧条**"\n---\n正文无变更记录区段\n',
+            encoding="utf-8")
+        r11 = parse_version(td / "sumchain.md")
+        assert r11 and _norm(r11[0]) == "1.0.74" and _norm(r11[1]) == "1.0.74", "T8a"
+        # 两本账负例：summary 链顶 ≠ frontmatter 仍须显形
+        (td / "sumchain_bad.md").write_text(
+            '---\nversion: v1.0.80\nsummary: "**v1.0.74（2026-10-24·x）：旧**"\n---\n正文\n',
+            encoding="utf-8")
+        r12 = parse_version(td / "sumchain_bad.md")
+        assert r12 and _norm(r12[0]) == "1.0.80" and _norm(r12[1]) == "1.0.74", "T8b"
+        ok += 1; print("✅ T8 summary 链型兜底（INDEX 型账目可判·两本账负例仍显形）")
     for k in ("ZCODE_PARITY_DIR", "ZCODE_PARITY_STATE", "ZCODE_PARITY_TARGET_DIR", "ZCODE_PARITY_TARGET"):
         os.environ.pop(k, None)
-    print(f"自测结果: {ok}/5 通过")
-    return 0 if ok == 5 else 1
+    print(f"自测结果: {ok}/8 通过")
+    return 0 if ok == 8 else 1
 
 
 def main():

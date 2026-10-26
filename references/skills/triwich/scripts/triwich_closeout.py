@@ -48,6 +48,40 @@ def _find_append_log():
 
 APPEND_LOG = _find_append_log()
 
+# ── 采样台账 seal 凭据自动化（v1.1.0·2026-10-25·MiniMax Code 端根治 S1 告警） ──
+# 病：closeout 写采样行时**不带 seal 指纹** ⇒ triwich_closeout_guard 的 S1
+#     （强凭据判定：台账须含本轮 seal 指纹）恒判 miss ⇒ 每轮真告警，
+#     而手工补行＝每轮靠人记得 ⇒ 违背愿景①全自动化。
+# 治法：closeout 写行时**自动带凭据** —— 指纹取 seal stdout（唯一权威），
+#       链长取 seal.log 中本轮行的位次（与 guard._seal_identity 同口径：非空行计数）。
+#       ⛔ 不编造：指纹取不到 ⇒ 不写凭据且显形（不填假 hex）。
+SEAL_LOG = os.environ.get("TRIWICH_SEAL_LOG") or os.path.join(SKILL, "scripts", "seal.log")
+_SEAL_HEX_RX = re.compile(r"seal=([0-9a-f]{16})")
+
+
+def _seal_credential(seal_stdout):
+    """返回 (hex, chain_len) 或 (None, None)。
+
+    hex 权威源＝seal record 的 stdout（`已记录 seal=<16hex>（链长 N）`）。
+    chain_len 取 seal.log 中**本轮那一行**的位次（非空行计数·与 guard 同口径），
+    而非 stdout 里的链长 —— 后者按「已解析条目数」计，畸形行会与之产生偏差。
+    本轮不是链尾时（他端并发封口），仍写本轮指纹 + 本轮位次 ⇒ 不冒领他人凭据。
+    """
+    m = _SEAL_HEX_RX.search(seal_stdout or "")
+    hexv = m.group(1) if m else None
+    if not hexv or not os.path.isfile(SEAL_LOG):
+        return None, None
+    try:
+        lines = [l for l in open(SEAL_LOG, encoding="utf-8", errors="replace").read().split("\n") if l.strip()]
+    except (IOError, OSError):
+        return hexv, None
+    for i, ln in enumerate(lines):
+        parts = ln.split("|")
+        if len(parts) >= 3 and parts[2] == hexv:
+            return hexv, i + 1
+    return hexv, None
+
+
 def fail(step, done, msg):
     print("CLOSEOUT:FAIL @%s —— 已完成面: %s ｜%s" % (step, "→".join(done) or "无", msg), file=sys.stderr)
     sys.exit(3)
@@ -81,6 +115,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     done = []
+    seal_stdout = ""
 
     if not os.path.isfile(a.block_file):
         fail("block-file", done, "读不到 %s" % a.block_file)
@@ -117,6 +152,7 @@ def main():
     if "--followup" in a.seal_args and "FOLLOWUP:FAIL" in r.stdout:
         fail("FU登记", done, "seal 链已进但 FU 卡被拒：" + [l for l in r.stdout.splitlines() if "FOLLOWUP" in l][0][:160] + "（夹具环境须预置 TRIWICH_DECISION_ROOM 文件或去掉 --seal-args 中的 --followup）")
     seal_line = [l for l in r.stdout.splitlines() if "SEAL" in l or "FOLLOWUP" in l]
+    seal_stdout = r.stdout  # v1.1.0：供采样行凭据提取（指纹唯一权威源）
     done.append("seal" + ("+FU" if "--followup" in a.seal_args else ""))
 
     # ①b 键-链互锁回读自证（v1.2·结果导向：linkcheck 现算==链载才认封）
@@ -133,12 +169,22 @@ def main():
         if fields < 4:
             fail("sampling", done, "采样行须 ≥5 段（|分隔·任务|卡点|深度匹配|需回访|已回访），实得 %d 段" % (fields + 1))
         ts = datetime.datetime.now().strftime("%m-%d %H:%M")
-        row = "| %s | %s |\n" % (ts, a.sampling)
+        # v1.1.0（2026-10-25）：采样行**自动带 seal 凭据**（指纹+链长）
+        # ⇒ triwich_closeout_guard S1 强凭据判定（台账须含本轮 seal 指纹）可命中
+        # ⇒ 根治「每轮手工补行」的靠人记得结构（愿景①）。
+        cred = ""
+        hexv, clen = _seal_credential(seal_stdout)
+        if hexv and clen:
+            cred = " · seal %s（链长%d）" % (hexv, clen)
+        elif hexv:
+            cred = " · seal %s" % hexv
+        # 末格并入（⛔不新增列：既有关数与 8 列表头的既存不一致不在本轮扩大）
+        row = "| %s | %s%s |\n" % (ts, a.sampling, cred)
         with open(a.sampling_file, "a", encoding="utf-8") as f:
             f.write(row)
         # 落点自证：行数必须真+1
         now_n = sum(1 for _ in open(a.sampling_file, encoding="utf-8"))
-        done.append("采样台账(+1行·总%d)" % now_n)
+        done.append("采样台账(+1行·总%d%s)" % (now_n, ("·带凭据" if cred else "·⚠无凭据")))
     else:
         if not a.no_sampling_reason:
             fail("sampling", done, "本轮不采须给 --no-sampling-reason（防静默漏登·0915/0917 判例）")

@@ -42,7 +42,7 @@ DIARY_DIR = os.path.join(HOME, "[日记仓库]", "1-每日计划", "01-日记")
 CONCEPT_DIR = os.path.join(HOME, "[日记仓库]", "2-知识库", "08-概念层")
 AI_LIB_DIR = os.path.join(HOME, "[记忆共享中心]", "知识库", "AI学习库")
 INDEX_PATH = os.path.join(AI_LIB_DIR, "INDEX.md")
-COLLISION_JSON = os.path.join(os.path.expanduser("[记忆共享中心]"), "知识联邦引擎", "collision_candidates.json")
+COLLISION_JSON = os.path.join(str(dbenv.FED_DIR), "collision_candidates.json")  # 2026-10-23 P6a 修断链：旧址=顶层过渡软链·10-15 拆链即断（目录已不存在）→ 复用 dbenv.FED_DIR 单一真相源
 SYSLOG_DIR = os.path.join(os.path.expanduser("[记忆共享中心]"), "工作日志", "系统日志")
 SNAPSHOT_DIR = os.path.join(os.path.expanduser("[记忆共享中心]"), "技能配置", "daily-buddy", "data_snapshots")
 
@@ -291,13 +291,38 @@ def collect_video_data(month):
                     r"视频.{0,10}上线",
                 ]
                 future_patterns = [r"计划发布", r"准备发布", r"要发布", r"打算发布", r"明天发布", r"下周发布", r"即将发布"]
+                # 2026-10-23 P6a 修断链：原实现是「全文档只要出现任一未来态词就整篇否决」，
+                # 反向漏判——10/13 正文写"明天视频发布上线"（明日目标）+ 后文真发布，被整篇否决；
+                # 10/13/10/14 的"视频发布上线"其实在【明日目标/续接锚点】段（未来态）却被判为已发布，
+                # 导致 2026-10 快照视频数=3（真值 1 条：10-19 数字分身视频正式发布）。
+                # 修法=【命中行级判定 + 段落语义判定】：
+                #   ① 只对命中的那一行做未来态排除（原为整篇否决）；
+                #   ② 命中行若落在【明日目标/TOMORROW】或【续接锚点】段内 → 属承诺态，不算已发布。
                 is_published = False
                 for pat in publish_patterns:
-                    if re.search(pat, content):
-                        # 排除未来态
-                        if not any(re.search(fp, content) for fp in future_patterns):
-                            is_published = True
-                            break
+                    for m in re.finditer(pat, content):
+                        line_start = content.rfind("\n", 0, m.start()) + 1
+                        line_end = content.find("\n", m.end())
+                        line = content[line_start:line_end if line_end != -1 else len(content)]
+                        if any(re.search(fp, line) for fp in future_patterns):
+                            continue
+                        # 未来时点词紧邻命中片段 → 判为承诺态
+                        window = content[max(0, m.start() - 12):m.end() + 12]
+                        if re.search(r"(明天|明日|后天|下周|即将|准备|计划|打算|待|将要)", window):
+                            continue
+                        # 段落语义判定：命中所在 SECTION 是未来态 → 不算已发布
+                        prev_sec = None
+                        for sm in re.finditer(r"<!-- SECTION: (\w+) -->", content[:m.start()]):
+                            prev_sec = sm.group(1)
+                        if prev_sec == "TOMORROW":
+                            continue
+                        # 命中行在「续接锚点」引用块内 → 属昨日/今日承诺表述，不算发布事实
+                        if line.lstrip().startswith(">") and ("昨天说今天要做" in line or "昨天说" in line):
+                            continue
+                        is_published = True
+                        break
+                    if is_published:
+                        break
                 if is_published:
                     date_str = fname.replace(".md", "")
                     # 提取视频标题

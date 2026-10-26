@@ -2,18 +2,6 @@
   "_readme": "L1 派生配对豁免册·scope=mac_only|win_only·reason/basis 必填(空壳=L1判红)·候选扫描生成+依据自动定性 2026-10-10",
   "exemptions": [
     {
-      "file": "adapters/traework/scripts/install_launchd.sh",
-      "scope": "mac_only",
-      "reason": "仅 macOS 运行：依赖 launchctl、launchd、plist",
-      "basis": "件内实测引用 launchctl launchd plist（grep 在位·2026-10-10 自动定性）"
-    },
-    {
-      "file": "adapters/traework/scripts/route_traework_patrol.sh",
-      "scope": "mac_only",
-      "reason": "仅 macOS 运行：依赖 launchd",
-      "basis": "件内实测引用 launchd（grep 在位·2026-10-10 自动定性）"
-    },
-    {
       "file": "adapters/zcode/privacy/desensitize-guard.sh",
       "scope": "mac_only",
       "reason": "仅 macOS 运行：依赖 plist",
@@ -683,7 +671,19 @@
       "file": "references/skills/daily-buddy/scripts/run.sh",
       "scope": "not_on_windows_path",
       "reason": "明示不适用：daily-buddy 开发侧统一机检入口（结构闸/引用闸/形态闸/语法闸），非 Windows 装机运行件；包内执行形引用 0 命中实测",
-      "basis": "件头自述「编排律迁移·统一机检入口 v1.1·2026-10-23」+ grep references/skills/daily-buddy/ 对 scripts/run.sh 执行形引用 0 命中·2026-10-23 V2.2.10 daily-buddy 冻结态回滚带出（同 triwich run.sh 判据形）"
+      "basis": "件头自述「编排律迁移·统一机检入口 v1.1·2026-10-23」+ grep references/skills/daily-buddy/ 对 scripts/run.sh 执行形引用 0 命中·2026-10-23 发布轮 daily-buddy 冻结态回滚带出（同 triwich run.sh 判据形）"
+    },
+    {
+      "file": "references/skills/growth-box/scripts/run.sh",
+      "scope": "not_on_windows_path",
+      "reason": "明示不适用：growth-box 开发侧统一机检入口（六闸：结构/引用/形态/语法/eval计数/冒烟），非 Windows 装机运行件；包内执行形引用 0 命中实测",
+      "basis": "件头自述「编排律迁移·统一机检入口 v1.0·2026-10-23·第三实例建闸」+ grep --include=py/json/yaml 对 run.sh 执行形引用 growth 域 0 命中（SKILL.md L556 属文档提及面·不入 L1 观察窗）·2026-10-23 Qoder CN 根治轮登记（同 daily-buddy/triwich run.sh 判据形）"
+    },
+    {
+      "file": "references/skills/system-logger/scripts/orchestration_check.sh",
+      "scope": "not_on_windows_path",
+      "reason": "明示不适用：system-logger 施工末闸作者侧入口（编排结构闸参数化+负例自测），非 Windows 装机运行件；包内执行形引用 0 命中实测（SKILL.md 亦零提及，L1 loose 命中源自件头注释自串（同名印在件内））",
+      "basis": "件头自述「v3.18.0·四区骨架迁移落地件·挂点=施工末/发版链手动跑（本 Skill 无 run.sh）」+ grep --include=py/json/yaml/sh 执行形 0 命中实测·2026-10-23 Qoder CN 同步轮登记（同 growth-box/daily-buddy/triwich run.sh 判据形）"
     },
     {
       "file": "references/成就系统/achievement_notify.sh",

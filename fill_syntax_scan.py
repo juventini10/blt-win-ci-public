@@ -70,22 +70,55 @@ def scan(mc):
                         _txt = open(p, encoding="utf-8-sig").read()
                     except (UnicodeDecodeError, OSError):
                         continue
-                    # 先按单文档验；失败再按 JSONL 逐行验（按日追加的队列件·2026-10-23
-                    # V2.2.9 Win 反馈 P2-6：原实现一律整文件 loads，JSONL 恒报解析失败）。
-                    # 顺序不可倒：格式化多行 JSON 首字符是 `{`，先逐行会把合法 JSON 误判成雷。
+                    # 2026-10-25 根治（Trae CN 入包轮·3 件假雷）：0 字节 `.jsonl` 实测 2 件
+                    #   （route_evolve_backlog / h4-conflict-samples）——原实现 json.loads("")
+                    #   恒报 "Expecting value: line 1 column 1 (char 0)" ⇒ 空队列（0 条记录）
+                    #   被当语法雷。语义上 `.jsonl`＝按行追加的队列，零记录是合法态；
+                    #   `.json` 是单文档，空文件没有"零记录"形态 ⇒ 仍判雷（⛔不顺手放宽）。
+                    if not _txt.strip():
+                        if ext == ".jsonl":
+                            checked += 1
+                            continue
+                        red.append("JSON雷 %s: 空文件（.json 单文档无零记录形态）" % p)
+                        continue
                     try:
-                        try:
-                            json.loads(_txt)
-                        except json.JSONDecodeError:
-                            _lines = [ln for ln in _txt.splitlines() if ln.strip()]
-                            if not _lines:
-                                raise
-                            for _ln in _lines:
-                                json.loads(_ln)
+                        _decode_json_surface(_txt)
                         checked += 1
                     except json.JSONDecodeError as e:
                         red.append("JSON雷 %s: %s" % (p, str(e)[:80]))
     return red, checked
+
+
+def _decode_json_surface(txt):
+    """按三种合法形态验 JSON 内容（顺序不可倒·后一形态只在前一形态失败时启用）：
+
+    ① 单文档（格式化多行 JSON 首位是 `{`，必须先试整文件 loads，否则会被逐行判死）
+    ② JSONL 逐行（每行一个对象·按日追加的队列件）
+    ③ 多文档串接（多条 pretty-print JSON 连续拼接·`gap_snapshot.jsonl` 2026-10-25 实测形态）
+       —— 用 raw_decode 游标推进，既吃单行也吃多行记录，⛔不靠"猜换行"。
+    """
+    try:
+        json.loads(txt)
+        return
+    except json.JSONDecodeError as first:
+        err = first
+    lines = [ln for ln in txt.splitlines() if ln.strip()]
+    if lines:
+        try:
+            for ln in lines:
+                json.loads(ln)
+            return
+        except json.JSONDecodeError:
+            pass
+    dec = json.JSONDecoder()
+    i, n = 0, len(txt)
+    while True:
+        while i < n and txt[i] in " \t\r\n":
+            i += 1
+        if i >= n:
+            return
+        _obj, i = dec.raw_decode(txt, i)      # 失败即抛 JSONDecodeError（由调用方报雷）
+    raise err                                  # 理论不可达：非空内容 raw_decode 必抛或必解析
 
 
 def main():

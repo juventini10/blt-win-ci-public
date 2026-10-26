@@ -92,60 +92,35 @@ def types_from_rows(rows):
 
 
 def expected_from_center(path: Path):
-    """公共口径入口：读蒸馏中心 → {类型: 预期下次字符串}。失败返回 None。"""
-    try:
-        content = path.read_text(encoding="utf-8")
-    except OSError as exc:
-        print(f"ERROR 读取失败: {exc}", file=sys.stderr)
+    """公共口径入口：读蒸馏中心 → {类型: 预期下次字符串}。失败返回 None。
+
+    v8.5.2：改为委托 parse_center + latest_expected（单一解析链），不再自行重复解析。
+    原实现与 parse_center 各写一份表行解析 ⇒ 同模块三份实现（core /
+    expected_from_center / latest_expected 内联读盘），接线的偏偏是错的那份。
+    """
+    rows = parse_center(path)
+    if rows is None:
         return None
-    rows = []
-    month = None
-    for line in content.splitlines():
-        s = line.strip()
-        if s.startswith("#"):
-            m = re.match(r"^## (\d{4}-\d{2})\s*$", s)
-            month = m.group(1) if m else None
-            continue
-        if month is None or not s.startswith("|"):
-            continue
-        cells = [c.strip() for c in s.strip("|").split("|")]
-        if len(cells) < 5 or not re.match(r"^\d{4}-\d{2}-\d{2}$", cells[0]):
-            continue
-        rows.append((month, cells[1], None))
-    cfg = {typ: {"match": typ} for (_m, typ, _n) in rows}
-    return _core().extract_expected(content, cfg)
+    return {typ: nxt.isoformat() for typ, (_m, nxt) in latest_expected(rows).items()}
 
 
 def latest_expected(rows):
-    """兼容层：保持旧签名 (月段, 预期下次)，真值委托公共口径 distill_due_core。
+    """每种类型取**文档顺序最后一条**账行的 (月段, 预期下次)。
 
-    ⛔ 原实现为「月段内取第一行」，与 patrol.md §2 声明的「月段内最近一行」
-       相反 —— 2026-10-02 实锤致 1 项误报 + 6 项补蒸馏噪音。
-    依据：指令编写规范 §6.1 单一来源原则 · 真源 = distill_due_core。
+    v8.5.2 根治（P0-1·回归缺陷）：v8.3.1 为修「月段内取第一行」的 bug，把取数改成
+    「二次读盘 + 写死 Path.home()」，副作用是 main 的位置参数与 dashboard 的
+    DISTILL_CENTER_PATH 双双失效（指向沙箱仍读真档案，静默假绿）。
+    现改为**纯 rows 派生**：rows 由 parse_center 顺序遍历产出 ⇒ 顺序覆盖即
+    「文档最后一条」，零二次读盘、零路径依赖；归一化仍委托 core.normalize_type，
+    不自行分桶（口径单真源）。
     """
-    import datetime as _dt
     if not rows:
         return {}
-    # 从 rows 反推类型表后走公共口径（归一化在 core 内完成·此处不自行分桶）
-    cfg = {typ: {"match": typ, "normalize": True} for (_m, typ, _n) in rows}
-    center = Path('[记忆共享中心]') / "记忆蒸馏" / "蒸馏中心.md"
-    try:
-        content = center.read_text(encoding="utf-8")
-    except OSError:
-        content = ""
-    exp = _core().extract_expected(content, cfg) if content else {}
-    # 保留月段归属（取 rows 里该类型最后一次出现的月段）
-    seg = {}
-    for m, typ, _n in rows:
-        seg[typ] = m
-    out = {}
-    for typ, s in exp.items():
-        try:
-            y, mo, d = (int(x) for x in s.split("-"))
-            out[typ] = (seg.get(typ, ""), _dt.date(y, mo, d))
-        except (ValueError, AttributeError):
-            continue
-    return out
+    norm = _core().normalize_type
+    latest = {}
+    for month, typ, nxt in rows:
+        latest[norm(typ)] = (month, nxt)  # 顺序覆盖 = 文档顺序最后一条
+    return latest
 
 
 def classify(nxt: datetime.date):
@@ -165,7 +140,7 @@ def main():
     if rows is None:
         sys.exit(1)
     due = []
-    for typ, (_month, nxt) in latest_expected(rows).items():
+    for typ, (_month, nxt) in latest_expected(rows).items():  # v8.5.2：取数随 rows 走，位置参数生效
         level, detail = classify(nxt)
         if level:
             due.append((LEVEL_ORDER[level], f"DUE|{level}|{typ}|{nxt.isoformat()}|{detail}"))

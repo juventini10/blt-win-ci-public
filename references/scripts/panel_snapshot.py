@@ -1,6 +1,92 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""panel_snapshot.py v0.9.7 — 愿景看板 v3（峰终体验版·渲染器）
+"""panel_snapshot.py v1.1.0 — 愿景看板 v4.1（单页分区下钻·三主题可切换）
+
+v1.1.0（2026-10-25·皮叔令「三个都可以，点一个切换一个模板」·三主题系统）：
+  - 形态升级：单主题 → 三主题共存可切换——theme-a 细线终端（Linear 式·默认）/
+    theme-b 硬件面板（Teenage Engineering 式·液晶屏/LED排灯/键阵/推子）/
+    theme-c 印刷年报（Feltron 式·暖白纸底/朱红贯穿/巨号数字/行式数据条）
+  - 架构：单 DOM + 单 LIVE_JS（id 零冲突·数据注入一份）+ 三套 CSS 变量主题；
+    切换器在右上角（终端/面板/年报三钮）·localStorage('panel-theme') 记住选择·
+    body 首行内联恢复脚本防主题闪烁；趋势图颜色改读 CSS 变量
+    （--c-detected/--c-fixed/--c-immune/--chart-grid/--chart-axis），切主题自动重绘
+  - 设计语言来源：huashu-design 风格库（web 11-Dark Editorial / app 01-Hardware Panel /
+    info 01-Personal Annual Report·参照系 Linear/Teenage Engineering/Feltron）·
+    三方向真实数据预览页见 可视化呈现/design-demos/·你裁定三套全要
+  - 可读性底线落地（huashu-design 硬规则）：全站字号 ≥12px（v4 的 9.5-10px 微字全升档）
+  - 配套：merge_collision_viz.py DASHBOARD_CSS 改引用面板 CSS 变量（--accent/--panel2 等）
+    ——碰撞模块自身零主题逻辑，自动随面板主题换肤
+
+v1.0.0（2026-10-25·皮叔令「升级成简约但高级」·v4 视觉重构·峰终保留）：
+  - 形态：单页+分区+下钻——L0 心跳（闭环流唯一 hero + 四方向状态灯·10 秒读完）→
+    L1 分区带（愿景进度 / 知识库 / 平台覆盖）→ L2 点击下钻（口径/公式/构念保真度/明细表
+    全部 details 收纳）·零按钮零跳转（按钮工作台留给「面板上有动作」的那天）
+  - 设计语言七规则落地：字号阶梯（hero 40px mono / 分区读数 20-24px / 标签 11px）；
+    色彩三档制（中性灰阶承载 95% 面积 + 语义色只给状态 + 唯一强调色 --accent:#5b8cff）；
+    闭环流四阶段装饰色退役（数字中性白·差异化交给位置与箭头）；渐变全退役（进度条纯色）；
+    标题 emoji 全退役；「差值」pill 降级为 hero 脚注 chip（不可消信号不占主视图·宪法④）；
+    tabular-nums 全站
+  - 数据层零改动：take_snapshot/write_panel_data_js 一字未动（audit 对账 panel_data.js
+    不受影响）；全部元素 id 保留（LIVE_JS 注入契约不破）；PANEL_DATA 失败红横幅保留；
+    治理闸门红框保留（class alarm）；n·CI 仍随四方向卡数字同屏（显示契约不破）
+  - 配套：merge_collision_viz.py 同批 v4 化（注入产物新设计语言 + mount 锚点
+    id="collision-mount" + 幂等 remove）——两件须同批部署，单改一件=注入错位
+
+v0.9.14（2026-10-25·Zwork·第 19 端 extra 腿补齐·皮叔令「像 WorkBuddy 一样如实反馈加号后面挂了多少个」）：
+  - 病形：`extra_count()` 无 Zwork 分支 ⇒ 本端 extra 恒 None、面板「+N」空白——看着像
+    "本端没挂任何东西"，实为本端承载形态不同（软约束端·无 hooks 配置面·童灵包 2026-10-12
+    已真接入 v2.1.3）。同 Trae CN/MiniMax Code 补腿先例（v0.9.8/v0.9.12 族）。
+  - 修法：Zwork extra = 安装回执机械计数——读
+    `~/Library/Application Support/AutoClaw-official/doenglingz/installed_manifest.json`
+    （install_receipt.py 产出·⛔禁手写副本＝机械源），verdict=ok 才计（防假绿）：
+    installed capabilities + installed components + twin_core(core_built) ⇒ 2+5+1=+8。
+    ⛔ 不入 12-Hook 分母口径（平台边界·0/12 如实）——本端 extra 语义=端承载件非守卫·
+    渲染 tooltip 同步扩注「平台附加守卫/端承载件」。
+
+v0.9.13（2026-10-25·退役件残留清理·共享分母名单归正）：
+  - 病形：`extra_count()` 的共享分母名单（SHARED13·13 项）含 **已退役** 的 `reply_format_guard`
+    （退役台账 `脚本中心/守卫/retired-hooks.json`：2026-08-13 你令退役·2026-08-26 完全删除·
+    form=entity_deleted）⇒ 判据面含一个不存在的项 = 名单与退役台账脱钩（口径双本账）。
+  - 实测：全端 6 个真实挂载面（workbuddy / qoder-cn / qoder / trae-cn / zcode / minimaxcode）
+    对 `reply_format_guard` 命中数 **全为 0** ⇒ 清理**零数值影响**（各端 extra 读数不变）。
+  - 修法：名单 13→12 项（= `load_live_rates` 的 HOOKS12 逐项对齐）·常量名 SHARED13→SHARED12
+    （名称=实际条目数，消除「名单 13 / 分母 12」的数名不符）。
+  - ⛔ 未改任何端的判定结论·未改 extra 公式·未改 SSOT 登记值。
+
+v0.9.12（2026-10-25·MiniMax Code·第 21 端实盘腿补齐）：
+  - 你质证「这里面显示你还没有登记，并且你缺了很多……你看一下像 Workbuddy 啊这些，
+    它加号数字还有好多个 hook 或脚本呢，你的机制应该也是支持的」。
+  - 病形①：`load_live_rates()` 的 PLATFORMS 无 MiniMax Code ⇒ 本端 num/den 一直吃 SSOT 人工登记值
+    （配置改了面板不跟·同 Trae CN v0.9.11 族）。
+  - 病形②：`extra_count()` 无 MiniMax Code 分支（PLATFORM_CFG 只认 settings.json，而本端唯一真实
+    挂载面是 Plugin 包 hooks.json·本端无用户级 settings.json）⇒ extra 恒 None、「+N」空白。
+  - 病形③：SSOT §二·七 校验覆盖段 🟢机械校验名单无 minimaxcode ⇒ 本端恒判「❔未登记」＝假红
+    （同 Trae CN v1.8.15 族·根因＝登记做了但判据读不到）。
+  - 修法：补 Plugin hooks.json 实盘腿（形态与 settings.json 同构·12 项清单与其他端同口径）
+    + extra_count 实盘统计 + 校验覆盖段补 minimaxcode（与 platform_adaptation_check.check_minimaxcode 同源）。
+  - ⛔ 母本 ~/.workbuddy/settings.json 不算本端挂载面（那是 WorkBuddy 运行时·本端 Plugin 不读它）。
+
+v0.9.11（2026-10-25·Trae CN·本端接入自检腿补齐）：
+  - 你质证「你的接入你自己都不检查呢？……为什么 WorkBuddy/Qoder 有那么多的加号，你没有？」
+  - 病形①：`load_live_rates()` 的 PLATFORMS 无 Trae CN ⇒ 本端 num/den 一直吃 SSOT 人工登记值，
+    配置改了面板不跟（他端是实盘直读，本端是"人记账"）。
+  - 病形②：`extra_count()` 无 Trae CN 分支（PLATFORM_CFG 只认 settings.json，而本端官方挂载面
+    是 ~/.trae-cn/hooks.json）⇒ extra 恒 None、面板「+N」空白——看着像"本端不需要附加守卫"，
+    实为脚本漏配。
+  - 修法：补 hooks.json 实盘腿（本端清单 12 项·crossend N/A 排除·rule_fragment/title_namer 计入，
+    与 platform_adaptation_check.check_traecn 同口径）；extra 计入 NON_GUARD_CMDS 剔除探针。
+  - 附带发现（未代改·ZCode 端待办）：本文件 v0.9.10 顶注声称「ZCode 移出 PATROL_EXTRA_SCRIPT·
+    入 PLATFORM_CFG + SHARED13 补 title_namer」，但正文实盘仍是旧写法（PATROL 表内 ZCode、SHARED13
+    无 title_namer）＝写侧声称未回指（铁律-016 ④）。按端归属留给 ZCode 端自查补齐。
+
+v0.9.10（2026-10-25·ZCode·extra 假读数根治）：
+  - 病形：ZCode 走 PATROL_EXTRA_SCRIPT 写死「zcode_config_guard.py 存在即 +1」（patrol 型记法遗留），
+    实盘 36 挂载条目（共享 12 + 本端承载 24）只显示 +1——登记面≠实盘（与 SSOT ZCode 格 09-12
+    口径未回写同轮根治）。
+  - 修法：ZCode 移出 PATROL_EXTRA_SCRIPT·入 PLATFORM_CFG（~/.zcode/cli/config.json），
+    命令收集兼容 hooks.events 联合形态（对齐 platform_adaptation_check.classify_entries）；
+    SHARED13 补 `title_namer`（12 项分母第 12 项·各端适配器名均含该串——否则 zcode_title_namer
+    被误计成附加守卫）。连带动效：QD/QCN 的 title_namer 适配器由附加改计共享（+N 各降 1·口径归 12 项分母）。
 
 你的定案（2026-08-21 愿景仪表盘 §10·任务交接）：
   看板从"静态分数清单"重构为"峰终体验 + 闭环流"的活系统呈现。
@@ -8,6 +94,22 @@
   - 终点 = 一句话总结（峰终收尾·你记住的那句）
   - 中间 = 少而真（四方向原生数据·不合成·分数全去：北极星0.8/自动化率100%是虚荣指标）
   -   刷新即最新：panel_data.js?v={时间戳} cache_bust + fswatch/Stop 钩子重渲染
+
+v0.9.9（2026-10-25·Trae CN·端名去序号后缀配套）：
+  - 皮叔令「（第 20 端）这种很难看后缀，把我全部都撤掉，留着名字就行了」⇒ SSOT 表头端名
+    已瘦身为 `Trae CN 💡`／`Zwork 🧠`／`MiniMax Code 🐰`（v1.8.16）。
+  - 本件两步归一（先剥括号段再剥非字母数字）**保留**：服务 `WorkBuddy AI（国际版）`
+    这类真实括号后缀；端名不带序号后 key 直接命中覆盖段，无需再靠剥离代偿。
+
+v0.9.8（2026-10-25·Trae CN·面板「未登记」假红根治）：
+  - 病形：SSOT 平台列名带徽标/序号后缀（如「Trae CN 💡（第 20 端）」「Zwork 🧠（第 19 端）」），
+    _parse_coverage_from_ssot 的 key 归一只去空格与连字符 → key 变成 "traecn💡（第20端）"，
+    永远匹配不上校验覆盖段里的 "traecn" → 已登记机械校验的端在面板显示「❔ 未登记」= 假红。
+  - 修法：key 归一改为两步——先剥括号段（re.sub(r"[（(][^）)]*[）)]", "")），
+    再剥一切非字母数字（re.sub(r"[^a-z0-9]+", "", base.lower())）。
+    只剥非字母数字不够：括号里的序号数字会残留 ⇒ "traecn20" 仍匹配不上 "traecn"；
+    中文端（豆包办公等）走原「自核」兜底分支不受影响。
+  - ⛔ 不改校验覆盖段判定规则、不改任何端的登记结论（只让已有登记被正确读到）。
 
 v0.9.7（2026-09-07·皮叔批准归属约定·补全 v0.9.6 根治的最后一段）：
   - 归属约定入报警文案：自动补登报警文本新增"收到本报警的端须在变更日志补一条归属说明"
@@ -294,7 +396,7 @@ def _parse_coverage_from_ssot():
     red_names = clean(red_raw)
     # 别名映射：SSOT 校验覆盖段中的特殊标识 → 平台名 key（lower+去空格）
     # 例：dsh → deepseekharness（DeepSeek Harness）
-    alias_map = {"dsh": "deepseekharness"}
+    alias_map = {"dsh": "deepseekharness", "workbuddyai": "workbuddyai（国际版）"}
     green_set = set(green_names)
     red_set = set(red_names)
     for alias, mapped in alias_map.items():
@@ -305,7 +407,11 @@ def _parse_coverage_from_ssot():
     # 从 SSOT 表头获取平台名
     rates = load_kanban_rates() or {}
     for name in rates:
-        key = name.lower().replace(" ", "").replace("-", "")
+        # v0.9.8 端名归一：先剥括号段（（第 20 端）/（国际版）），再剥一切非字母数字
+        # （emoji/中文）。少了第一步，「Trae CN 💡（第 20 端）」会因序号里的数字残留
+        # 变成 "traecn20" ⇒ 恒匹配不上覆盖段的 "traecn" = 假「未登记」
+        base = re.sub(r"[（(][^）)]*[）)]", "", name)
+        key = re.sub(r"[^a-z0-9]+", "", base.lower())
         if key in green_set:
             out[name] = ("🟢", "机械校验 · 登记自 SSOT §二·七")
         elif key in red_set:
@@ -316,62 +422,107 @@ def _parse_coverage_from_ssot():
     return out
 
 def load_live_rates():
-    """实盘接入率：直接读各平台 settings.json hooks 算 11-Hook N/M。
+    """实盘接入率：直接读各端 settings.json 算 12-Hook N/M。
     跳过"人更新 SSOT 文档"环节——配置一改，面板刷新即最新（愿景: 全自动化·减少人工）。
-    2026-09-27 童灵根治：分母 12→11 对齐 SSOT §二·七（2026-09-12 裁定 l3_conclusion_guard
-    全端永久关闭移出分母）与 platform_adaptation_check.py 现行口径——旧 12-Hook 分母
-    给 Qoder CN/WorkBuddy 制造了假"缺 1"（实为 11/11 满额）。"""
-    HOOKS11_WITH_CROSSEND = [
-        "crossend_guard", "route_inject_prompt", "route_miss_feeder", "kb_inject_prompt",
-        "route_unknown_unknown", "audit_search_kb", "route_audit", "route_guard_audit",
-        "feedback_detect",
-        "rule_three_layer_guard", "card_id_guard",
+    2026-10-23 口径根治（面板与 platform_adaptation_check.py 打架）：
+      · 分母统一 12（2026-10-09 title_namer 族转正 +1）——旧 11 项清单造成
+        WorkBuddy 假缺 3（8/11 vs 核验器 12/12）、Qoder CN 假满额（11/11 vs 11/12）、
+        同表 11/12 分母混用→"缺 N"不可横向比；
+      · title_namer 族按各端适配器名识别（session_title_namer / wbai_title_namer / title_namer）；
+      · WorkBuddy 端 UPS 已收敛为 ups_aggregator 单出口，四件作为聚合器内部 provider
+        （settings.json 顶层无独立挂载）→ 认聚合器承载，对齐核验器 1411 行同口径；
+      · Hermes 退出实盘直读：插件级颗粒度无法逐钩核验（旧逻辑 7/11 与 SSOT 11/11 恒冲突
+        = 假红）→ 返回 None 由 SSOT 登记值兜底（同文件顶部设计声明"其余平台回退 SSOT"）。
+    2026-10-25 补齐 Trae CN 实盘腿（你质证"你的接入你自己都不检查"）：
+      · 读 ~/.trae-cn/hooks.json（官方全局挂载面·核验器 platform_adaptation_check.check_traecn 同源）；
+      · 清单按本端适用口径：crossend_guard N/A（合并单端·无他端共居）排除，
+        rule_fragment_inject + traecode_title_namer 计入 ⇒ 分母 12，不再吃 SSOT 人工登记值。
+    """
+    HOOKS12 = [
+        ("crossend_guard", ("crossend_guard",)),
+        ("route_inject_prompt", ("route_inject_prompt",)),
+        ("route_miss_feeder", ("route_miss_feeder",)),
+        ("kb_inject_prompt", ("kb_inject_prompt",)),
+        ("route_unknown_unknown", ("route_unknown_unknown",)),
+        ("audit_search_kb", ("audit_search_kb",)),
+        ("route_audit", ("route_audit",)),
+        ("route_guard_audit", ("route_guard_audit",)),
+        ("feedback_detect", ("feedback_detect",)),
+        ("rule_three_layer_guard", ("rule_three_layer_guard",)),
+        ("card_id_guard", ("card_id_guard",)),
+        ("title_namer", ("session_title_namer", "wbai_title_namer", "title_namer")),
     ]
     PLATFORMS = [
-        ("Qoder Desktop", os.path.expanduser("~/.qoder/settings.json"), True, "settings"),
-        ("Qoder CN", os.path.expanduser("~/.qoder-cn/settings.json"), True, "settings"),
-        ("WorkBuddy", os.path.expanduser("~/.workbuddy/settings.json"), False, "settings"),
-        ("Hermes", os.path.expanduser("~/.hermes/config.yaml"), False, "hermes"),
+        ("Qoder Desktop", os.path.expanduser("~/.qoder/settings.json")),
+        ("Qoder CN", os.path.expanduser("~/.qoder-cn/settings.json")),
+        ("WorkBuddy", os.path.expanduser("~/.workbuddy/settings.json")),
+        ("WorkBuddy AI（国际版）", os.path.expanduser("~/.workbuddy-ai/settings.json")),
+        # 2026-10-25 v0.9.12：MiniMax Code（第 21 端）——本端无用户级 settings.json，
+        # 唯一真实挂载面 = Plugin 包 hooks.json（形态与 settings.json 同构：hooks.<Event>.<group>.hooks[]）
+        # ⇒ 直接进 PLATFORMS 实盘腿，12 项清单与其他端同口径（title_namer 适配器名含该串）。
+        ("MiniMax Code 🐰", os.path.expanduser("~/.minimax/plugins/bulutuo-guards/hooks/hooks.json")),
+    ]
+    # Trae CN 本端清单（2026-10-25）：crossend N/A + rule_fragment/title_namer 计入
+    TRAECN_HOOKS12 = [
+        ("route_inject_prompt", ("route_inject_prompt",)),
+        ("route_miss_feeder", ("route_miss_feeder",)),
+        ("kb_inject_prompt", ("kb_inject_prompt",)),
+        ("route_unknown_unknown", ("route_unknown_unknown",)),
+        ("audit_search_kb", ("audit_search_kb",)),
+        ("route_audit", ("route_audit",)),
+        ("route_guard_audit", ("route_guard_audit",)),
+        ("feedback_detect", ("feedback_detect",)),
+        ("rule_three_layer_guard", ("rule_three_layer_guard",)),
+        ("card_id_guard", ("card_id_guard",)),
+        ("rule_fragment_inject", ("rule_fragment_inject",)),
+        ("title_namer", ("traecode_title_namer", "session_title_namer", "title_namer")),
     ]
     out = {}
-    for name, cfg, denom_all, kind in PLATFORMS:
+    for name, cfg in PLATFORMS:
         try:
-            if kind == "hermes":
-                import yaml
-                with open(cfg, encoding="utf-8") as f:
-                    d = yaml.safe_load(f)
-                enabled = d.get("plugins", {}).get("enabled", []) or []
-                mounted = set()
-                for h in HOOKS11_WITH_CROSSEND:
-                    hook_plugin = {
-                        "route_unknown_unknown": "route-audit-hook",
-                        "route_audit": "route-audit-hook",
-                        "route_guard_audit": "route-audit-hook",
-                        "audit_search_kb": "route-audit-hook",
-                        "feedback_detect": "route-audit-hook",
-                        "rule_three_layer_guard": "route-audit-hook",
-                        "card_id_guard": "route-audit-hook",
-                    }.get(h)
-                    if hook_plugin and hook_plugin in enabled:
-                        mounted.add(h)
-                # 2026-09-12 SSOT 裁定：统一分母 = 11（l3_conclusion_guard 全端永久关闭移出）
-                out[name] = (len(mounted), len(HOOKS11_WITH_CROSSEND))
-                continue
             with open(cfg, encoding="utf-8") as f:
                 d = json.load(f)
+            # 2026-10-23 口径根治②：区分挂载形态，对齐 platform_adaptation_check.classify_entries——
+            # 扁平形态（事件数组条目直接带 command·无 hooks 包裹）= 实测不执行（Qoder CN 9 条死形态
+            # 前后回执对比），旧逻辑一律计入分子 → Qoder Desktop 假 11/12（实 7/12·4 条死形态）。
             cmds = []
+            hooks_root = d.get("hooks", {})
             for evt in ("SessionStart", "UserPromptSubmit", "Stop"):
-                for it in d.get("hooks", {}).get(evt, []):
+                evt_entries = list(hooks_root.get(evt, [])) + \
+                    list(hooks_root.get("events", {}).get(evt, []))
+                for it in evt_entries:
                     if "hooks" in it:
                         for hh in it["hooks"]:
                             cmds.append(hh.get("command", ""))
-                    elif "command" in it:
-                        cmds.append(it["command"])
-            mounted = set(h for h in HOOKS11_WITH_CROSSEND if any(h in c for c in cmds))
-            # 2026-09-12 SSOT 裁定：统一分母 = 11（l3_conclusion_guard 全端永久关闭移出）
-            out[name] = (len(mounted), len(HOOKS11_WITH_CROSSEND))
+                    # 扁平 dead 形态不计入（无 else 分支即丢弃）
+            mounted = set(k for k, pats in HOOKS12
+                          if any(p in c for p in pats for c in cmds))
+            # WorkBuddy 聚合器承载（对齐 platform_adaptation_check.py 同口径）
+            if name == "WorkBuddy" and any("ups_aggregator.py" in c for c in cmds):
+                mounted |= {"route_inject_prompt", "route_miss_feeder",
+                            "kb_inject_prompt", "title_namer"}
+            out[name] = (len(mounted), len(HOOKS12))
         except Exception:
             out[name] = None
+    out["Hermes"] = None   # 插件级不可逐钩核验 → SSOT 登记值兜底
+    # Trae CN 实盘腿（2026-10-25）：读官方全局 hooks.json，本端清单 12 项
+    try:
+        with open(os.path.expanduser("~/.trae-cn/hooks.json"), encoding="utf-8") as f:
+            d = json.load(f)
+        cmds = []
+        hooks_root = d.get("hooks", {})
+        for evt in ("SessionStart", "UserPromptSubmit", "Stop"):
+            for it in hooks_root.get(evt, []):
+                if "hooks" in it:
+                    for hh in it["hooks"]:
+                        cmds.append(hh.get("command", ""))
+                elif "command" in it:
+                    cmds.append(it["command"])
+        mounted = set(k for k, pats in TRAECN_HOOKS12
+                      if any(p in c for p in pats for c in cmds))
+        out["Trae CN 💡"] = (len(mounted), len(TRAECN_HOOKS12))
+    except Exception:
+        out["Trae CN 💡"] = None
     return out
 
 def load_okr():
@@ -612,6 +763,13 @@ def take_snapshot():
     snap["regulator_activity"] = dirs.get("regulator_activity", {}).get("actual")
     snap["regulator_last"] = dirs.get("regulator_activity", {}).get("last_week")
     snap["evo_events"] = dirs.get("autonomous_evolution", {}).get("actual")
+    # 2026-10-23 口径根治（你令）：采纳三态 + 样本量 + 区间——比率⛔不裸报
+    _evo = dirs.get("autonomous_evolution", {})
+    snap["evo_adopted"] = _evo.get("adopted")
+    snap["evo_waived"] = _evo.get("waived")
+    snap["evo_pending"] = _evo.get("pending")
+    snap["evo_rate_n"] = _evo.get("adoption_rate_n")
+    snap["evo_rate_ci"] = _evo.get("adoption_rate_ci")
     snap["evo_evidence"] = dirs.get("autonomous_evolution", {}).get("evidence")
     snap["evo_adoption_rate"] = dirs.get("autonomous_evolution", {}).get("adoption_rate")
     snap["evo_state"] = dirs.get("autonomous_evolution", {}).get("state")
@@ -654,14 +812,27 @@ def take_snapshot():
     ssot = parse_kanban_rates() or {}
     merged = {}
     for name in ssot:
+        if not name.strip():
+            continue  # 2026-10-23 根治：SSOT 表头含空列（Trae CN 与 MiniMax 之间的占位列）→ 旧逻辑渲染出空名"未登记"行
         lv = live.get(name)
-        # 实盘直读若返回 None（如 Hermes yaml 分支异常）也回退 SSOT——否则 None 覆盖 SSOT 值 → 假"未解析"
+        # 实盘直读若返回 None（如 Hermes 插件级不可逐钩核验）也回退 SSOT——否则 None 覆盖 SSOT 值 → 假"未解析"
         merged[name] = lv if lv is not None else ssot.get(name)
     for name in live:
-        merged.setdefault(name, live[name])
+        if name.strip():
+            merged.setdefault(name, live[name])
     snap["platform_rates"] = merged
     snap["knowledge_ladder"] = load_knowledge_ladder()   # 知识内化流（L1-L4）
     snap["okr"] = compute_okr(platform_rates=merged)
+    # 季度时间进度（2026-10-23）：与"本季累计 X/30"并列，防读者把产量%误读为完成度
+    try:
+        import calendar as _cal2
+        _n2 = datetime.now()
+        _q2 = (_n2.month - 1) // 3 + 1
+        _s2 = datetime(_n2.year, _q2 * 3 - 2, 1)
+        _e2 = datetime(_n2.year, _q2 * 3, _cal2.monthrange(_n2.year, _q2 * 3)[1], 23, 59)
+        snap["quarter_time_pct"] = round((_n2 - _s2).total_seconds() / (_e2 - _s2).total_seconds() * 100)
+    except Exception:
+        snap["quarter_time_pct"] = None
 
     # 知识库可视化3模块数据（2026-09-08 童灵根治·合并入panel_snapshot.py）
     kb_metadata_path = os.path.join(MC, "可视化呈现/data/kb_metadata.json")
@@ -724,12 +895,14 @@ def _fmt_okr_val(v, unit):
     return (str(v) + "%") if unit == "rate" else str(v)
 
 def build_okr_html(snap):
-    """季度 OKR 目标对照层（本季目标线 vs 实际进度）。目标值来自 okr_quarter.json·当前值来自脚本·机械算。"""
+    """季度 OKR 目标对照层（本季目标线 vs 实际进度）。目标值来自 okr_quarter.json·当前值来自脚本·机械算。
+    v4.1：表面=名称/目标/进度条/读数（n·CI 由同区四方向卡同屏承载·显示契约不破）+达标线刻度（okr-tick@100%）；
+    口径 note/公式 formula/构念保真度 fidelity/measures 长文全部收进 <details> 下钻层。"""
     okr = snap.get("okr")
     if not okr:
-        return '<div class="card wide okr"><h3>🎯 季度 OKR <span style="font-size:11px;color:var(--amber);font-weight:400">数据源缺失（okr_quarter.json 未读到）</span></h3><div class="sub">季度目标线待接入——只上线有数据源的指标</div></div>'
+        return '<div class="card"><div class="drill-body">季度 OKR 数据源缺失（okr_quarter.json 未读到）——季度目标线待接入，只上线有数据源的指标</div></div>'
     rows = ""
-    for i, o in enumerate(okr.get("objectives", []), 1):
+    for i, o in enumerate(okr.get("objectives", [])):
         unit = o.get("unit")
         tgt = o.get("target_pct")
         cur = o.get("current")
@@ -748,158 +921,447 @@ def build_okr_html(snap):
                 fill_cls, cur_lbl = "f-red", "{}%".format(disp)
             width = min(pct, 100)
             st_lbl = "当前 " + _fmt_okr_val(cur, unit)
-        marks = "".join("<span></span>" for _ in range(10))
         d = o.get("dir", "x")
         rows += (
-            '<div class="okr-item">'
-            '<div class="okr-idx"><b>{}</b> · {} <span class="e">{}</span></div>'
+            '<div class="okr-item{first}">'
+            '<div class="okr-idx">{name} <span class="e">{ev}</span><span class="tg">{tgt}</span></div>'
             '<div><div class="okr-track">'
-            '<div class="okr-fill {}" id="o-fill-{}" style="width:{}%"></div>'
-            '<div class="okr-marks">{}</div></div>'
-            '<div class="okr-note">{}</div>'
-            '<div class="okr-formula" title="计算公式 · 口径SSOT: okr_quarter.json">ƒ {}</div>'
-            '<div class="okr-measure" title="构念保真度 · 绿灯≠愿景达成(2026-08-23你质证落地)">🧪 {} {}</div></div>'
-            '<div class="okr-pct" id="o-pct-{}">{}<span class="st" id="o-st-{}">{}</span></div>'
+            '<div class="okr-fill {cls}" id="o-fill-{d}" style="width:{w}%"></div>'
+            '<div class="okr-tick" style="left:100%" title="到此线=达标"></div>'
             '</div>'
-        ).format(o.get("name", "—"), tgt_txt, o.get("evidence", ""),
-                 fill_cls, d, width, marks, o.get("note", ""), o.get("formula", ""),
-                 o.get("fidelity", ""), o.get("measures", ""),
-                 d, cur_lbl, d, st_lbl)
+            '<details class="drill"><summary>口径 · 公式 · 构念保真度 ▾</summary>'
+            '<div class="drill-body"><b>口径</b>：{note}'
+            '<span class="fx">ƒ {formula}</span>'
+            '<span class="fx">🧪 {fidelity} — {measures}</span>'
+            '</div></details></div>'
+            '<div class="okr-pct" id="o-pct-{d}">{cur}<span class="st" id="o-st-{d}">{st}</span></div>'
+            '</div>'
+        ).format(first=(" okr-first" if i == 0 else ""),
+                 name=o.get("name", "—"), ev=o.get("evidence", ""), tgt=tgt_txt,
+                 cls=fill_cls, d=d, w=width,
+                 note=o.get("note", ""),
+                 formula=o.get("formula", ""),
+                 fidelity=o.get("fidelity", ""),
+                 measures=o.get("measures", ""),
+                 cur=cur_lbl, st=st_lbl)
     head = (
-        '<div class="okr-head">'
-        '<h3>🎯 季度 OKR · {} <span style="font-size:11px;color:var(--faint);font-weight:400">本季 {} → {}</span></h3>'
-        '<span class="tag" id="okr-remaining">剩余 {} 天 · 目标/当前由 okr_quarter.json + 脚本机械映射 · 自然季度框定</span>'
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px">'
+        '<span style="font-size:13px;font-weight:600">季度 OKR · {q} <span style="font-size:12px;color:var(--ink3);font-weight:400;font-family:var(--f-mono)">{s} → {e}</span></span>'
+        '<span class="tag" id="okr-remaining" style="font-size:12px;font-family:var(--f-mono);color:var(--ink2)">剩余 {r} 天 · 目标/当前由 okr_quarter.json + 脚本机械映射 · 自然季度框定</span>'
         '</div>'
-    ).format(okr.get("quarter", "—"), okr.get("start", "—"), okr.get("end", "—"),
-             okr.get("remaining") if okr.get("remaining") is not None else "—")
+    ).format(q=okr.get("quarter", "—"), s=okr.get("start", "—"), e=okr.get("end", "—"),
+             r=(okr.get("remaining") if okr.get("remaining") is not None else "—"))
     alarm = snap.get("registry_alarm")
-    alarm_html = (
-        '<div style="background:rgba(220,38,38,.14);border:1px solid var(--red);color:#fca5a5;'
-        'padding:6px 10px;border-radius:6px;font-size:11px;margin-bottom:8px">🚨 {}</div>'.format(alarm)
-    ) if alarm else ""
-    return '<div class="card wide okr">{}{}</div>'.format(alarm_html, head + rows)
+    alarm_html = ('<div class="alarm">🚨 {}</div>'.format(alarm)) if alarm else ""
+    return '<div class="card">{}</div>'.format(alarm_html + head + rows)
+
 
 # ─────────────────────────────────────────────────────────────
-# 渲染 v0.6：峰终布局（峰值=闭环流 / 中间=四方向+维护成本+接入率 / 终点=一句话总结）
+# 渲染 v1.1.0：v4.1 三主题（a 细线终端 / b 硬件面板 / c 印刷年报·右上角切换）·单页分区下钻保留
 # ─────────────────────────────────────────────────────────────
 
 CSS = """
-:root{--bg:#0f1115;--card:#181b22;--border:#242832;--text:#e6e8ec;--muted:#7a8090;--faint:#4a4f5c;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--blue:#3b82f6;--purple:#a78bfa;--mono:"SF Mono",ui-monospace,Menlo,"JetBrains Mono",monospace;--sans:-apple-system,"PingFang SC","Segoe UI",system-ui,sans-serif;}
+/* ═══ v4.1 主题系统：共享骨架（布局/间距/字号·与主题无关）+ 三主题皮肤（theme-a/b/c） ═══ */
+/* 字号纪律（花叔可读性底线）：全站最小 12px */
 *{margin:0;padding:0;box-sizing:border-box}
-html{color-scheme:dark;-webkit-font-smoothing:antialiased}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px;min-height:100vh}
-.dash{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:1400px;margin:0 auto}
-.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 20px}
-.card.wide{grid-column:span 4}
-.card h3{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
-.card .sub{font-size:11px;color:var(--muted);margin-bottom:12px}
-/* ── 峰值：闭环流 ── */
-.hero{grid-column:span 4;background:linear-gradient(180deg,#1a1e27 0%,var(--card) 100%);border:1px solid #2e3442;border-radius:10px;padding:20px 24px;position:relative;overflow:hidden}
-.hero::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),var(--green),var(--blue),transparent)}
-.hero h3{font-size:15px;font-weight:700}
-.hero .sub{font-size:11px;color:var(--muted);margin:2px 0 16px}
-.flow{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap}
-.stage{flex:1;min-width:130px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:14px 16px;text-align:center}
-.stage .num{font-size:42px;font-weight:800;line-height:1.05}
-.stage .lbl{font-size:12px;font-weight:600;margin-top:6px}
-.stage .src{font-size:10px;color:var(--faint);margin-top:3px;font-family:var(--mono)}
-.num.c-amber{color:var(--amber)}.num.c-green{color:var(--green)}.num.c-blue{color:var(--blue)}.num.c-purple{color:var(--purple)}
-.arrow{align-self:center;font-size:22px;color:var(--faint);font-weight:700}
-.pill{margin-left:auto;align-self:center;font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px;white-space:nowrap}
-.pill.ok{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.35)}
-.pill.warn{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.35)}
-.pill.neutral{background:rgba(122,128,144,.12);color:var(--muted);border:1px solid rgba(122,128,144,.35)}
-.chart-box{position:relative;height:200px;margin-top:16px}
-.chart-legend{position:absolute;top:-4px;right:0;display:flex;gap:14px;font-size:10.5px;color:var(--muted);align-items:center}
-.chart-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+html{-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);padding:28px 24px 40px;min-height:100vh;font-family:var(--f-sans)}
+.n,.num,.count,.pct,.rd{font-variant-numeric:tabular-nums}
+.wrap{max-width:var(--wrap-w,1180px);margin:0 auto}
+/* ── 顶栏 ── */
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--line2);padding-bottom:14px}
+.topbar .lft{display:flex;flex-direction:column;gap:4px}
+.brand{font-size:var(--brand-size);font-weight:var(--brand-weight);letter-spacing:.01em;color:var(--text)}
+.brand .ver{font-size:12px;color:var(--ink3);font-family:var(--f-mono);margin-left:10px;font-weight:400}
+.brand .sub{font-family:var(--f-mono);font-size:12px;color:var(--ink3);letter-spacing:.18em;margin-top:4px}
+.topbar .rgt{display:flex;align-items:center;gap:18px}
+.live{font-size:12px;color:var(--ink2);font-family:var(--f-mono)}
+.live .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:1px}
+/* ── 切换器 ── */
+.tswitch{display:flex;border:1px solid var(--line2);border-radius:var(--radius);overflow:hidden}
+.tswitch button{appearance:none;border:none;background:transparent;color:var(--ink3);font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;padding:7px 14px;cursor:pointer;border-right:1px solid var(--line)}
+.tswitch button:last-child{border-right:none}
+.tswitch button:hover{color:var(--text)}
+.tswitch button.on{background:var(--accent);color:var(--btn-on-ink);font-weight:600}
+/* ── 分区 ── */
+.sec{margin-top:40px}
+.sec-head{display:flex;align-items:baseline;gap:14px;padding-bottom:9px;margin-bottom:16px}
+.sec-head .no{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.sec-head .t{font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--text)}
+.sec-head .m{font-size:12px;color:var(--ink3);font-family:var(--f-mono);margin-left:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+/* ── L0 心跳 ── */
+.hero{border-radius:var(--radius);padding:22px 24px;position:relative}
+.hero-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.hero-head .t{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.16em}
+.hero-head .no{font-family:var(--f-mono);font-size:12px;color:var(--accent);margin-right:8px}
+.hero-head .m{font-size:12px;color:var(--ink3);font-family:var(--f-mono)}
+.flow{display:flex;align-items:stretch;flex-wrap:wrap}
+.stage{flex:1;min-width:150px;padding:4px 20px;text-align:center;border-left:1px solid var(--line)}
+.stage:first-child{border-left:none;padding-left:0}
+.stage .tag{font-family:var(--f-mono);font-size:12px;color:var(--ink3);letter-spacing:.2em}
+.stage .num{font-size:var(--hero-num-size);font-weight:var(--hero-num-weight);line-height:1.15;font-family:var(--hero-num-font);letter-spacing:var(--hero-num-ls);margin:12px 0 8px;color:var(--text)}
+.stage .lbl{font-size:13px;font-weight:600;color:var(--ink2)}
+.stage .src{font-size:12px;color:var(--ink3);margin-top:5px;font-family:var(--f-mono)}
+.stage.hot .num{color:var(--accent)}
+.arrow{color:var(--ink3);font-size:16px;align-self:center;padding:0 6px}
+.hero-mid{display:grid;grid-template-columns:1fr 300px;gap:24px;margin-top:18px}
+.chart-box{position:relative;height:170px}
+.chart-legend{position:absolute;top:-2px;right:0;display:flex;gap:14px;font-size:12px;color:var(--ink2);align-items:center}
+.chart-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
 svg#clTrend{width:100%;height:100%;display:block}
-.vmethod{color:var(--muted);font-weight:600;font-size:10.5px;letter-spacing:.02em}
-.chart-note{font-size:10px;color:var(--faint);font-family:var(--mono);margin-top:8px;text-align:right}
-/* ── 四方向（紧凑·少而真） ── */
-.fourdir{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.fd{background:rgba(255,255,255,.015);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
-.fd .name{font-size:11px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;align-items:center}
-.fd .badge{font-size:11px}
-.fd .val{font-size:17px;font-weight:700;margin-top:6px;line-height:1.35}
-.fd .note{font-size:10px;color:var(--faint);margin-top:4px}
-/* ── 维护成本 / 接入率 ── */
-.maint .bar{font-size:12px;line-height:1.9}
-.maint .bar b{color:var(--text);font-weight:600}
-.maint .bar .seg-item{color:var(--muted)}
-/* ── 季度 OKR 目标对照层 ── */
-.okr{grid-column:span 4}
-.okr-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.okr-head .tag{font-size:11px;font-family:var(--mono);color:var(--blue)}
-.okr-item{display:grid;grid-template-columns:200px 1fr 60px;gap:14px;align-items:center;margin-top:10px}
-.okr-idx{font-size:11px;color:var(--muted);font-weight:600}
-.okr-idx .e{font-size:10px;margin-left:4px}
-.okr-track{position:relative;height:18px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:99px;overflow:hidden}
-.okr-fill{position:absolute;top:0;left:0;height:100%;border-radius:99px;transition:width .6s ease}
-.okr-marks{position:absolute;inset:0;display:flex;pointer-events:none}
-.okr-marks span{flex:1;border-right:1px dashed rgba(255,255,255,.07)}
-.okr-fill.f-green{background:linear-gradient(90deg,#16a34a,#22c55e)}
-.okr-fill.f-amber{background:linear-gradient(90deg,#d97706,#f59e0b)}
-.okr-fill.f-red{background:linear-gradient(90deg,#dc2626,#ef4444)}
-.okr-fill.f-gray{background:#374151}
-.okr-pct{font-size:15px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
-.okr-pct .st{font-size:9px;color:var(--faint);font-weight:600;display:block}
-.okr-note{font-size:10px;color:var(--faint);margin-top:3px}
-.okr-formula{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin-top:4px;padding-top:4px;border-top:1px dashed rgba(255,255,255,.06)}
-.okr-measure{font-size:9.5px;color:var(--muted);margin-top:3px}
-details.rates{grid-column:span 4}
-details.rates summary{cursor:pointer;font-size:13px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
-details.rates summary::-webkit-details-marker{display:none}
-details.rates summary .hint{font-size:11px;color:var(--faint);font-family:var(--mono)}
-details.rates[open] summary{margin-bottom:12px}
-table{border-collapse:collapse;width:100%;font-size:12px;font-family:var(--sans)}
-th{text-align:left;color:var(--faint);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
-td{padding:6px 8px;border-bottom:1px solid var(--border)}
-td:first-child{color:var(--muted);font-weight:600}
-td:nth-child(2){font-weight:700}
-/* ── 终点：一句话总结 ── */
-.summary{grid-column:span 4;background:linear-gradient(135deg,#1c2029 0%,#181b22 70%);border:1px solid #2e3442;border-radius:10px;padding:22px 26px;display:flex;gap:16px;align-items:flex-start}
-.summary .bolt{font-size:28px;line-height:1}
-.summary .text{font-size:19px;font-weight:700;line-height:1.5}
-.summary .text .em{color:var(--green)}
-.summary .meta{font-size:10px;color:var(--faint);font-family:var(--mono);margin-top:8px}
-.footer{max-width:1400px;margin:16px auto 0;padding:0 4px;display:flex;justify-content:space-between;font-size:10px;color:var(--faint);font-family:var(--mono)}
-
-/* ── 知识库可视化3模块（2026-09-08 童灵根治·合并入panel_snapshot.py） ── */
-.kb-federation{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.kb-federation .kb-cell{background:rgba(255,255,255,.015);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-align:center}
-.kb-federation .kb-cell .label{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:4px}
-.kb-federation .kb-cell .val{font-size:22px;font-weight:800;line-height:1.2}
-.kb-federation .kb-cell .val.c-amber{color:var(--amber)}.kb-federation .kb-cell .val.c-green{color:var(--green)}.kb-federation .kb-cell .val.c-blue{color:var(--blue)}.kb-federation .kb-cell .val.c-purple{color:var(--purple)}
-.kb-federation .kb-cell .src{font-size:9px;color:var(--faint);margin-top:3px;font-family:var(--mono)}
-.kb-cards{margin-top:12px}
-.kb-card-row{display:grid;grid-template-columns:90px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px}
-.kb-card-row .name{font-size:11px;color:var(--muted);font-weight:600}
-.kb-card-row .bar-track{position:relative;height:16px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:99px;overflow:hidden}
-.kb-card-row .bar-fill{position:absolute;top:0;left:0;height:100%;border-radius:99px;transition:width .6s ease}
-.kb-card-row .bar-fill.f-green{background:linear-gradient(90deg,#16a34a,#22c55e)}
-.kb-card-row .bar-fill.f-amber{background:linear-gradient(90deg,#d97706,#f59e0b)}
-.kb-card-row .bar-fill.f-blue{background:linear-gradient(90deg,#2563eb,#3b82f6)}
-.kb-card-row .bar-fill.f-purple{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
-.kb-card-row .bar-fill.f-red{background:linear-gradient(90deg,#dc2626,#ef4444)}
-.kb-card-row .count{font-size:13px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
-.kb-progress{margin-top:12px}
-.kb-progress-track{position:relative;height:24px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:99px;overflow:hidden}
-.kb-progress-fill{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,#2563eb,#3b82f6,#a78bfa);border-radius:99px;transition:width .8s ease}
-.kb-progress-text{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text);text-shadow:0 1px 2px rgba(0,0,0,.5)}
-.kb-progress-meta{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--faint);font-family:var(--mono)}
-.kb-method{margin-top:10px;padding:8px 12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:6px;font-size:10px;color:var(--muted);line-height:1.6}
-.kb-method b{color:var(--blue)}
+.chart-note{font-size:12px;color:var(--ink3);font-family:var(--f-mono);margin-top:12px;line-height:1.8}
+.hero-side{border-left:1px solid var(--line);padding-left:22px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.hside-title{font-size:12px;color:var(--ink3);font-weight:600;letter-spacing:.14em}
+.hs-item{display:flex;align-items:center;gap:9px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+.hs-item:last-child{border-bottom:none}
+.hs-item .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.hs-item .nm{color:var(--ink2);font-weight:600}
+.hs-item .vl{font-family:var(--f-mono);font-weight:600;font-size:16px;margin-left:auto}
+.dot.ev-g{background:var(--ok)}.dot.ev-a{background:var(--warn)}.dot.ev-r{background:var(--bad)}.dot.ev-n{background:var(--line2)}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;font-family:var(--f-mono)}
+.chip-neutral{background:rgba(127,127,127,.1);color:var(--ink2);border:1px solid var(--line2)}
+.chip-ok{background:transparent;color:var(--ok);border:1px solid var(--ok)}
+/* ── 下钻 ── */
+details.drill{margin-top:8px}
+details.drill>summary{cursor:pointer;list-style:none;font-size:12px;color:var(--ink3);font-family:var(--f-mono);user-select:none}
+details.drill>summary::-webkit-details-marker{display:none}
+details.drill>summary:hover{color:var(--ink2)}
+details.drill[open]>summary{margin-bottom:8px}
+.drill-body{font-size:13px;color:var(--ink2);line-height:1.75;padding:11px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius)}
+.drill-body b{color:var(--text);font-weight:600}
+.drill-body .fx{font-family:var(--f-mono);font-size:12px;color:var(--ink3);display:block;margin-top:7px;line-height:1.7}
+/* ── 愿景进度 ── */
+.fourdir{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.fd{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px}
+.fd .name{font-size:12px;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.fd .badge{font-size:12px;flex:none}
+.fd .val{font-size:13.5px;font-weight:600;margin-top:8px;line-height:1.55;color:var(--text)}
+.fd .note{font-size:12px;color:var(--ink3);margin-top:6px}
+.okr-item{display:grid;grid-template-columns:220px 1fr 90px;gap:16px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.okr-first{border-top:none}
+.okr-idx{font-size:13.5px;font-weight:700}
+.okr-idx .e{font-size:12px;margin-left:6px}
+.okr-idx .tg{display:block;font-size:12px;color:var(--ink3);font-weight:400;margin-top:3px;font-family:var(--f-mono)}
+.okr-track{position:relative;height:var(--track-h);background:var(--track-bg);border-radius:99px;overflow:hidden;box-shadow:var(--track-shadow)}
+.okr-fill{position:absolute;top:0;left:0;height:100%;border-radius:99px;background:var(--accent);transition:width .5s ease}
+.okr-fill.f-green{background:var(--ok)}
+.okr-fill.f-amber{background:var(--warn)}
+.okr-fill.f-red{background:var(--bad)}
+.okr-fill.f-gray{background:var(--line2)}
+.okr-tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--text);opacity:.75}
+.okr-pct{font-size:18px;font-weight:700;text-align:right}
+.okr-pct .st{font-size:12px;color:var(--ink3);font-weight:500;display:block;margin-top:2px;font-family:var(--f-mono)}
+.alarm{background:transparent;border:1px solid var(--bad);color:var(--bad);padding:9px 13px;border-radius:var(--radius);font-size:12.5px;line-height:1.7;margin-bottom:14px;white-space:pre-wrap}
+.ops{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ops .card{padding:14px 17px}
+.ops h4{font-size:12px;color:var(--ink3);font-weight:600;letter-spacing:.12em;margin-bottom:8px}
+.ops .line{font-size:12.5px;color:var(--ink2);line-height:1.8}
+.ops .line b{color:var(--text);font-weight:600}
+/* ── 知识库 ── */
+.kb-flow{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.kb-flow .stage{min-width:118px}
+.kb-flow .stage .num{font-size:26px}
+.kb-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+.kb-cell{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:11px 10px;text-align:center}
+.kb-cell .label{font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:5px}
+.kb-cell .val{font-size:20px;font-weight:700;line-height:1.2;font-family:var(--f-mono)}
+.kb-cell .src{font-size:12px;color:var(--ink3);margin-top:4px;font-family:var(--f-mono)}
+.kb-bars{margin:14px 0 12px}
+.kb-bar-row{display:grid;grid-template-columns:78px 1fr 52px;gap:10px;align-items:center;margin-bottom:8px}
+.kb-bar-row .name{font-size:12px;color:var(--ink2);font-weight:600}
+.kb-bar-row .bar-track{height:10px;background:var(--track-bg);border-radius:99px;overflow:hidden}
+.kb-bar-row .bar-fill{height:100%;border-radius:99px;background:var(--accent);opacity:.85}
+.kb-bar-row .count{font-size:13px;font-weight:700;text-align:right}
+.kb-progress-track{position:relative;height:16px;background:var(--track-bg);border-radius:99px;overflow:hidden}
+.kb-progress-fill{position:absolute;top:0;left:0;height:100%;background:var(--accent);border-radius:99px;transition:width .6s ease}
+.kb-progress-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text)}
+.kb-progress-meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:7px;font-size:12px;color:var(--ink3);font-family:var(--f-mono)}
+/* ── 平台覆盖 ── */
+.cov-strip{display:grid;grid-template-columns:repeat(8,1fr);gap:var(--cov-gap)}
+.cov-cell{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:12px 12px 11px}
+.cov-cell .nm{font-size:12px;color:var(--ink2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cov-cell .rd{font-family:var(--f-mono);font-size:18px;font-weight:700;margin-top:6px;color:var(--text)}
+.cov-cell .ex{font-size:12px;color:var(--ink3);font-family:var(--f-mono);margin-top:3px}
+.cov-cell .bar{display:none;position:relative;height:12px;background:var(--track-bg);margin-top:7px;border-radius:2px}
+.cov-cell .bar i{position:absolute;top:0;left:0;bottom:0;background:var(--text);border-radius:2px}
+.cov-cell.c-ok{border-color:var(--cov-ok-border)}
+.cov-cell.c-mid .rd{color:var(--warn)}
+.cov-cell.c-bad .rd{color:var(--bad)}
+details.rates{margin-top:14px}
+details.rates>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+details.rates>summary::-webkit-details-marker{display:none}
+details.rates>summary .hint{font-size:12px;color:var(--ink3);font-family:var(--f-mono)}
+details.rates[open]>summary{margin-bottom:10px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{text-align:left;color:var(--ink3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px}
+td{padding:7px 8px;border-top:1px solid var(--line)}
+td:first-child{color:var(--ink2);font-weight:600}
+td:nth-child(2){font-weight:600}
+.vmethod{color:var(--ink2);font-weight:600;font-size:12px}
+/* ── 季度时间进度旋钮（P2·三主题皮肤：--knob-base/--knob-shadow） ── */
+.knob-row{display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+.knob{position:relative;width:46px;height:46px;flex:none}
+.knob .base{position:absolute;inset:0;border-radius:50%;background:var(--knob-base);box-shadow:var(--knob-shadow)}
+.knob .needle{position:absolute;left:50%;top:50%;width:2px;height:21px;background:var(--accent);transform-origin:50% 0;border-radius:2px}
+.knob .cap{position:absolute;left:50%;top:50%;width:11px;height:11px;border-radius:50%;background:var(--knob-cap,#E9E9E4);transform:translate(-50%,-50%);box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.knob-row .kv{font-family:var(--f-mono);font-size:26px;font-weight:700}
+.knob-row .kl{font-size:12px;color:var(--ink2);font-weight:600;margin-top:2px}
+.knob-row .ks{font-size:12px;color:var(--ink3);font-family:var(--f-mono);margin-top:2px}
+/* ── 终点 ── */
+.summary{margin-top:40px;border-radius:var(--radius);padding:24px 26px;display:flex;gap:18px;align-items:flex-start}
+.summary .bolt{font-family:var(--f-mono);font-size:14px;color:var(--accent);line-height:1.5}
+.summary .text{font-size:19px;font-weight:600;line-height:1.65;color:var(--text)}
+.summary .meta{font-size:12px;color:var(--ink3);font-family:var(--f-mono);margin-top:9px}
+.footer{max-width:1180px;margin:18px auto 0;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink3);font-family:var(--f-mono)}
+@media(max-width:1100px){
+.hero-mid{grid-template-columns:1fr}
+.hero-side{border-left:none;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+.kb-grid,.cov-strip{grid-template-columns:repeat(4,1fr)}
+.fourdir{grid-template-columns:repeat(2,1fr)}
+.okr-item{grid-template-columns:1fr;gap:8px}
+.okr-pct{text-align:left}
+.ops{grid-template-columns:1fr}
+}
+/* ═══════════ 主题 A · 细线终端（Linear / Vercel） ═══════════ */
+body.theme-a{
+color-scheme:dark;
+--bg:#0C0D10;--panel:transparent;--panel2:#131519;--line:#232529;--line2:#33363D;
+--text:#E8E9ED;--ink2:#9BA0AC;--ink3:#6B7180;
+--accent:#7C7CFF;--ok:#5BD88E;--warn:#E8B04B;--bad:#F0655F;
+--wrap-w:1240px;--radius:0;--btn-on-ink:#0C0D10;--knob-base:#131519;--knob-shadow:inset 0 0 0 1px #33363D;
+--f-sans:-apple-system,"Inter Tight","PingFang SC","Segoe UI",system-ui,sans-serif;
+--f-mono:"SF Mono",ui-monospace,Menlo,"JetBrains Mono",monospace;
+--brand-size:14px;--brand-weight:600;
+--hero-num-size:56px;--hero-num-weight:500;--hero-num-font:var(--f-mono);--hero-num-ls:0;
+--track-h:3px;--track-bg:var(--line);--track-shadow:none;--cov-gap:0;
+--cov-ok-border:transparent;
+--c-detected:#F0655F;--c-fixed:#7C7CFF;--c-immune:#5BD88E;--chart-grid:#232529;--chart-axis:#6B7180;
+}
+body.theme-a .topbar{border-bottom:1px solid var(--line)}
+body.theme-a .hero{background:transparent;border:none;padding:22px 0 0}
+body.theme-a .hero .flow{border:1px solid var(--line);border-left:1px solid var(--line)}
+body.theme-a .stage{border-right:1px solid var(--line);border-left:none;border-bottom:1px solid var(--line)}
+body.theme-a .stage:first-child{padding-left:20px}
+body.theme-a .stage:last-child{border-right:1px solid var(--line)}
+body.theme-a .hero-mid{border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 20px;margin-top:0;grid-column-gap:20px}
+body.theme-a .card{border:1px solid var(--line)}
+body.theme-a .cov-cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0}
+body.theme-a .cov-cell.c-ok{border-color:rgba(91,216,142,.4)}
+body.theme-a .hs-item{border-bottom-color:transparent;padding:5px 0}
+body.theme-a .sec-head{border-bottom:1px solid var(--line)}
+body.theme-a .okr-item{border-top:1px solid var(--line)}
+body.theme-a .summary{background:transparent;border-top:1px solid var(--line);border-radius:0;padding:26px 0 0}
+body.theme-a .chip-neutral{background:transparent;border-color:var(--line2)}
+/* ═══════════ 主题 B · 硬件面板（Teenage Engineering） ═══════════ */
+body.theme-b{
+color-scheme:light;
+--bg:#D9D7D0;--panel:#CFCCC3;--panel2:#D6D3CB;--line:#B3AFA4;--line2:#8F8B7E;
+--text:#17150F;--ink2:#5B574C;--ink3:#6E6A5E;
+--accent:#FF5A1F;--ok:#3FA34D;--warn:#A87A28;--bad:#B3402A;--wrap-w:1340px;
+--radius:7px;--btn-on-ink:#FFFFFF;--knob-base:#2A2A26;--knob-shadow:inset 0 2px 5px rgba(0,0,0,.8);
+--f-sans:-apple-system,"PingFang SC","Helvetica Neue",system-ui,sans-serif;
+--f-mono:"SF Mono",ui-monospace,Menlo,monospace;
+--brand-size:21px;--brand-weight:800;
+--hero-num-size:44px;--hero-num-weight:700;--hero-num-font:var(--f-mono);--hero-num-ls:.06em;
+--track-h:14px;--track-bg:#B8B4A9;--track-shadow:inset 0 2px 4px rgba(23,21,15,.35);--cov-gap:12px;
+--cov-ok-border:transparent;
+--c-detected:#FF5A1F;--c-fixed:#EDEDE4;--c-immune:#3FA34D;--chart-grid:#2A2A26;--chart-axis:#8B8D82;
+/* B 专属：液晶屏 */
+--screen:#0B0B0B;--screen2:#141412;--lcd:#EDEDE4;--lcd2:#8B8D82;
+}
+body.theme-b{
+background-image:
+ repeating-linear-gradient(0deg,rgba(23,21,15,.06) 0 1px,transparent 1px 28px),
+ repeating-linear-gradient(90deg,rgba(23,21,15,.06) 0 1px,transparent 1px 28px);
+}
+body.theme-b .topbar{border-bottom:2px solid var(--text)}
+body.theme-b .brand{letter-spacing:.02em}
+body.theme-b .stage .tag,body.theme-b .hero-head .m{letter-spacing:.2em}
+body.theme-b .tswitch,body.theme-b .card,body.theme-b .fd{box-shadow:0 1px 0 #EAE8E0,0 2px 5px rgba(23,21,15,.12)}
+body.theme-b .tswitch button.on{background:var(--accent);box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+body.theme-b .cov-cell{box-shadow:0 3px 0 #B1ADA2,0 4px 6px rgba(23,21,15,.16);cursor:default}
+body.theme-b .cov-cell:active{transform:translateY(2px);box-shadow:0 1px 0 #B1ADA2}
+/* B 核心：hero=液晶屏（暗屏+扫描线+LCD发光数字） */
+body.theme-b .hero{background:var(--screen);box-shadow:inset 0 3px 12px rgba(0,0,0,.85),0 1px 0 #EAE8E0;border:1px solid #23231F;overflow:hidden}
+body.theme-b .hero::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 2px,transparent 2px 4px);pointer-events:none;border-radius:inherit}
+body.theme-b .hero .hero-head .t,body.theme-b .hero .chart-note{color:var(--lcd2)}
+body.theme-b .hero .stage{border-left-color:#23231F}
+body.theme-b .hero .stage .tag{color:var(--lcd2)}
+body.theme-b .hero .stage .num{color:var(--lcd);text-shadow:0 0 10px rgba(237,237,228,.3)}
+body.theme-b .hero .stage.hot .num{color:var(--accent);text-shadow:0 0 12px rgba(255,90,31,.55)}
+body.theme-b .hero .stage .lbl{color:var(--lcd2)}
+body.theme-b .hero .stage .src{color:#5B5D52}
+body.theme-b .hero .arrow{color:var(--lcd2)}
+body.theme-b .hero .hero-side{border-left-color:#23231F}
+body.theme-b .hero .hside-title{color:var(--lcd2)}
+body.theme-b .hero .hs-item{border-bottom-color:#23231F}
+body.theme-b .hero .hs-item .nm{color:var(--lcd2)}
+body.theme-b .hero .hs-item .vl{color:var(--lcd)}
+body.theme-b .hero .chart-legend{color:var(--lcd2)}
+body.theme-b .hero .chip-neutral{color:var(--lcd2);border-color:#3A3A34;background:rgba(255,255,255,.04)}
+/* B：LED 排灯（方形+辉光） */
+body.theme-b .hs-item .dot{border-radius:2px}
+body.theme-b .hs-item .dot.ev-g{box-shadow:0 0 7px rgba(63,163,77,.65)}
+body.theme-b .hs-item .dot.ev-r{box-shadow:0 0 8px rgba(255,90,31,.75)}
+body.theme-b .hs-item .dot.ev-a{box-shadow:0 0 7px rgba(200,127,31,.65)}
+/* B：推子感进度槽（okr-fill 顶距+刻度指针已由 okr-tick 承担） */
+body.theme-b .okr-fill{top:3px;bottom:3px;left:3px;height:auto}
+body.theme-b .okr-fill.f-green{background:var(--ok)}
+body.theme-b .okr-fill.f-red{background:var(--accent)}
+body.theme-b .summary{background:var(--screen);box-shadow:inset 0 3px 12px rgba(0,0,0,.85),0 1px 0 #EAE8E0;border:1px solid #23231F}
+body.theme-b .summary .text{color:var(--lcd)}
+body.theme-b .summary .bolt{color:var(--accent)}
+body.theme-b .summary .meta{color:var(--lcd2)}
+body.theme-b .sec-head .t{letter-spacing:.24em;font-weight:700}
+body.theme-b .sec-head{border-bottom:2px solid var(--text)}
+body.theme-b .fd .name,body.theme-b .ops h4{letter-spacing:.1em}
+/* ── B v4.2 设备感全套（P0+P1·适配 1440×900：板宽 1340 居中·四周露底板） ── */
+body.theme-b{padding:34px 26px 60px}
+body.theme-b .wrap{background:var(--panel);border:1px solid #B9B5AA;border-radius:16px;box-shadow:0 1px 0 #EDEBE4 inset,0 16px 44px rgba(23,21,15,.18);padding:32px 36px 38px;position:relative}
+/* 对角螺丝（五金件·径向高光圆） */
+body.theme-b .wrap::before,body.theme-b .wrap::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#E8E6DE,#B7B3A8 70%);box-shadow:inset 0 1px 2px rgba(23,21,15,.5),0 1px 0 #EDEBE4}
+body.theme-b .wrap::before{top:11px;left:11px}
+body.theme-b .wrap::after{bottom:11px;right:11px}
+/* 电源灯：live 圆点升级为带辉光 LED */
+body.theme-b .live .dot{width:10px;height:10px;box-shadow:0 0 9px rgba(63,163,77,.85),0 0 2px rgba(63,163,77,1)}
+/* 屏内像素格：横向扫描线+竖向点阵（竖向淡一档防摩尔纹） */
+body.theme-b .hero::before{background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 2px,transparent 2px 4px),repeating-linear-gradient(90deg,rgba(255,255,255,.015) 0 2px,transparent 2px 4px)}
+/* 推子头：fill 前端米白竖帽（随 width 动画走） */
+body.theme-b .okr-fill::after{content:"";position:absolute;right:0;top:-4px;bottom:-4px;width:4px;background:#E9E9E4;border-radius:1px;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* 4×4 键阵 */
+body.theme-b .cov-strip{grid-template-columns:repeat(4,1fr)}
+/* 一橙纪律：进度 fill 收灰（读数交给语义色与刻线）·纯橙只留焦点与交互 */
+body.theme-b .okr-fill{background:#4A463C}
+body.theme-b .kb-bar-row .bar-fill{background:#6E6A5E}
+body.theme-b .kb-progress-fill{background:#6E6A5E}
+body.theme-b .kb-progress-text{color:#F2F0E9}
+/* 键阵厚度加深（凸起感） */
+body.theme-b .cov-cell{box-shadow:0 3px 0 #A8A499,0 4px 7px rgba(23,21,15,.2)}
+body.theme-b .footer{letter-spacing:.1em}
+/* ── B v4.3 下半页功能色码（TE 按键分组色·油墨版）+第二块屏 + OKR语义色修复 ── */
+/* OKR 语义色修复：v4.2 收灰规则特异性压掉了 f-green/f-red/f-amber——红色告警被抹（红必须能消），此处恢复 */
+body.theme-b .okr-fill.f-green{background:var(--ok)}
+body.theme-b .okr-fill.f-red{background:var(--bad)}
+body.theme-b .okr-fill.f-amber{background:var(--warn)}
+/* 知识库=第二块屏：内化流 L1-L4 是读数，屏语义成立（OP-1 主屏+编码器小屏的布局） */
+body.theme-b .kb-flow{background:var(--screen);border:1px solid #23231F;border-radius:8px;padding:14px 18px;position:relative;overflow:hidden}
+body.theme-b .kb-flow::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 2px,transparent 2px 4px);pointer-events:none}
+body.theme-b .kb-flow .stage{border-left-color:#23231F}
+body.theme-b .kb-flow .stage .num{color:var(--lcd);text-shadow:0 0 9px rgba(237,237,228,.28)}
+body.theme-b .kb-flow .stage.hot .num{color:var(--accent);text-shadow:0 0 12px rgba(255,90,31,.55)}
+body.theme-b .kb-flow .stage .lbl{color:var(--lcd2)}
+body.theme-b .kb-flow .stage .src{color:#5B5D52}
+body.theme-b .kb-flow .stage .tag{color:var(--lcd2)}
+body.theme-b .kb-flow .arrow{color:var(--lcd2)}
+body.theme-b .kb-flow + .chart-note{color:var(--ink3)}
+body.theme-b .kb-cell{box-shadow:0 2px 0 #B1ADA2}
+body.theme-b .kb-cell.hot .val{color:var(--ok)}
+/* 满额端去绿框改绿数字（2026-10-26 你令：外框难看·数字绿即可） */
+body.theme-b .cov-cell.c-ok .rd{color:var(--ok)}
+/* 卡类型功能色码：色=卡类型语义（TE 按键分组色的油墨低饱和版·oklch chroma≈0.06-0.1） */
+/* 卡类型色码收敛（2026-10-26 你令收色）：只留知识卡分布+索引进度两条彩，其余归灰 */
+body.theme-b .bar-fill.c-knowledge{background:#4A6FA5}
+body.theme-b .bar-fill.c-stance,body.theme-b .bar-fill.c-concept,
+body.theme-b .bar-fill.c-index,body.theme-b .bar-fill.c-skill{background:#6E6A5E}
+body.theme-b .kb-progress-fill{background:#4A6FA5}
+/* 碰撞分级恢复：强共识=高置信激活（信号橙）·互补=中灰·潜在=浅灰——三级不是装饰是置信度 */
+/* 碰撞产出=完成态绿 */
+body.theme-b .coll-prog-fill{background:var(--ok)}
+/* 旋钮读数入屏色体系：kv=LCD亮字+辉光·kl=lcd2·ks=屏内灰（v4.3.1·修"黑字压黑屏看不清"） */
+body.theme-b .hero .knob-row{border-top-color:#23231F}
+body.theme-b .hero .knob-row .kv{color:var(--lcd);text-shadow:0 0 9px rgba(237,237,228,.28);font-size:30px}
+body.theme-b .hero .knob-row .kl{color:var(--lcd2)}
+body.theme-b .hero .knob-row .ks{color:#5B5D52}
+/* ── B v4.3.2 浅色控件面质感：磨砂细网格（7px·密度高于底板28px=机件加工面）+顶部内高光（受光塑料缘）── */
+body.theme-b .cov-cell,body.theme-b .kb-cell,body.theme-b .fd,
+body.theme-b .ops .card,body.theme-b .drill-body,body.theme-b .tswitch{
+ background-image:
+  repeating-linear-gradient(0deg,rgba(23,21,15,.02) 0 1px,transparent 1px 7px),
+  repeating-linear-gradient(90deg,rgba(23,21,15,.02) 0 1px,transparent 1px 7px);
+}
+body.theme-b .cov-cell{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 3px 0 #A8A499,0 4px 7px rgba(23,21,15,.2)}
+body.theme-b .kb-cell{box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 2px 0 #B1ADA2}
+body.theme-b .fd{box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 #EAE8E0,0 2px 5px rgba(23,21,15,.12)}
+body.theme-b .ops .card{box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 #EAE8E0}
+body.theme-b .drill-body{box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+/* 推子帽随行语义：达标（f-green）=米白帽·未达标/待量化（f-red/f-amber/f-gray）=墨黑帽（浅底上白帽像高亮·2026-10-26 你令） */
+body.theme-b .okr-fill.f-red::after,body.theme-b .okr-fill.f-amber::after,body.theme-b .okr-fill.f-gray::after{background:#6E6A5E}
+/* ═══════════ 主题 C · 印刷年报（Feltron） ═══════════ */
+body.theme-c{
+color-scheme:light;
+--bg:#F7F4EC;--panel:transparent;--panel2:#EFEADF;--line:#D8D2C4;--line2:#1C1A17;
+--text:#1C1A17;--ink2:#57534A;--ink3:#8B857A;
+--accent:#C8371E;--ok:#4A7C59;--warn:#B07A2A;--bad:#C8371E;
+--wrap-w:1180px;--radius:0;--btn-on-ink:#F7F4EC;--knob-base:#EFEADF;--knob-shadow:inset 0 0 0 1px #C4BCA9;--knob-cap:#1C1A17;
+--f-sans:-apple-system,"Helvetica Neue","PingFang SC",system-ui,sans-serif;
+--f-mono:"SF Mono",ui-monospace,Menlo,monospace;
+--brand-size:30px;--brand-weight:800;
+--hero-num-size:60px;--hero-num-weight:800;--hero-num-font:var(--f-sans);--hero-num-ls:-.03em;
+--track-h:5px;--track-bg:var(--line);--track-shadow:none;--cov-gap:0;
+--cov-ok-border:transparent;
+--c-detected:#C8371E;--c-fixed:#4A6FA5;--c-immune:#4A7C59;--chart-grid:#D8D2C4;--chart-axis:#8B857A;
+}
+body.theme-c .topbar{border-bottom:3px solid var(--text)}
+body.theme-c .brand .sub{letter-spacing:.22em}
+body.theme-c .hero{padding:22px 0 0}
+body.theme-c .flow{border-bottom:1px solid var(--line)}
+body.theme-c .stage{border-left:1px solid var(--line);text-align:left;padding:4px 22px 20px}
+body.theme-c .stage:first-child{border-left:none;padding-left:0}
+body.theme-c .stage .tag{color:var(--ink3)}
+body.theme-c .stage .lbl{font-weight:700}
+body.theme-c .stage.hot .num{color:var(--accent)}
+body.theme-c .hero-mid{border-bottom:1px solid var(--line);padding-bottom:20px}
+body.theme-c .hero-side{border-left:1px solid var(--line)}
+body.theme-c .card{border:1px solid var(--line);background:transparent}
+body.theme-c .sec-head{border-bottom:1px solid var(--text);border-top:3px solid var(--text);padding:8px 0 8px;margin-top:34px}
+body.theme-c .sec{margin-top:22px}
+body.theme-c .fd{border:none;border-bottom:1px solid var(--line);background:transparent;border-radius:0;padding:13px 8px}
+body.theme-c .fd .name{font-weight:700}
+body.theme-c .fd .val{font-weight:700}
+body.theme-c .okr-item{border-top:1px solid var(--line)}
+body.theme-c .okr-idx{font-weight:800}
+body.theme-c .okr-fill.f-green{background:var(--text)}
+body.theme-c .okr-fill.f-red,body.theme-c .okr-fill.f-amber{background:var(--accent)}
+body.theme-c .okr-tick{background:var(--accent);opacity:1}
+/* C：平台覆盖改行式数据条 */
+body.theme-c .cov-strip{grid-template-columns:1fr 1fr;gap:0 44px}
+body.theme-c .cov-cell{display:grid;grid-template-columns:130px 1fr 58px;gap:10px;align-items:center;background:transparent;border:none;border-radius:0;border-bottom:1px solid var(--line);padding:8px 0}
+body.theme-c .cov-cell .rd{margin-top:0;font-size:13px;text-align:right}
+body.theme-c .cov-cell .ex{display:none}
+body.theme-c .cov-cell .bar{display:block;margin-top:0}
+body.theme-c .cov-cell .bar i{background:var(--text)}
+body.theme-c .cov-cell.c-bad .bar i,body.theme-c .cov-cell.c-mid .bar i{background:var(--accent)}
+body.theme-c .cov-cell.c-ok{border-color:transparent}
+body.theme-c .summary{border-top:3px solid var(--text);border-radius:0;padding:26px 0 0;background:transparent}
+body.theme-c .summary .text{font-size:23px;font-weight:800;letter-spacing:-.01em;max-width:860px}
+body.theme-c .summary .text .em{color:var(--accent)}
+body.theme-c .chip-neutral{border:none;color:var(--ink3)}
+body.theme-c .tswitch button.on{background:var(--text);color:var(--bg)}
 """
 
 HEAD_JS = """
-// v0.8.0 零外链：内联 SVG 趋势图（原生 <title> 悬停读数·断网可渲染·无 Chart.js/字体 CDN）
+// v1.0.1 零外链：内联 SVG 趋势图（原生 <title> 悬停读数·断网可渲染·无 Chart.js/字体 CDN）
+// v4.1 主题化：折线/网格颜色从 body 的 CSS 变量读取（--c-detected/--c-fixed/--c-immune/--chart-grid/--chart-axis）
+// ——三主题（a 终端/b 硬件/c 年报）各自定义变量值，切换主题后重调 renderTrend 即换色
 (function(){
-  var MUTED="#7a8090",GRID="#242832";
-  var SERIES=[["detected","#f59e0b","检出"],["fixed","#22c55e","留痕"],["immune","#3b82f6","免疫"]];
+  function cssVar(name, fallback){
+    try{
+      var v = getComputedStyle(document.body).getPropertyValue(name).trim();
+      return v || fallback;
+    }catch(e){ return fallback; }
+  }
   window.renderTrend=function(trend){
     var svg=document.getElementById("clTrend");
     if(!svg||!trend||!trend.length)return;
-    var W=720,H=200,L=38,R=16,T=16,B=24,n=trend.length;
+    window._lastTrend=trend;   // v4.1：留存末次数据，主题切换后由切换器重绘
+    var SERIES=[
+      ["detected", cssVar("--c-detected","#f0564f"), "检出"],
+      ["fixed",    cssVar("--c-fixed",   "#5b8cff"), "留痕"],
+      ["immune",   cssVar("--c-immune",  "#3ecf8e"), "免疫"]
+    ];
+    var MUTED=cssVar("--chart-axis","#8b90a0"),GRID=cssVar("--chart-grid","#252a35");
+    var W=720,H=170,L=38,R=16,T=14,B=24,n=trend.length;
     var vals=[];trend.forEach(function(r){SERIES.forEach(function(s){if(typeof r[s[0]]==="number")vals.push(r[s[0]]);});});
     if(!vals.length)return;
     var rawMax=Math.max.apply(null,vals);
@@ -910,24 +1372,24 @@ HEAD_JS = """
     var out="";
     for(var g=0;g<=ymax;g+=step){
       var y=yp(g);
-      out+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+(W-R)+'" y2="'+y.toFixed(1)+'" stroke="'+GRID+'" stroke-opacity=".55" stroke-width="1"/>';
-      out+='<text x="'+(L-7)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="'+MUTED+'">'+g+'</text>';
+      out+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+(W-R)+'" y2="'+y.toFixed(1)+'" stroke="'+GRID+'" stroke-opacity=".7" stroke-width="1"/>';
+      out+='<text x="'+(L-7)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="12" fill="'+MUTED+'">'+g+'</text>';
     }
     trend.forEach(function(r,i){
-      out+='<text x="'+xp(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9.5" fill="'+MUTED+'">'+r.date+'</text>';
+      out+='<text x="'+xp(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="'+MUTED+'">'+r.date+'</text>';
     });
     SERIES.forEach(function(s){
       var key=s[0],col=s[1],name=s[2],pts=[];
       trend.forEach(function(r,i){pts.push([xp(i),yp(r[key]||0)]);});
       var d="";
       pts.forEach(function(p,i){d+=(i?" L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1);});
-      out+='<path d="'+d+' L'+pts[n-1][0].toFixed(1)+' '+yp(0).toFixed(1)+' L'+pts[0][0].toFixed(1)+' '+yp(0).toFixed(1)+' Z" fill="'+col+'" opacity="0.08"/>';
-      out+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+      out+='<path d="'+d+' L'+pts[n-1][0].toFixed(1)+' '+yp(0).toFixed(1)+' L'+pts[0][0].toFixed(1)+' '+yp(0).toFixed(1)+' Z" fill="'+col+'" opacity="0.07"/>';
+      out+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>';
       pts.forEach(function(p,i){
-        out+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.6" fill="'+col+'"><title>'+trend[i].date+' · '+name+' '+(trend[i][key]||0)+'</title></circle>';
+        out+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.4" fill="'+col+'"><title>'+trend[i].date+' · '+name+' '+(trend[i][key]||0)+'</title></circle>';
       });
       var lp=pts[n-1],lv=(trend[n-1][key]||0);
-      out+='<text x="'+(lp[0]-7).toFixed(1)+'" y="'+(lp[1]-7).toFixed(1)+'" text-anchor="end" font-size="10" font-weight="700" fill="'+col+'">'+lv+'</text>';
+      out+='<text x="'+(lp[0]-7).toFixed(1)+'" y="'+(lp[1]-7).toFixed(1)+'" text-anchor="end" font-size="12" font-weight="600" fill="'+col+'">'+lv+'</text>';
     });
     svg.setAttribute("viewBox","0 0 "+W+" "+H);
     svg.setAttribute("preserveAspectRatio","xMidYMid meet");
@@ -943,19 +1405,47 @@ LIVE_JS = """
   var d = window.PANEL_DATA;
   if (!d) {
     var b = document.createElement('div');
-    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99;background:#ef4444;color:#fff;font:600 12px/1.6 system-ui;padding:8px 14px';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99;background:#f0564f;color:#fff;font:600 12px/1.6 system-ui;padding:8px 14px';
     b.textContent = '⚠️ panel_data.js 加载失败——下方数字为上次生成的快照，非实时（宁可少，不要假）';
     document.body.appendChild(b);
     return;
   }
   function set(id, v){ var el = document.getElementById(id); if(el && v !== undefined && v !== null) el.textContent = v; }
+  set("panel-updated", d.updated);
+
+  // v4.1 主题切换器：三主题共存（a 终端 / b 硬件 / c 年报）·localStorage 记住选择·切换后趋势图按新主题色重绘
+  (function(){
+    var sw = document.getElementById('theme-switch');
+    if (!sw) return;
+    var btns = sw.querySelectorAll('button');
+    function curTheme(){
+      var m = /theme-([abc])/.exec(document.body.className || '');
+      return m ? m[1] : 'a';
+    }
+    function syncBtns(){
+      var t = curTheme();
+      btns.forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t') === t); });
+    }
+    function apply(t){
+      document.body.className = 'theme-' + t;
+      try { localStorage.setItem('panel-theme', t); } catch(e){}
+      syncBtns();
+      if (window.renderTrend && window._lastTrend) window.renderTrend(window._lastTrend);
+    }
+    syncBtns();
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){ apply(b.getAttribute('data-t')); });
+    });
+  })();
+
   var cl = d.closed_loop || {};
   set("cl-detected", cl.detected); set("cl-fixed", cl.fixed);
   set("cl-immune", cl.immune); set("cl-antibodies", cl.antibodies);
+  // 差值为 hero 脚注 chip（不可消信号不占主视图·文案与口径声明保真）
   var pill = document.getElementById("cl-pending");
   if (pill) {
-    if (cl.pending > 0) { pill.className = "pill neutral"; pill.title = "粗口径=检出−留痕·非逐项核销·不代表积压"; pill.textContent = "差值 " + cl.pending + " · 粗口径·非核销"; }
-    else if (cl.detected !== null && cl.detected !== undefined) { pill.className = "pill ok"; pill.title = "粗口径=检出−留痕·两源独立计数·非核销"; pill.textContent = "检出 ≤ 留痕 · 粗口径"; }
+    if (cl.pending > 0) { pill.className = "chip chip-neutral"; pill.title = "粗口径=检出−留痕·非逐项核销·不代表积压"; pill.textContent = "检出−留痕差值 " + cl.pending + " · 粗口径·非核销"; }
+    else if (cl.detected !== null && cl.detected !== undefined) { pill.className = "chip chip-ok"; pill.title = "粗口径=检出−留痕·两源独立计数·非核销"; pill.textContent = "检出 ≤ 留痕 · 粗口径"; }
   }
   var st = document.getElementById("summary-text");
   if (st && d.summary) { st.innerHTML = d.summary; }
@@ -966,8 +1456,8 @@ LIVE_JS = """
     set("kf-l3", kl.stats.L3); set("kf-l4", kl.stats.L4);
     var kc = document.getElementById("kf-cand");
     if (kc && kl.skill_candidates !== undefined) {
-      kc.textContent = "🔧 技能卡候选 " + kl.skill_candidates;
-      kc.style.color = kl.skill_candidates > 0 ? "var(--amber)" : "var(--faint)";
+      kc.textContent = "技能卡候选 " + kl.skill_candidates;
+      kc.style.color = kl.skill_candidates > 0 ? "var(--warn)" : "var(--ink3)";
     }
     var kp = document.getElementById("kf-pill");
     if (kp && kl.l4_probe) {
@@ -985,7 +1475,6 @@ LIVE_JS = """
   var okrObjs = (d.okr && d.okr.objectives) || [];
   ['auto','better','evo','knows'].forEach(function(k){
     var oi = okrObjs.filter(function(o){return o.dir===k;})[0];
-    // 通过卡片容器定位该方向徽标
     var fdCard = document.querySelector('#fd-'+k);
     var cardEl = fdCard ? fdCard.closest('.fd') : null;
     if (cardEl) {
@@ -996,7 +1485,7 @@ LIVE_JS = """
       var nm = cardEl.querySelector('.name');
       if (nm && stRaw) {
         var existing = nm.querySelector('.st-badge'); if (existing) existing.remove();
-        var sb = document.createElement('span'); sb.className = 'st-badge'; sb.textContent = '· ' + stRaw; sb.style.cssText = 'font-weight:400;font-size:10px;opacity:.6;margin-left:4px;'; nm.appendChild(sb);
+        var sb = document.createElement('span'); sb.className = 'st-badge'; sb.textContent = '· ' + stRaw; sb.style.cssText = 'font-weight:400;font-size:12px;opacity:.6;margin-left:4px;'; nm.appendChild(sb);
       }
     }
   });
@@ -1007,13 +1496,13 @@ LIVE_JS = """
   var html = '';
   d.platform_rates.forEach(function(r){
     var gapHtml = (r.gap !== undefined && r.gap !== null)
-      ? '<span style="color:' + (r.gap>0?'#ef4444':'#22c55e') + '">缺 ' + r.gap + '</span>'
+      ? '<span style="color:' + (r.gap>0?'var(--bad)':'var(--ok)') + '">缺 ' + r.gap + '</span>'
       : '—';
     var numHtml = (r.num !== undefined && r.num !== null)
       ? '<span style="color:' + r.color + ';font-weight:700">' + r.num + '/' + r.den + '</span>'
       : '—';
     var extraHtml = (r.extra > 0)
-      ? ' <span title="平台附加守卫(非共享清单)" style="color:#3b82f6;font-weight:600">+' + r.extra + '</span>'
+      ? ' <span title="平台附加守卫/端承载件(非共享清单)" style="color:var(--accent);font-weight:600">+' + r.extra + '</span>'
       : '';
     html += '<tr><td>' + r.name + '</td>' +
             '<td><span class="vmethod" title="' + r.note + '">' + (r.method || r.mark || '—') + '</span></td>' +
@@ -1023,7 +1512,7 @@ LIVE_JS = """
   if (table) {
     table.innerHTML = '<tr><th>平台</th><th>核验</th><th>已接</th><th>缺口</th></tr>' + html;
     var upd = document.createElement("div");
-    upd.style.cssText = 'font-size:11px;color:#4a4f5c;font-family:var(--mono);margin-top:8px;text-align:right';
+    upd.style.cssText = 'font-size:12px;color:var(--ink3);font-family:var(--f-mono);margin-top:8px;text-align:right';
     upd.textContent = '数据更新: ' + (d.updated || '—');
     table.parentElement.appendChild(upd);
   }
@@ -1052,7 +1541,7 @@ LIVE_JS = """
     });
   }
 
-  // 知识库可视化3模块数据加载（2026-09-08 童灵根治·合并入panel_snapshot.py）
+  // 知识库可视化数据加载（2026-09-08 童灵根治·合并入panel_snapshot.py）
   var kb = d.knowledge_base;
   if (kb) {
     if (kb.ai_lib) set("kb-ai-lib", kb.ai_lib.total);
@@ -1087,10 +1576,11 @@ LIVE_JS = """
 })();
 """
 
-def _stage(num, color, lbl, src, num_id):
-    return ('<div class="stage"><div class="num {c}" id="{i}">{n}</div>'
+def _stage(num, tag, lbl, src, num_id, hot=False):
+    return ('<div class="stage{hot}"><div class="tag">{tag}</div><div class="num" id="{i}">{n}</div>'
             '<div class="lbl">{l}</div><div class="src">{s}</div></div>').format(
-        c=color, i=num_id, n=("—" if num is None else num), l=lbl, s=src)
+        hot=(" hot" if hot else ""), tag=tag, i=num_id,
+        n=("—" if num is None else num), l=lbl, s=src)
 
 def render_html(snap):
     cl = snap.get("closed_loop", {}) or {}
@@ -1098,36 +1588,86 @@ def render_html(snap):
     anti, pending = cl.get("antibodies"), cl.get("pending") or 0
     trend = cl.get("trend") or []
     today_md = (snap.get("date") or "")[5:]   # "MM-DD"
-    trend_plot = [r for r in trend if r.get("date") != today_md]  # v0.8.0 今日进行中不入图·防零值断崖
+    trend_plot = [r for r in trend if r.get("date") != today_md]  # 今日进行中不入图·防零值断崖
 
-    # 峰值：闭环流
+    # ── L0 心跳：闭环流（全页唯一主角·v4.1 三主题皮肤·检测格 hot 高亮） ──
     flow_html = (
-        _stage(det, "c-amber", "检测 · DRIFT 检出", "platform_adaptation_check.log", "cl-detected") +
+        _stage(det, "DETECT", "检测 · DRIFT 检出", "platform_adaptation_check.log", "cl-detected", hot=True) +
         '<div class="arrow">→</div>' +
-        _stage(fix, "c-green", "修正 · 变更留痕", "变更日志 WorkBuddy 行", "cl-fixed") +
+        _stage(fix, "FIX", "修正 · 变更留痕", "变更日志 WorkBuddy 行", "cl-fixed") +
         '<div class="arrow">→</div>' +
-        _stage(imm, "c-blue", "免疫 · 复发监测", "免疫复发记录「命中」（本周·0=无复发=抗体生效）", "cl-immune") +
+        _stage(imm, "IMMUNE", "免疫 · 复发监测", "免疫复发记录「命中」（本周·0=无复发=抗体生效）", "cl-immune") +
         '<div class="arrow">→</div>' +
-        _stage(anti, "c-purple", "抗体库 · 累计", "规范反哺日志「🛡」", "cl-antibodies")
+        _stage(anti, "ANTIBODY", "抗体库 · 累计", "规范反哺日志「🛡」", "cl-antibodies")
     )
     if det is not None and fix is not None and det > fix:
-        pill = '<div class="pill neutral" id="cl-pending" title="粗口径=检出−留痕·非逐项核销·不代表积压">差值 {} · 粗口径·非核销</div>'.format(det - fix)
+        pill = '<span class="chip chip-neutral" id="cl-pending" title="粗口径=检出−留痕·非逐项核销·不代表积压">检出−留痕差值 {} · 粗口径·非核销</span>'.format(det - fix)
     elif det is not None:
-        pill = '<div class="pill ok" id="cl-pending" title="粗口径=检出−留痕·两源独立计数·非核销">检出 ≤ 留痕 · 粗口径</div>'
+        pill = '<span class="chip chip-ok" id="cl-pending" title="粗口径=检出−留痕·两源独立计数·非核销">检出 ≤ 留痕 · 粗口径</span>'
     else:
-        pill = '<div class="pill neutral" id="cl-pending">数据采集中</div>'
+        pill = '<span class="chip chip-neutral" id="cl-pending">数据采集中</span>'
 
-    hero = (
-        '<div class="hero">'
-        '<h3>🔄 闭环流 <span style="font-size:11px;color:var(--faint);font-weight:400">检测 → 修正 → 免疫 → 抗体库 ↺ 自主进化回路</span></h3>'
-        '<div class="sub">本周流量 · 全自动检出与拦截 · 修正自动留痕（图优先：回路在动吗，一眼看出）</div>'
-        '<div class="flow">{}{}</div>'
-        '<div class="chart-box"><div class="chart-legend" id="clLegend"></div><svg id="clTrend" role="img" aria-label="近7日闭环流趋势"></svg></div>'
-        '<div class="chart-note">近7日逐日流量 · 今日进行中不入图（防零值断崖） · 结构性基线从 2026-08-21 起自动积累（缺数日=0·不编造）</div>'
+    # 四方向状态灯（SSR·与 OKR 同源·L0 十秒心跳的一部分）
+    _okr_map = {}
+    for _o in ((snap.get("okr") or {}).get("objectives") or []):
+        _okr_map[_o.get("dir")] = _o
+    _EV_DOT = {"🟢": "ev-g", "🟡": "ev-a", "🔴": "ev-r"}
+    def _hs(dirkey):
+        o = _okr_map.get(dirkey) or {}
+        cur, tgt = o.get("current"), o.get("target_pct")
+        # 口径统一（2026-10-26 你令）：灯条读数=季度达成度%（与 OKR 进度条同口径·封顶100）；
+        # 当前值/目标收进悬停明细——计数型（knows 条/目标）也在此转达成度，防 4/30 与百分比混排致晕
+        if cur is None or not tgt:
+            disp = "—"
+        else:
+            disp = "{}%".format(min(round(cur / tgt * 100), 100))
+        dot = _EV_DOT.get(o.get("evidence"), "ev-n")
+        cur_txt = "{}{}".format(cur, ("%" if o.get("unit") == "rate" else " 条"))
+        title = "当前 {} · 目标 ≥{} · 达成度 {}".format(cur_txt, tgt, disp)
+        if dirkey == "knows":
+            title += " · 时间进度 {}%".format(snap.get("quarter_time_pct"))
+        return ('<div class="hs-item" title="{tt}"><span class="dot {d}"></span>'
+                '<span class="nm">{n}</span><span class="vl">{v}</span></div>').format(
+            tt=title, d=dot, n=o.get("name") or dirkey, v=disp)
+    # 季度时间进度旋钮（P2·指针角度=进度·SSR·三主题皮肤）
+    _qtp = snap.get("quarter_time_pct")
+    _okr_q = snap.get("okr") or {}
+    if isinstance(_qtp, (int, float)):
+        _knob_deg = round(-135 + (_qtp / 100.0) * 270, 1)   # 旋钮行程 270°：-135°(0%) → +135°(100%)
+    else:
+        _knob_deg = -135
+    knob_html = (
+        '<div class="knob-row">'
+        '<div class="knob"><div class="base"></div>'
+        '<div class="needle" style="transform:translateX(-50%) rotate({deg}deg)"></div>'
+        '<div class="cap"></div></div>'
+        '<div><div class="kv">{pct}%</div><div class="kl">季度时间进度</div>'
+        '<div class="ks">{qs} → {qe} · 剩 {rem} 天</div></div>'
         '</div>'
-    ).format(flow_html, pill)
+    ).format(deg=_knob_deg,
+             pct=(_qtp if _qtp is not None else "—"),
+             qs=(_okr_q.get("start") or "—"), qe=(_okr_q.get("end") or "—"),
+             rem=(_okr_q.get("remaining") if _okr_q.get("remaining") is not None else "—"))
+    hero_side = (
+        '<div class="hero-side"><div class="hside-title">四方向 · 季度达成度</div>'
+        + _hs("auto") + _hs("better") + _hs("evo") + _hs("knows") +
+        knob_html +
+        '</div>'
+    )
+    hero = (
+        '<section class="hero">'
+        '<div class="hero-head">'
+        '<span class="no">01</span><span class="t">系统心跳 · 闭环流</span>'
+        '<span class="m">本周流量 · 检测 → 修正 → 免疫 → 抗体库 ↺ 自主进化回路</span></div>'
+        '<div class="flow">{f}</div>'
+        '<div class="hero-mid">'
+        '<div><div class="chart-box"><div class="chart-legend" id="clLegend"></div><svg id="clTrend" role="img" aria-label="近7日闭环流趋势"></svg></div>'
+        '<div class="chart-note">近7日逐日流量 · 今日进行中不入图（防零值断崖） · 结构性基线从 2026-08-21 起自动积累（缺数日=0·不编造）&nbsp;&nbsp;{p}</div></div>'
+        '{s}</div>'
+        '</section>'
+    ).format(f=flow_html, p=pill, s=hero_side)
 
-    # 知识内化流（2026-08-26 新增·L1-L4 管道打通后入板·与闭环流同构）
+    # ── 知识内化流（L1-L4·知识库分区内的一行流·v4.1 加 mono 阶梯标签） ──
     kl = snap.get("knowledge_ladder") or {}
     kl_stats = kl.get("stats") or {}
     kl_probe = kl.get("l4_probe")
@@ -1138,27 +1678,27 @@ def render_html(snap):
     if kl_probe:
         probe_txt = " · 试金石 {} 引用{}含你决策{}".format(kl_probe["card"], kl_probe["total"], kl_probe["ge"])
     if _klv("L4") == 0 and _klv("L4") != "—":
-        kl_pill = '<div class="pill ok" id="kf-pill" title="引用登记已自动化·L4 首例待你决策引用触发">管道已通 · L4 待首例{}</div>'.format(probe_txt)
+        kl_chip = '<span class="chip chip-ok" id="kf-pill" title="引用登记已自动化·L4 首例待你决策引用触发">管道已通 · L4 待首例{}</span>'.format(probe_txt)
     else:
-        kl_pill = '<div class="pill ok" id="kf-pill">L4 已破冰</div>'
+        kl_chip = '<span class="chip chip-ok" id="kf-pill">L4 已破冰</span>'
     ladder_html = (
-        '<div class="hero">'
-        '<h3>🧠 知识内化流 <span style="font-size:11px;color:var(--faint);font-weight:400">L1 提炼 → L2 质证 → L3 应用 → L4 内化 ↺ 引用自动登记</span> <span id="kf-cand" style="font-size:11px;color:var(--amber);font-weight:600;margin-left:8px">🔧 技能卡候选 {}</span></h3>'
-        '<div class="sub">立场卡+技能卡内化阶梯 · 引用自动登记（2026-08-26 管道打通）· 数据源=INDEX.md/引用台账 机械解析（无人工填报）</div>'
-        '<div class="flow">'
-        '<div class="stage"><div class="num c-amber" id="kf-l1">{}</div><div class="lbl">L1 · 提炼</div><div class="src">AI学习库 · 待质证</div></div>'
+        '<div class="kb-flow">'
+        '<div class="stage"><div class="tag">L1</div><div class="num" id="kf-l1">{l1}</div><div class="lbl">提炼 · 待质证</div><div class="src">AI学习库</div></div>'
         '<div class="arrow">→</div>'
-        '<div class="stage"><div class="num c-green" id="kf-l2">{}</div><div class="lbl">L2 · 质证</div><div class="src">分身初审 / 你锤事件</div></div>'
+        '<div class="stage"><div class="tag">L2</div><div class="num" id="kf-l2">{l2}</div><div class="lbl">质证 · 初审</div><div class="src">分身初审 / 你锤事件</div></div>'
         '<div class="arrow">→</div>'
-        '<div class="stage"><div class="num c-blue" id="kf-l3">{}</div><div class="lbl">L3 · 应用</div><div class="src">引用台账 · 自动登记</div></div>'
+        '<div class="stage"><div class="tag">L3</div><div class="num" id="kf-l3">{l3}</div><div class="lbl">应用 · 自动登记</div><div class="src">引用台账</div></div>'
         '<div class="arrow">→</div>'
-        '<div class="stage"><div class="num c-purple" id="kf-l4">{}</div><div class="lbl">L4 · 内化</div><div class="src">引用≥3 含你决策</div></div>'
-        '{}</div>'
-        '<div class="chart-note">知识内化回路（2026-08-26 童灵打通）· 更新于 {} · 每批碰撞/你确认自动登记引用</div>'
+        '<div class="stage hot"><div class="tag">L4</div><div class="num" id="kf-l4">{l4}</div><div class="lbl">内化 · 引用≥3 含你决策</div><div class="src">引用台账</div></div>'
+        '<div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end">'
+        '<span id="kf-cand" style="font-size:12px;color:var(--ink3);font-family:var(--f-mono)">技能卡候选 {sc}</span>'
+        '{chip}</div>'
         '</div>'
-    ).format(kl.get("skill_candidates", 0), _klv("L1"), _klv("L2"), _klv("L3"), _klv("L4"), kl_pill, kl.get("updated", "—"))
+        '<div class="chart-note">知识内化回路（2026-08-26 童灵打通）· 更新于 {upd} · 每批碰撞/你确认自动登记引用</div>'
+    ).format(l1=_klv("L1"), l2=_klv("L2"), l3=_klv("L3"), l4=_klv("L4"),
+             sc=kl.get("skill_candidates", 0), chip=kl_chip, upd=kl.get("updated", "—"))
 
-    # 知识库可视化3模块（2026-09-08 童灵根治·合并入panel_snapshot.py）
+    # ── 知识库联邦（规模读数·方法论收进下钻） ──
     kb = snap.get("knowledge_base") or {}
     fc = kb.get("federated_cards", {}) or {}
     ic = kb.get("index_cards", {}) or {}
@@ -1173,62 +1713,51 @@ def render_html(snap):
     def _bar_w(val):
         return max(val / max_card * 100, 0.5) if max_card > 0 else 0.5
     kb_html = (
-        '<div class="card wide"><h3>📚 知识库联邦总览 <span style="font-size:10px;color:var(--faint);font-weight:400">AI学习库 + Obsidian知识库 + 记忆蓝图 · 联邦多路径统计 · 三维度联合识别</span></h3><div class="sub">数据源=kb_metadata_extract.py 机械采集（无人工填报）· 立场卡/概念卡/知识卡跨库联邦统计 · 每日 07:30 机械采集</div>'
-        '<div class="kb-federation">'
-        '<div class="kb-cell"><div class="label">AI学习库</div><div class="val c-amber" id="kb-ai-lib">{}</div><div class="src">立场卡+技能卡+其他</div></div>'
-        '<div class="kb-cell"><div class="label">Obsidian知识库</div><div class="val c-green" id="kb-obsidian">{}</div><div class="src">10子目录 · 知识池/概念层/读书笔记</div></div>'
-        '<div class="kb-cell"><div class="label">记忆蓝图</div><div class="val c-blue" id="kb-blueprint">{}</div><div class="src">6顶层目录 · 设计哲学/开发规范</div></div>'
-        '<div class="kb-cell"><div class="label">联邦总规模</div><div class="val c-purple" id="kb-total">{}</div><div class="src">AI学习库+Obsidian+蓝图</div></div>'
-        '<div class="kb-cell"><div class="label">立场卡</div><div class="val c-amber" id="kb-stance">{}</div><div class="src">AI学习库 · 决策判据</div></div>'
-        '<div class="kb-cell"><div class="label">概念卡</div><div class="val c-green" id="kb-concept">{}</div><div class="src">Obsidian 08-概念层</div></div>'
-        '<div class="kb-cell"><div class="label">知识卡</div><div class="val c-blue" id="kb-knowledge">{}</div><div class="src">Obsidian 05-知识池</div></div>'
-        '<div class="kb-cell"><div class="label">技能卡</div><div class="val c-purple" id="kb-skill">{}</div><div class="src">AI学习库 · Skill用法卡</div></div>'
+        '<div class="card">'
+        + ladder_html +
+        '<div style="height:16px"></div>'
+        '<div class="kb-grid">'
+        '<div class="kb-cell"><div class="label">AI学习库</div><div class="val" id="kb-ai-lib">{v1}</div><div class="src">立场卡+技能卡+其他</div></div>'
+        '<div class="kb-cell"><div class="label">Obsidian知识库</div><div class="val" id="kb-obsidian">{v2}</div><div class="src">10子目录 · 知识池/概念层/读书笔记</div></div>'
+        '<div class="kb-cell"><div class="label">记忆蓝图</div><div class="val" id="kb-blueprint">{v3}</div><div class="src">6顶层目录 · 设计哲学/开发规范</div></div>'
+        '<div class="kb-cell hot"><div class="label">联邦总规模</div><div class="val" id="kb-total">{v4}</div><div class="src">AI学习库+Obsidian+蓝图</div></div>'
+        '<div class="kb-cell"><div class="label">立场卡</div><div class="val" id="kb-stance">{v5}</div><div class="src">AI学习库 · 决策判据</div></div>'
+        '<div class="kb-cell"><div class="label">概念卡</div><div class="val" id="kb-concept">{v6}</div><div class="src">Obsidian 08-概念层</div></div>'
+        '<div class="kb-cell"><div class="label">知识卡</div><div class="val" id="kb-knowledge">{v7}</div><div class="src">Obsidian 05-知识池</div></div>'
+        '<div class="kb-cell"><div class="label">技能卡</div><div class="val" id="kb-skill">{v8}</div><div class="src">AI学习库 · Skill用法卡</div></div>'
         '</div>'
-        '<div class="kb-method"><b>三维度联合识别方法</b>：文件名前缀 + YAML type字段 + 目录位置，不强制改名，联邦多路径统计。立场卡=AI学习库立场卡#前缀，概念卡=Obsidian 08-概念层目录，知识卡=Obsidian 05-知识池目录，技能卡=AI学习库技能卡#前缀。</div>'
+        '<div class="kb-bars">'
+        '<div class="kb-bar-row"><div class="name">知识卡</div><div class="bar-track"><div class="bar-fill c-knowledge" id="kb-bar-knowledge" style="width:{bw1}%"></div></div><div class="count" id="kb-count-knowledge">{c1}</div></div>'
+        '<div class="kb-bar-row"><div class="name">立场卡</div><div class="bar-track"><div class="bar-fill c-stance" id="kb-bar-stance" style="width:{bw2}%"></div></div><div class="count" id="kb-count-stance">{c2}</div></div>'
+        '<div class="kb-bar-row"><div class="name">概念卡</div><div class="bar-track"><div class="bar-fill c-concept" id="kb-bar-concept" style="width:{bw3}%"></div></div><div class="count" id="kb-count-concept">{c3}</div></div>'
+        '<div class="kb-bar-row"><div class="name">蓝图索引卡</div><div class="bar-track"><div class="bar-fill c-index" id="kb-bar-index" style="width:{bw4}%"></div></div><div class="count" id="kb-count-index">{c4}</div></div>'
+        '<div class="kb-bar-row"><div class="name">技能卡</div><div class="bar-track"><div class="bar-fill c-skill" id="kb-bar-skill" style="width:{bw5}%"></div></div><div class="count" id="kb-count-skill">{c5}</div></div>'
         '</div>'
-        '<div class="card wide"><h3>📊 卡片分布与蓝图索引卡进度 <span style="font-size:10px;color:var(--faint);font-weight:400">五类卡片分布条形图 + 蓝图索引卡生成进度</span></h3><div class="sub">条形图按数量比例渲染 · 蓝图索引卡=记忆蓝图文件的索引卡（核心原则+摘要+路径指针），进知识库可被语义检索</div>'
-        '<div class="kb-cards" id="kb-cards-container">'
-        '<div class="kb-card-row"><div class="name">知识卡</div><div class="bar-track"><div class="bar-fill f-blue" id="kb-bar-knowledge" style="width:{}%"></div></div><div class="count" id="kb-count-knowledge">{}</div></div>'
-        '<div class="kb-card-row"><div class="name">立场卡</div><div class="bar-track"><div class="bar-fill f-amber" id="kb-bar-stance" style="width:{}%"></div></div><div class="count" id="kb-count-stance">{}</div></div>'
-        '<div class="kb-card-row"><div class="name">概念卡</div><div class="bar-track"><div class="bar-fill f-green" id="kb-bar-concept" style="width:{}%"></div></div><div class="count" id="kb-count-concept">{}</div></div>'
-        '<div class="kb-card-row"><div class="name">蓝图索引卡</div><div class="bar-track"><div class="bar-fill f-purple" id="kb-bar-index" style="width:{}%"></div></div><div class="count" id="kb-count-index">{}</div></div>'
-        '<div class="kb-card-row"><div class="name">技能卡</div><div class="bar-track"><div class="bar-fill f-red" id="kb-bar-skill" style="width:{}%"></div></div><div class="count" id="kb-count-skill">{}</div></div>'
-        '</div>'
-        '<div class="kb-progress">'
-        '<div class="kb-progress-track"><div class="kb-progress-fill" id="kb-progress-fill" style="width:{}%"></div><div class="kb-progress-text" id="kb-progress-text">{} / {} · {}%</div></div>'
-        '<div class="kb-progress-meta"><span>已生成 {} 张</span><span>待生成 {} 张</span>{}</div>'
-        '</div></div>'
-        '<div class="card wide"><h3>🔍 知识库运作机制 <span style="font-size:10px;color:var(--faint);font-weight:400">卡片碰撞机制 + 检索路径 + 增量更新闭环</span></h3><div class="sub">童灵全系统导航协议：检索→路径指针→蓝图原文→综合回答 · 卡片碰撞=概念卡+知识卡+立场卡三向碰撞产生新洞察</div>'
-        '<div class="kb-federation">'
-        '<div class="kb-cell"><div class="label">检索引擎</div><div class="val c-amber" style="font-size:16px">search_kb.py</div><div class="src">5源联邦检索 · 三路融合</div></div>'
-        '<div class="kb-cell"><div class="label">蓝图索引卡</div><div class="val c-green" style="font-size:16px">路径指针</div><div class="src">检索到→Read完整蓝图</div></div>'
-        '<div class="kb-cell"><div class="label">卡片碰撞</div><div class="val c-blue" style="font-size:16px">三向碰撞</div><div class="src">概念+知识+立场→新洞察</div></div>'
-        '<div class="kb-cell"><div class="label">增量更新</div><div class="val c-purple" style="font-size:16px">launchd</div><div class="src">每日 07:30 自动校验</div></div>'
-        '</div>'
-        '<div class="kb-method"><b>童灵全系统导航协议（K2 W1第12条）</b>：蓝图结构（6顶层目录）+ 映射表（蓝图文件→索引卡路径）+ 渐进式加载4步（L0恒驻核→L1条目索引→L2域切片→L3单条目）+ 7大域导航路径。通过童灵就知道整个系统的"为何做、如何做、做的目的和效果"。</div>'
+        '<div class="kb-progress-track"><div class="kb-progress-fill" id="kb-progress-fill" style="width:{pp}%"></div><div class="kb-progress-text" id="kb-progress-text">{pg} / {pt} · {pp}%</div></div>'
+        '<div class="kb-progress-meta"><span>蓝图索引卡已生成 {pg} 张</span><span>待生成 {pd} 张</span>{watch}</div>'
+        '<details class="drill"><summary>统计方法 · 数据链 · 运作机制 ▾</summary><div class="drill-body">'
+        '<b>三维度联合识别方法</b>：文件名前缀 + YAML type字段 + 目录位置，不强制改名，联邦多路径统计。立场卡=AI学习库立场卡#前缀，概念卡=Obsidian 08-概念层目录，知识卡=Obsidian 05-知识池目录，技能卡=AI学习库技能卡#前缀。<br><br>'
+        '<b>数据链</b>：kb_metadata_extract.py 机械采集（无人工填报）· 每日 07:30 · 蓝图索引卡=记忆蓝图文件的索引卡（核心原则+摘要+路径指针），进知识库可被语义检索；条形图按数量比例渲染。<br><br>'
+        '<b>童灵全系统导航协议（K2 W1第12条）</b>：蓝图结构（6顶层目录）+ 映射表（蓝图文件→索引卡路径）+ 渐进式加载4步（L0恒驻核→L1条目索引→L2域切片→L3单条目）+ 7大域导航路径。检索引擎=search_kb.py（5源联邦检索·三路融合）；卡片碰撞=概念卡+知识卡+立场卡三向碰撞产生新洞察；增量更新=launchd 每日 07:30 自动校验。'
+        '</div></details>'
         '</div>'
     ).format(
-        _kbv(ai_lib, "total"), _kbv(obs_kb, "total_md"), _kbv(bp, "total_md"), _kbv(fed, "total"),
-        _kbv(fc, "stance"), _kbv(fc, "concept"), _kbv(fc, "knowledge"), _kbv(fc, "skill"),
-        _bar_w(_kbv(fc, "knowledge", 0)), _kbv(fc, "knowledge"),
-        _bar_w(_kbv(fc, "stance", 0)), _kbv(fc, "stance"),
-        _bar_w(_kbv(fc, "concept", 0)), _kbv(fc, "concept"),
-        _bar_w(_kbv(ic, "generated", 0)), _kbv(ic, "generated"),
-        _bar_w(_kbv(fc, "skill", 0)), _kbv(fc, "skill"),
-        _kbv(ic, "progress_pct", 0), _kbv(ic, "generated"), _kbv(ic, "total_needed"), _kbv(ic, "progress_pct"),
-        _kbv(ic, "generated"), _kbv(ic, "pending", 0),
+        v1=_kbv(ai_lib, "total"), v2=_kbv(obs_kb, "total_md"), v3=_kbv(bp, "total_md"), v4=_kbv(fed, "total"),
+        v5=_kbv(fc, "stance"), v6=_kbv(fc, "concept"), v7=_kbv(fc, "knowledge"), v8=_kbv(fc, "skill"),
+        bw1=_bar_w(_kbv(fc, "knowledge", 0)), c1=_kbv(fc, "knowledge"),
+        bw2=_bar_w(_kbv(fc, "stance", 0)), c2=_kbv(fc, "stance"),
+        bw3=_bar_w(_kbv(fc, "concept", 0)), c3=_kbv(fc, "concept"),
+        bw4=_bar_w(_kbv(ic, "generated", 0)), c4=_kbv(ic, "generated"),
+        bw5=_bar_w(_kbv(fc, "skill", 0)), c5=_kbv(fc, "skill"),
+        pp=_kbv(ic, "progress_pct", 0), pg=_kbv(ic, "generated"), pt=_kbv(ic, "total_needed"),
+        pd=_kbv(ic, "pending", 0),
         # 2026-09-27 童灵根治：守卫状态改读数据字段（watch_active），⛔不再硬编码✅——假绿=反模式
-        ('<span>防漂移校验 ✅</span><span>launchd增量监控 ✅</span>'
-         if _kbv(ic, "watch_active", False)
-         else '<span style="color:var(--amber)">⚠️ 防漂移守卫未挂载（kb-card-version-watch / blueprint-index-watcher 均缺位）</span>')
+        watch=('<span>防漂移校验 ✅</span><span>launchd增量监控 ✅</span>'
+               if _kbv(ic, "watch_active", False)
+               else '<span style="color:var(--warn)">⚠️ 防漂移守卫未挂载（kb-card-version-watch / blueprint-index-watcher 均缺位）</span>')
     )
 
-
-    # 四方向原生数据（紧凑行·少而真·零分数）
-    # v0.8.0 三面孔同源：①/④ 卡直接复用 OKR 机械映射行读数（auto_closure/auto_done/auto_cov/evidence）
-    _okr_map = {}
-    for _o in ((snap.get("okr") or {}).get("objectives") or []):
-        _okr_map[_o.get("dir")] = _o
+    # ── 四方向详情卡（愿景进度分区·L1 层·长注收 title 悬停·n·CI 随 val 同屏） ──
     def _pf(v):  # percent-or-dash
         return ("{}%".format(v) if isinstance(v, (int, float)) else "—")
     _oa = _okr_map.get("auto") or {}
@@ -1246,72 +1775,74 @@ def render_html(snap):
         better_txt = "免疫命中 {}（累计） · 有效抗体 {}".format(imm_h if imm_h is not None else "—", anti_e if anti_e is not None else "—")
     better_ev = snap.get("better_evidence") or "🟢"
     evo_v = snap.get("evo_events")
-    evo_txt = "本季进化事件 {} · 净采纳率 {}".format(
+    _ci = snap.get("evo_rate_ci") or []
+    evo_txt = "本季提案 {} · 采纳 {} · 豁免 {} · 未决 {} · 净采纳率 {}（n={} · 95%CI {}）".format(
         evo_v if evo_v is not None else "—",
-        ("{:.0f}%".format(snap.get("evo_adoption_rate") * 100) if snap.get("evo_adoption_rate") is not None else "待量"))
+        snap.get("evo_adopted") if snap.get("evo_adopted") is not None else "—",
+        snap.get("evo_waived") if snap.get("evo_waived") is not None else "—",
+        snap.get("evo_pending") if snap.get("evo_pending") is not None else "—",
+        ("{:.0f}%".format(snap.get("evo_adoption_rate") * 100) if snap.get("evo_adoption_rate") is not None else "待量"),
+        snap.get("evo_rate_n") if snap.get("evo_rate_n") is not None else "—",
+        ("{:.0f}–{:.0f}%".format(_ci[0] * 100, _ci[1] * 100) if len(_ci) == 2 else "—"))
     evo_badge = snap.get("evo_evidence") or "🔴"
     knows_v = snap.get("knows_count")
     knows_dl = snap.get("knows_days_left")
     _ok = _okr_map.get("knows") or {}
-    knows_txt = "本月 {} 条 · 本季累计 {}/{} · 剩 {} 天".format(
+    knows_txt = "本月 {} 条 · 本季累计 {}/{} · 时间进度 {}% · 剩 {} 天".format(
         knows_v if knows_v is not None else "—",
         _ok.get("current") if _ok.get("current") is not None else "—",
         _ok.get("target_pct") if _ok.get("target_pct") is not None else "—",
+        snap.get("quarter_time_pct") if snap.get("quarter_time_pct") is not None else "—",
         knows_dl if knows_dl is not None else "—")
     knows_badge = _ok.get("evidence") or snap.get("knows_evidence") or "🟡"
     fourdir = (
-        '<div class="card wide fourdir">'
-        '<div class="fd"><div class="name">① 全自动化 <span class="badge" title="愿景①真义=机制自动运转不依赖人记得·值为hook_auto触发占比(自动触发调用/总调用)·手动调用累积会拉低占比(非自动化退化)">{}</span></div>'
-        '<div class="val" id="fd-auto">{}</div><div class="note">值为 hook_auto 触发占比(愿景①=机制自动运转不依赖人记得) · 手动调用累积拉低占比≠自动化退化 · returncode 成功=100%(可靠性) · 覆盖N/M独立读数 · 🧪🟡过程代理</div></div>'
-        '<div class="fd"><div class="name">② 越用越好用 <span class="badge" title="定案(v0.5)=漏触发修复率·两池join≥90%门槛实过">{}</span></div>'
-        '<div class="val" id="fd-better">{}</div><div class="note">免疫命中=历史复发被捕获次数(证明闭环在跑·非未实现) · 有效抗体=已建防复发规则 · 基线 {} · 🧪{}</div></div>'
-        '<div class="fd"><div class="name">③ 自主进化 <span class="badge" title="净采纳率=本季新增采纳/总提案">{}</span></div>'
-        '<div class="val" id="fd-evo">{}</div><div class="note">挑战线=净采纳率≥60% · 愿景③真义=机制被真内化 · 🧪🟢行为锚</div></div>'
-        '<div class="fd"><div class="name">④ 越懂你 <span class="badge" title="过渡方向·代理计数证据封顶🟡">{}</span></div>'
-        '<div class="val" id="fd-knows">{}</div><div class="note" id="fd-knows-note">过渡=认知发现数·自然月归当月 · 定案=预测准确率（需先建「预测vs实际」成对标签） · 🧪🔴产量代理</div></div>'
+        '<div class="fourdir">'
+        '<div class="fd" title="值为 hook_auto 触发占比(愿景①=机制自动运转不依赖人记得·自动触发调用/总调用) · 手动调用累积会拉低占比(非自动化退化) · returncode 成功=100%(可靠性) · 覆盖N/M独立读数">'
+        '<div class="name">① 全自动化 <span class="badge" title="愿景①真义=机制自动运转不依赖人记得·值为hook_auto触发占比(自动触发调用/总调用)·手动调用累积会拉低占比(非自动化退化)">{ab}</span></div>'
+        '<div class="val" id="fd-auto">{av}</div><div class="note">hook_auto 触发占比 · 手动调用累积拉低占比≠自动化退化 · 🧪过程代理</div></div>'
+        '<div class="fd">'
+        '<div class="name">② 越用越好用 <span class="badge" title="定案(v0.5)=漏触发修复率·两池join≥90%门槛实过">{be}</span></div>'
+        '<div class="val" id="fd-better">{bv}</div><div class="note">定案口径=漏触发修复率（两池join）· 免疫命中/抗体为过渡基线</div></div>'
+        '<div class="fd">'
+        '<div class="name">③ 自主进化 <span class="badge" title="净采纳率=采纳÷(采纳+未决)·豁免排除分母·小样本带95%CI">{ee}</span></div>'
+        '<div class="val" id="fd-evo">{ev}</div><div class="note">三态口径 · 分母=采纳+未决 · 比率必带 n 与区间</div></div>'
+        '<div class="fd">'
+        '<div class="name">④ 越懂你 <span class="badge" title="过渡方向·代理计数证据封顶🟡">{kb}</span></div>'
+        '<div class="val" id="fd-knows">{kv}</div><div class="note" id="fd-knows-note">过渡=认知发现数·自然月归当月 · 定案=预测准确率（需先建「预测vs实际」成对标签）</div></div>'
         '</div>'
-    ).format(auto_badge, auto_txt, better_ev, better_txt,
-             ("{:.0%}".format(better_base) if better_base is not None else "—"),
-             ("🟢定案(活跃口径)" if snap.get("better_state") == "定案" else "🟡过程代理"),
-             evo_badge, evo_txt, knows_badge, knows_txt)
+    ).format(ab=auto_badge, av=auto_txt, be=better_ev, bv=better_txt,
+             ee=evo_badge, ev=evo_txt, kb=knows_badge, kv=knows_txt)
 
-    # 维护成本（git 派生·免自评）
+    okr_html = build_okr_html(snap)   # 季度 OKR 目标对照层（v4.1·口径收下钻·达标线 tick）
+
+    # ── 运营行：维护成本 + 价值层（待量化明示·不装假指标） ──
     mt = snap.get("maintenance", {}) or {}
     if mt.get("total_commits") is not None:
         segs = " · ".join("{} {}".format(s["segment"], s["commits"]) for s in mt.get("segments", []) if s.get("commits") is not None)
         maint_line = "近7天共 {} 次提交 · 环节Top：{}（环节口径≠总量口径·示集中度）".format(mt["total_commits"], segs)
     else:
         maint_line = "数据采集中（环节维护台账.py 待产出）"
-    maint = (
-        '<div class="card wide maint">'
-        '<h3>🧰 维护成本 <span style="font-size:10px;color:var(--faint);font-weight:400">git log 按环节统计提交数/周 · 免人工 · 免自评</span></h3>'
-        '<div class="bar" id="maint-line" style="margin-top:8px">{}</div>'
+    ops = (
+        '<div class="ops">'
+        '<div class="card"><h4>维护成本 · GIT 环节统计</h4><div class="line" id="maint-line">{ml}</div></div>'
+        '<div class="card"><h4>价值层 · 北极星产出轴（S451 投资回收轴 · 建/停决策依据）</h4><div class="line">待量化（定义中：本周「系统帮你产出」事件数——视频发布 / 文案产出 / 账号数据） · 无数据源不上假指标</div></div>'
         '</div>'
-    ).format(maint_line)
+    ).format(ml=maint_line)
 
-    # v0.8.0 价值层占位卡：北极星产出轴入口（S451 投资回收轴）——诚实待量化，不装假指标
-    value_card = (
-        '<div class="card wide maint">'
-        '<h3>🎯 价值层（北极星产出轴） <span style="font-size:10px;color:var(--faint);font-weight:400">S451 投资回收轴 · 建/停决策依据</span></h3>'
-        '<div class="bar" style="margin-top:8px;color:var(--muted)">待量化（定义中：本周「系统帮你产出」事件数——视频发布 / 文案产出 / 账号数据） · 无数据源不上假指标（你最高原则）</div>'
-        '</div>'
-    )
-
-    okr_html = build_okr_html(snap)   # 季度 OKR 目标对照层（本季目标线 vs 实际进度）
-
-    # 平台接入率（按需展开·保留 N/M + 校验覆盖标记）
-    # 校验覆盖标记自动解析自 SSOT §二·七 校验覆盖段（不硬编码·防漂移）
+    # ── 平台覆盖（16 端色带一眼扫缺口·明细表收下钻·v4.1 加数据条供 C 主题行式呈现） ──
     ssot_cov = _parse_coverage_from_ssot()
     rates = snap.get("platform_rates", {})
     def rate_key(item):
         v = item[1]
         return (v[0] / v[1]) if v and v[1] else -1
+    METHOD_TXT = {"🟢": "机械", "🟡": "自核", "🔴": "自治"}
+    cov_cells = ""
     rate_rows = ""
     verified = 0
     known = 0
-    METHOD_TXT = {"🟢": "机械", "🟡": "自核", "🔴": "自治"}
     for name, v in sorted(rates.items(), key=rate_key, reverse=True):
         if v is None:
+            cov_cells += '<div class="cov-cell c-bad" title="{n}"><div class="nm">{n}</div><div class="rd">—</div><div class="ex">未登记</div><div class="bar"><i style="width:0%"></i></div></div>\n'.format(n=name)
             rate_rows += '<tr><td>{}</td><td><span class="vmethod">未登记</span></td><td>—</td><td>—</td></tr>\n'.format(name)
             continue
         num, den = v
@@ -1319,23 +1850,44 @@ def render_html(snap):
         mark, note = ssot_cov.get(name, ("❔", "未登记"))
         if mark == "🟢":
             verified += 1
-        pct = round(num / den * 100) if den else 0
-        color = "#22c55e" if pct >= 80 else "#f59e0b" if pct >= 50 else "#ef4444"
         gap = den - num
+        ratio = (num / den) if den else 0
+        cell_cls = "c-ok" if gap == 0 else ("c-mid" if ratio >= 0.5 else "c-bad")
+        bar_w = round(ratio * 100, 1)
+        cov_cells += ('<div class="cov-cell {c}" title="{n}"><div class="nm">{n}</div>'
+                      '<div class="rd">{a}/{b}</div><div class="ex">{m}</div>'
+                      '<div class="bar"><i style="width:{w}%"></i></div></div>\n').format(
+            c=cell_cls, n=name, a=num, b=den, m=METHOD_TXT.get(mark, "未登记"), w=bar_w)
+        pct = round(num / den * 100) if den else 0
+        color = "var(--ok)" if pct >= 80 else ("var(--warn)" if pct >= 50 else "var(--bad)")
         rate_rows += ('<tr><td>{}</td>'
                       '<td><span class="vmethod" title="{}">{}</span></td>'
                       '<td style="color:{};font-weight:700">{}/{}</td>'
                       '<td style="color:{}">缺 {}</td></tr>\n').format(
             name, note, METHOD_TXT.get(mark, "未登记"), color, num, den,
-            "#ef4444" if gap > 0 else "#22c55e", gap)
-    rates_card = (
-        '<details class="card rates">'
-        '<summary>📡 平台接入率 · 已登记 {known} 端（🟢机械核验 {verified}）<span class="hint">N/M 实际数量 · 🟢机械/🟡自签/🔴自治 · 点击展开明细 ▾</span></summary>'
+            ("var(--bad)" if gap > 0 else "var(--ok)"), gap)
+    platform_sec = (
+        '<section class="sec">'
+        '<div class="sec-head"><span class="no">04</span><span class="t">平台覆盖</span>'
+        '<span class="m">已登记 {k} 端 · 🟢机械核验 {v} · N/M=12项共享清单实盘读数</span></div>'
+        '<div class="cov-strip">{cells}</div>'
+        '<details class="rates"><summary><span class="hint">{k} 端明细表 · 核验方式与缺口 ▾</span></summary>'
         '<table id="rates-table"><tr><th>平台</th><th>核验</th><th>已接</th><th>缺口</th></tr>{rows}</table>'
         '</details>'
-    ).format(known=known, verified=verified, rows=rate_rows)
+        '</section>'
+    ).format(k=known, v=verified, cells=cov_cells, rows=rate_rows)
 
-    # 终点：一句话总结
+    # ── 05 数字分身（2026-10-26 你纠偏升独立 section：分身=治理主体"谁在值班"，
+    #    非知识库子域——初版蹭 suspend-mount 注入链属路径依赖，现归位） ──
+    twin_sec = (
+        '<section class="sec">'
+        '<div class="sec-head"><span class="no">05</span><span class="t">数字分身 · 状态与治理</span>'
+        '<span class="m">校准飞轮 · 岗位名册 · 纪律漂移 · 数据源=job台账/calibration/告警机</span></div>'
+        '<div id="twin-mount"></div>'
+        '</section>'
+    )
+
+    # ── 终点：一句话总结（峰终·终点） ──
     summary = build_summary(cl)
     summary_card = (
         '<div class="summary">'
@@ -1349,16 +1901,41 @@ def render_html(snap):
     html = (
         '<!doctype html>\n<html lang="zh">\n<head>\n<meta charset="utf-8"/>\n'
         '<meta name="viewport" content="width=device-width,initial-scale=1"/>\n'
-        '<title>系统活面板 · 峰终体验 v3</title>\n'
-        '<!-- v0.8.0 零外链：无 Chart.js/字体 CDN · 断网可渲染 -->\n'
+        '<title>布洛陀 · 系统面板 v4.1</title>\n'
+        '<!-- v1.1.0 三主题系统：a 终端 / b 硬件 / c 年报 · 右上角切换 · localStorage 记住选择 · 零外链保留 -->\n'
         '<style>' + CSS + '</style>\n'
         '<script>' + HEAD_JS + '</script>\n'
-        '</head>\n<body>\n<div class="dash">\n'
-        + hero + "\n" + ladder_html + "\n" + fourdir + "\n" + okr_html + "\n" + maint + "\n" + value_card + "\n" + rates_card + "\n" + kb_html + "\n" + summary_card + '\n'
+        '</head>\n<body class="theme-a">\n'
+        '<script>try{var _t=localStorage.getItem("panel-theme");if(_t==="a"||_t==="b"||_t==="c"){document.body.className="theme-"+_t;}}catch(e){}</script>\n'
+        '<div class="wrap">\n'
+        '<header class="topbar">'
+        '<div class="lft">'
+        '<div class="brand">布洛陀 · 系统面板<span class="ver">v4.1 · 三主题</span></div>'
+        '<div class="sub">BULUOTUO SYSTEM PANEL · 自主进化系统监测</div>'
+        '</div>'
+        '<div class="rgt">'
+        '<div class="tswitch" id="theme-switch">'
+        '<button type="button" data-t="a">终端</button>'
+        '<button type="button" data-t="b">面板</button>'
+        '<button type="button" data-t="c">年报</button>'
+        '</div>'
+        '<div class="live"><span class="dot"></span>活 · <span id="panel-updated">' + today_str + '</span></div>'
+        '</div>'
+        '</header>\n'
+        + hero + "\n"
+        + '<section class="sec">'
+        + '<div class="sec-head"><span class="no">02</span><span class="t">愿景进度 · 季度 OKR</span><span class="m">四方向原生读数 · 不合成总分（量纲不同不可加）</span></div>'
+        + fourdir + okr_html + ops +
+        '</section>\n'
+        + '<section class="sec">'
+        + '<div class="sec-head"><span class="no">03</span><span class="t">知识库</span><span class="m">内化阶梯 · 联邦统计 · 碰撞机制 · kb_metadata_extract 机械采集</span></div>'
+        + kb_html + "\n" + '<div id="collision-mount"></div>' + '<div id="suspend-mount"></div>'
+        '</section>\n'
+        + platform_sec + "\n" + twin_sec + "\n" + summary_card + '\n'
         '</div>\n'
         '<div class="footer">'
-        '<span>最后更新: ' + today_str + ' · 峰终体验 v3：峰值=闭环流 · 终点=一句话 · 中间少而真（零分数）</span>'
-        '<span>数据源: evolution_deviation / 环节维护台账 / 各端 settings.json · 刷新即最新 · 零外链(v0.8.0)</span>'
+        '<span>最后更新: ' + today_str + ' · v4.1 三主题：终端 / 面板 / 年报（右上角切换·记住选择） · 峰终保留（峰值=闭环流 · 终点=一句话）</span>'
+        '<span>数据源: evolution_deviation / 环节维护台账 / 各端 settings.json · 刷新即最新 · 零外链</span>'
         '</div>\n'
         '<script>window.PANEL_DATA = ' + json.dumps(write_panel_data_js(snap), ensure_ascii=False) + ';</script>\n'
         '<script>window.renderTrend(' + json.dumps(trend_plot, ensure_ascii=False) + ');</script>\n'
@@ -1395,14 +1972,28 @@ def write_panel_data_js(snap):
                 txt = ""
             if re.search(re.escape(name) + r"\s*自核", txt):
                 coverage[name] = ("🟢", "自核签名 · 登记自 SSOT §二·七")
-    SHARED13 = ["crossend_guard","route_inject_prompt","route_miss_feeder","kb_inject_prompt",
+    # 共享 12 项分母名单（SHARED12）——名称 = 实际条目数，与 load_live_rates 的 HOOKS12 逐项对齐。
+    # 2026-10-25 v0.9.13：原名单 13 项含 **已退役** 的 reply_format_guard
+    #   （退役台账 脚本中心/守卫/retired-hooks.json：2026-08-13 你令退役·08-26 完全删除·form=entity_deleted）
+    #   ⇒ 名单与退役台账脱钩（判据面读到不存在的项）。全端 6 个挂载面实测 hit=0
+    #   （workbuddy / qoder-cn / qoder / trae-cn / zcode / minimaxcode）⇒ 清理**零数值影响**，
+    #   纯口径归正（名单数 13→12 = 真实分母 12）。
+    SHARED12 = ["crossend_guard","route_inject_prompt","route_miss_feeder","kb_inject_prompt",
         "route_unknown_unknown","audit_search_kb","route_audit","route_guard_audit",
-        "reply_format_guard","feedback_detect",
-        "rule_three_layer_guard","card_id_guard"]
+        "feedback_detect","rule_three_layer_guard","card_id_guard","title_namer"]
     PLATFORM_CFG = {
         "WorkBuddy": os.path.expanduser("~/.workbuddy/settings.json"),
         "Qoder CN": os.path.expanduser("~/.qoder-cn/settings.json"),
         "Qoder Desktop": os.path.expanduser("~/.qoder/settings.json"),
+        # 2026-10-25：Trae CN 官方全局挂载面=hooks.json（非 settings.json）——补此分支，
+        # 否则 extra 恒 None＝面板「+N」空白（你质证：看起来像"本端不需要额外守卫"，实为脚本漏配）
+        "Trae CN 💡": os.path.expanduser("~/.trae-cn/hooks.json"),
+        # 2026-10-25 v0.9.10：ZCode 入直读清单（hooks.events 形态·对齐 classify_entries 联合取法）——
+        # extra 从「zcode_config_guard 文件存在 +1」写死改为实盘条目统计（对齐 WB 实挂盘点记法）
+        "ZCode": os.path.expanduser("~/.zcode/cli/config.json"),
+        # 2026-10-25 v0.9.12：MiniMax Code 入直读清单——本端唯一真实挂载面是 Plugin 包 hooks.json
+        # （本端无用户级 settings.json·⛔母本 ~/.workbuddy/settings.json 是 WorkBuddy 运行时·不算本端）
+        "MiniMax Code 🐰": os.path.expanduser("~/.minimax/plugins/bulutuo-guards/hooks/hooks.json"),
     }
     DSH_PLUGIN = os.path.expanduser(
         "[记忆共享中心]/脚本中心/five-layer-memory/src/index.js")
@@ -1414,14 +2005,35 @@ def write_panel_data_js(snap):
         "AutoClaw": os.path.expanduser("[记忆共享中心]/脚本中心/autoclaw_gateway_guard.py"),
         "LobsterAI": os.path.expanduser("[记忆共享中心]/脚本中心/内容创作/lobsterai_session_anomaly_guard.py"),
         "Trae Work": os.path.expanduser("[记忆共享中心]/脚本中心/内容创作/session_memory_quality_guard.py"),
-        "ZCode": os.path.expanduser("[记忆共享中心]/脚本中心/内容创作/zcode_config_guard.py"),
+        # 2026-10-25 v0.9.10：ZCode 移出（转 PLATFORM_CFG 实盘统计）——写死+1 是 patrol 型遗留，
+        # 实盘 36 条只显 +1 = 登记面≠实盘（WB 2026-10-06 实挂盘点同族根治）
         "Hermes": os.path.expanduser("[记忆共享中心]/脚本中心/hermes_read_evidence_guard.py"),
     }
-    # 非守卫命令（挂在 hooks 里但不是"专属守卫"：渲染器/机械校验器）——统计专属守卫时剔除，防 +N 虚高
-    NON_GUARD_CMDS = ("panel_snapshot.py", "platform_adaptation_check.py")
+    # 非守卫命令（挂在 hooks 里但不是"专属守卫"：渲染器/机械校验器/探针）——统计专属守卫时剔除，防 +N 虚高
+    NON_GUARD_CMDS = ("panel_snapshot.py", "platform_adaptation_check.py", "hooks-probe/probe.sh")
     def extra_count(name):
         if name in PATROL_EXTRA_SCRIPT:
             return 1 if os.path.exists(PATROL_EXTRA_SCRIPT[name]) else 0
+        if name == "Zwork 🧠":
+            # 2026-10-25 v0.9.14：Zwork（第 19 端·软约束端·无 hooks 配置面）——
+            # extra=童灵包安装回执机械计数（installed capabilities + installed components
+            # + twin_core core_built）·回执由 install_receipt.py 产出（⛔禁手写副本=机械源）·
+            # verdict!=ok 不计（防假绿）·⛔不入 12-Hook 分母（平台边界 0/12 如实）
+            try:
+                with open(os.path.expanduser(
+                    "~/Library/Application Support/AutoClaw-official/doenglingz/installed_manifest.json"),
+                    encoding="utf-8") as f:
+                    man = json.load(f)
+                if man.get("verdict") != "ok":
+                    return 0
+                n = sum(1 for c in man.get("capabilities", []) if c.get("status") == "installed")
+                n += sum(1 for c in man.get("components", {}).values()
+                         if isinstance(c, dict) and c.get("status") == "installed")
+                if (man.get("twin_core") or {}).get("state") == "core_built":
+                    n += 1
+                return n
+            except Exception:
+                return None
         cfg = PLATFORM_CFG.get(name)
         if name == "DeepSeek Harness":
             try:
@@ -1435,7 +2047,7 @@ def write_panel_data_js(snap):
                     seg_lines.append(line)
                 seg = "\n".join(seg_lines)
                 total = seg.count("script:")
-                in_shared = sum(1 for s in SHARED13 if s in seg)
+                in_shared = sum(1 for s in SHARED12 if s in seg)
                 return max(total - in_shared, 0)
             except Exception:
                 return None
@@ -1446,13 +2058,16 @@ def write_panel_data_js(snap):
                 d = json.load(f)
             cmds = []
             for evt in ("SessionStart", "UserPromptSubmit", "Stop"):
-                for it in d.get("hooks", {}).get(evt, []):
+                # 2026-10-25 v0.9.10：兼容 ZCode hooks.events.<Event> 联合形态（对齐 classify_entries）
+                evt_entries = list(d.get("hooks", {}).get(evt, [])) + \
+                    list(d.get("hooks", {}).get("events", {}).get(evt, []))
+                for it in evt_entries:
                     if "hooks" in it:
                         for hh in it["hooks"]:
                             cmds.append(hh.get("command", ""))
                     elif "command" in it:
                         cmds.append(it["command"])
-            in_shared = sum(1 for c in cmds if any(s in c for s in SHARED13))
+            in_shared = sum(1 for c in cmds if any(s in c for s in SHARED12))
             non_guard = sum(1 for c in cmds if any(s in c for s in NON_GUARD_CMDS))
             return max(len(cmds) - in_shared - non_guard, 0)
         except Exception:
@@ -1519,13 +2134,21 @@ def write_panel_data_js(snap):
                     anti_e if anti_e is not None else "—",
                     ("命中/抗体 {:.1f} 倍".format(snap.get("better_baseline"))
                      if isinstance(snap.get("better_baseline"), (int, float)) else "基线 —"))),
-            "evo": "本季进化事件 {} · 净采纳率 {}".format(
+            "evo": "本季提案 {} · 采纳 {} · 豁免 {} · 未决 {} · 净采纳率 {}（n={} · 95%CI {}）".format(
                 snap.get("evo_events") if snap.get("evo_events") is not None else "—",
-                (("{:.0f}%".format( snap.get("evo_adoption_rate")*100)) if snap.get("evo_adoption_rate") is not None else "待量")),
-            "knows": "本月 {} 条 · 本季累计 {}/{} · 剩 {} 天".format(
+                snap.get("evo_adopted") if snap.get("evo_adopted") is not None else "—",
+                snap.get("evo_waived") if snap.get("evo_waived") is not None else "—",
+                snap.get("evo_pending") if snap.get("evo_pending") is not None else "—",
+                ("{:.0f}%".format(snap.get("evo_adoption_rate")*100) if snap.get("evo_adoption_rate") is not None else "待量"),
+                snap.get("evo_rate_n") if snap.get("evo_rate_n") is not None else "—",
+                ("{:.0f}–{:.0f}%".format((snap.get("evo_rate_ci") or [0, 0])[0]*100,
+                                          (snap.get("evo_rate_ci") or [0, 0])[1]*100)
+                 if snap.get("evo_rate_ci") else "—")),
+            "knows": "本月 {} 条 · 本季累计 {}/{} · 时间进度 {}% · 剩 {} 天".format(
                 snap.get("knows_count") if snap.get("knows_count") is not None else "—",
                 _ok.get("current") if _ok.get("current") is not None else "—",
                 _ok.get("target_pct") if _ok.get("target_pct") is not None else "—",
+                snap.get("quarter_time_pct") if snap.get("quarter_time_pct") is not None else "—",
                 snap.get("knows_days_left") if snap.get("knows_days_left") is not None else "—"),
             "auto_state": snap.get("auto_state") or "定案",
             "better_state": snap.get("better_state") or "过渡",

@@ -15,7 +15,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 ---
 title: 未知未知 · 悬置区
 type: reference
-version: v0.1
+version: v0.2
 status: active
 summary: 认知盲区轴入口——存储无法归因的异常信号毛坯，不存结论
 source: 未知未知/悬置区.md
@@ -38,9 +38,9 @@ area: 未知未知
 ```
 ### 残差#{序号} · {YYYY-MM-DD}
 - 触发: T1|T2|T3|T4|T5
-- 归属: 你盲区|AI盲区|双方共盲
+- 归属: 用户盲区|AI盲区|双方共盲
 - 来源: 对话|日记|复盘|探针(反方向的钟/S级评审/迁理之外/三明智)
-- 记录者: 你|AI
+- 记录者: 用户|AI
 - 状态: 悬置(未闭合)
 - 毛坯描述: (仅冻现象，禁止当时深加工/归因)
 ```

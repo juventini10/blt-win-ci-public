@@ -12,7 +12,6 @@
 - 幂等：--sync 对已带号卡零改动；--allocate 纯只读。
 """
 import os, re, sys, glob, json, importlib.util
-import sys
 try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -20,9 +19,12 @@ except Exception:
     pass  # Windows cp1252 控制台防非ASCII print 崩（F2 根治·2026-10-17）
 
 HOME = os.path.expanduser("~")
-POOL = os.path.join(HOME, "[日记仓库]", "2-知识库", "05-知识池")
-MAP_PY = os.path.join(os.path.expanduser("[记忆共享中心]"), "脚本中心", "kb_no_map.py")
-MAP_JSON = os.path.join(os.path.expanduser("[记忆共享中心]"), "脚本中心", "data", "kb_no_map.json")
+# v4.17.0：env 覆盖优先（对齐 platform-paths OBSIDIAN_VAULT 约定·换 vault/换机不再静默指错账）
+_VAULT = os.environ.get("OBSIDIAN_VAULT")
+POOL = os.path.join(_VAULT, "2-知识库", "05-知识池") if _VAULT else os.path.join(HOME, "[日记仓库]", "2-知识库", "05-知识池")
+_MAP_CENTER = os.environ.get("SUCAIR_MAP_DIR") or os.path.join(os.path.expanduser("[记忆共享中心]"), "脚本中心")
+MAP_PY = os.path.join(_MAP_CENTER, "kb_no_map.py")
+MAP_JSON = os.path.join(_MAP_CENTER, "data", "kb_no_map.json")
 PAT = re.compile(r"^#Z\d{4}$")
 
 

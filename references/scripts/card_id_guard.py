@@ -36,7 +36,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-KB_DIR = Path.home() / Path('[记忆共享中心]') / "知识库" / "AI学习库"  # 2026-10-04 13:2x 回滚模板逆向污染（原改动把作者路径净化式改写进生产文件致 str/str TypeError·真凶见施工单§11）
+KB_DIR = Path.home() / "[记忆共享中心]" / "知识库" / "AI学习库"  # 2026-10-24 修双 Path.home() 叠加（扫到不存在的 ~/~/… 致实盘 1084 张读成 0 张→next 恒返 S001·取号撞号风险静默化）
 # 状态文件按宿主端隔离（跨工具中立·v0.2）：各端各写自己的状态文件，互不干扰去重逻辑。
 # 宿主由环境变量 CARD_GUARD_HOST 指定（缺省 qoder-cn 兼容原挂载）；hooks 命令里传 env。
 import os as _os

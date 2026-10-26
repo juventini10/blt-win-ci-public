@@ -17,7 +17,7 @@ note_validator.py — 读书助手（素裁）产出物合规「规则单源」
 设计依据：
 - 《文件格式规范》(⛔不锚版本#142) §三 通用7必填 + §八 Schema 注册表
 - 《笔记schema》v1.0.0（层3，note 类型）
-- 《读书卡片schema》v1.3.1（层3，reading-card 类型，含立场扩展层 + source_type 泛化 + trigger_scene + source_count）
+- 《读书卡片schema》v1.3.4（层3，reading-card 类型，含立场扩展层 + source_type 泛化 + trigger_scene + source_count）
 
 条件必填逻辑（2026-08-07 Wave 0.2 扩展）：
 - source_type =book → 书卡规则：book/book_author 必填（source_type 已收紧为必填·Wave 2.0）
@@ -108,7 +108,7 @@ NOTE_FIELDS = [
     ("date", True, lambda v: bool(_DATE_RE.match(str(v)))),
     ("summary", True, lambda v: 0 < len(str(v).strip()) <= 40),
     ("source", True, lambda v: bool(str(v).strip())),
-    ("author", True, lambda v: bool(str(v).strip())),          # 维护者（你/皮叔），非书作者
+    ("author", True, lambda v: bool(str(v).strip())),          # 维护者（用户署名），非书作者
     ("book", False, None),
     ("book_author", False, None),                              # 书作者，独立于 author
     ("publisher", False, None),
@@ -153,11 +153,11 @@ CARD_FIELDS = [
     ("trigger_scene", False, lambda v: bool(str(v).strip())),
     ("related", False, None),                                   # 双链数组或字符串
     # verified（schema v1.3.1 · 2026-09-01 清零批#11）：CONFLICT 立场闭环的人工复核载体——
-    # CONFLICT 新卡落 unverified，你/成长箱复核通过后改 verified（dedup-merge-gate ⑥ 对齐）。
+    # CONFLICT 新卡落 unverified，用户/成长箱复核通过后改 verified（dedup-merge-gate ⑥ 对齐）。
     ("verified", False, lambda v: v in ("unverified", "verified")),
     # --- 可信元数据（文件格式规范 · 原则 8 · ⛔不锚版本#142 · 全部 optional）---
     # generated: AI 蒸馏产物自动携带，标识生产者+时间。
-    # verified: 你复核后手动补（多行 YAML 数组格式，trust_of 解析含 human: 前缀 → human-reviewed）。
+    # verified: 用户复核后手动补（多行 YAML 数组格式，trust_of 解析含 human: 前缀 → human-reviewed）。
     # ⛔DO NOT 用内联数组 [{by:..., at:...}]——最小解析器不支持嵌套对象，会按逗号拆碎。
     ("generated", False, lambda v: bool(str(v).strip())),
     # --- 检索键（schema v1.2.0 定为必填 · v4.2.0 补进机器真源）---
@@ -230,7 +230,7 @@ def build_note_frontmatter(book_name, book_info, today, summary=None,
         "date": today,
         "summary": summary,
         "source": source or f"batch_extract_books.py 生成（输入: {book_name}）",
-        "author": "你",
+        "author": "用户",
         "book": book_name,
         "book_author": book_info.get("author", "未知"),
         "publisher": book_info.get("publisher", ""),
@@ -307,7 +307,7 @@ def build_card_frontmatter(book_name, book_info, card_n, title, topic,
         "date": today,
         "summary": summary,
         "source": source_quote or f"《{book_name}》",
-        "author": "你",
+        "author": "用户",
         "source_type": source_type,
         "source_title": source_title or (f"《{book_name}》" if is_book else book_name),
         "source_author": source_author or resolved_author,
@@ -685,7 +685,7 @@ def lint_path(path, verbose=True):
 # ---------------------------------------------------------------------------
 
 def verify_index(pool_root, index_path=None):
-    """INDEX 一致性校验（2026-08-12 反哺·SKILL-20260812-001·皮叔确认）。
+    """INDEX 一致性校验（2026-08-12 反哺·SKILL-20260812-001·已确认）。
 
     以 master 总览行为单一映射锚（链接列=目录名·书名列镜像段标题）：
       ① master 行卡片数 vs 目录实际卡片数

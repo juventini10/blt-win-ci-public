@@ -23,7 +23,7 @@
 | `scripts/calibration_review.py` | 校准台账聚合器（双盲分歧蒸馏端·v3.38.0·2026-09-05 A24补列） | 读 calibration_ledger.json 输出分歧清单非空 |
 | `scripts/check_package_health.sh` | 布洛陀发布前包源质检（9项检查·⑤项已废编号保留不重用·2026-09-05 A24补列） | exit 0 全通；FAIL 项数如实报告 |
 | `scripts/skill_eval.py` | Skill S级合规静态检查（19个微观维度=len(WEIGHTS)·v4.12.1 E6修正·Phase X机检） | `--check-only` 输出 `.phaseX_last_run.json` 非空 + `passed`=诚实章 true；`--check-evidence` 取证锁L1/L2 |
-| `scripts/evidence_guard.py` | 执行证据链路取证锁 L1证据行锁 + L2断言计数锁（§七·2026-09-06新增） | `python3 evidence_guard.py <断言> <源> [min]` exit 0；伪造行号/错引/纯描述→exit 1 |
+| `scripts/evidence_guard.py` | 执行证据链路取证锁 L1证据行锁 + L2断言计数锁（§七·2026-09-06新增） | `python3 evidence_guard.py <断言> <源> [min]` exit 0；伪造行号/错引/纯描述→exit 1；`--self-test` 三例（判绿+行号造假须逮+CLI 真取证支可执行）exit 0，已登记 run.sh 常链 |
 | `scripts/test_evidence_guard.py` | 取证锁回归测试（L1/L2 负例：伪造行号/错置引文/缺judgment/纯描述/自述伪锁·2026-09-06新增） | `python3 -m unittest test_evidence_guard` 0 failure |
 | 外部 `[记忆共享中心]/脚本中心/知识联邦引擎/scripts/kb_concept_lint.py` | 知识库Lint重档（Phase X-KB机械段） | 退出码 0/1/3（3=时序防抖重跑） |
 > 🔻 **降级声明**：上列/本节涉及的知识联邦引擎及其脚本随安装包以最小集分发（min 16 件·口径源=good-good-study collision-consumption.md 腿F案段）；**本路径所指的 `kb_concept_lint.py` 等重档件不在该最小集内**，故 H 路径在端用户环境仍需按件缺失降级（缺失件须逐名声明，⛔用全称「不携带该目录」）——端用户无此引擎时，相关步骤**跳过·不阻塞**。

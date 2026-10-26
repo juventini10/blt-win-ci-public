@@ -125,7 +125,10 @@ def last_acceptance_review_date() -> tuple[date | None, str]:
         # Markdown表格行：| M001 | 2026-10-15 | S1001 | S1002 | 原因 | 你 | v1.2→v1.3 | 路径 | 备注 |
         # split("|")后索引：0='' 1=合并ID 2=日期 3=主卡 4=次卡 5=原因 6=确认人 7=主卡版本 8=次卡归档 9=备注 10=''
         cells = [c.strip() for c in line.split("|")]
-        if len(cells) >= 7 and cells[6] == "你":
+        # v1.2（2026-10-26 H-1 根治）：确认人口径要求裸名「你」，但历史实填存在
+        # `你（本窗✓第二组·2026-10-17）` 这类括注形态；精确等值会让判定③静默不激活
+        # （=抽查提醒长期不响的实测根因），故改前缀匹配；裸名口径由 build_spotpack 侧显形提示收敛。
+        if len(cells) >= 7 and cells[6].startswith("你"):
             try:
                 dates.append(datetime.strptime(cells[2], "%Y-%m-%d").date())
             except ValueError:
@@ -141,13 +144,20 @@ PATROL_CONTRACTS = [
     {"name": "合并台账·确认人（强·跨作者）",
      "doc": Path.home() / "[记忆共享中心]" / "知识库" / "AI学习库" / "合并台账.md",
      "doc_needle": "裸名 `童灵` 或 `你`",
-     "reader": Path('[记忆共享中心]') / "脚本中心" / "build_spotpack.py",
+     # 2026-10-26 H-1 根治：原指向 脚本中心/build_spotpack.py（磁盘不存在→整族静默）；
+     # 真身=脚本中心/安装发布/build_spotpack.py（数字分身/scripts/ 下为软链·md5 同源）
+     "reader": Path('[记忆共享中心]') / "脚本中心" / "安装发布" / "build_spotpack.py",
      "reader_needle": '!= "童灵"'},
-    {"name": "反馈话术·这条没用（弱·同域异代）",
-     "doc": _KF / "kb_inject_prompt.py",
-     "doc_needle": "这条没用",
-     "reader": _KF / "feedback_detect.py",
-     "reader_needle": '"这条没用"'},
+    # 2026-10-26 H-1 根治批：本族 doc/reader 两指向件（开发工具/知识联邦引擎/scripts/kb_inject_prompt.py）
+    # 经 find + grep 全树（脚本中心/记忆蓝图/数字分身/技能配置/开发工具）确认均不存在，
+    # 「这条没用」字样在 .py 内亦零命中（该文案现由钩子侧注入，非本仓件）。
+    # 处理=显式注销而非静默保留（保留=以为在核，实为幽灵覆盖=假绿）；如需恢复，先建实物再解注释并补 needle。
+    # [已注销] {"name": "反馈话术·这条没用（弱·同域异代）",
+    # [已注销] "doc": _KF / "kb_inject_prompt.py",
+    # [已注销] "doc_needle": "这条没用",
+    # [已注销] "reader": _KF / "feedback_detect.py",
+    # [已注销] "reader_needle": '"这条没用"'},
+
     {"name": "快照·日期列名（弱·异端写入观察）",
      "doc": Path('[记忆共享中心]') / "情境层" / "动态状态快照.md",
      "doc_needle": "| 日期 |",
@@ -163,7 +173,10 @@ def _contract_drift_lines(contracts, read_text, today):
     for c in contracts:
         try:
             doc = read_text(c["doc"]); rdr = read_text(c["reader"])
-        except OSError:
+        except OSError as e:
+            # v1.2 显形化（原 `continue` 让"契约族自身断链"静默）：路径读不到本身
+            # 就是契约漂移的一种，必须出声——⛔不得把「没查」当「查了没事」。
+            print(f"⚠️ 契约族不可核（{c['name']}）：{e}（读不到≠无漂移，请修路径或显式注销该族）")
             continue
         if c["reader_needle"] in rdr and c["doc_needle"] not in doc:
             out.append(

@@ -13,7 +13,7 @@
     <array>
         <string>/usr/bin/env</string>
         <string>python3</string>
-        <string>[记忆共享中心]/脚本中心/记忆蒸馏/distillation_scheduler.py</string>
+        <string>[记忆共享中心]/脚本中心/distillation_scheduler.py</string>
     </array>
 
     <key>StartInterval</key>
@@ -22,8 +22,8 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>[记忆共享中心]/脚本中心/logs/distill-scheduler.out.log</string>
+    <string>[日志中心]/distill-scheduler.out.log</string>
     <key>StandardErrorPath</key>
-    <string>[记忆共享中心]/脚本中心/logs/distill-scheduler.err.log</string>
+    <string>[日志中心]/distill-scheduler.err.log</string>
 </dict>
 </plist>

@@ -39,7 +39,9 @@ REVIEW = os.path.join(BASE, "数字分身/steps/step3-first-review-log.md")
 SYSLOG_DIR = os.path.join(BASE, "工作日志/系统日志")
 LEDGER_FMT = os.path.join(HOME, ".workbuddy/doenglingz_guard_state_%s.json")
 
-TOOL_LEDGER_KEY = {"LobsterAI": "lobsterai", "AutoClaw": "autoclaw", "WorkBuddy": "workbuddy"}
+TOOL_LEDGER_KEY = {"LobsterAI": "lobsterai", "AutoClaw": "autoclaw", "WorkBuddy": "workbuddy",
+                   "Qoder Desktop": "qoderdesktop", "Qoder CN": "qodercn", "MiniMax Code": "minimaxcode"}
+TOOL_LEDGER_ROOT = {"qoderdesktop": "~/.qoder", "qodercn": "~/.qoder-cn", "minimaxcode": "~/.minimax"}
 
 
 def _read(p, limit=4_000_000):
@@ -54,9 +56,44 @@ def _dates(win):
     return {(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(win)}
 
 
+def _tool_names(tool):
+    """端名归一：工具名 → 可匹配名集合（规范名 + 同组变体）·真源=system-logger/normalize_tool.py。
+
+    2026-10-23 实证（假红形态·铁律-031 阴性读数先验尺）：LEARNINGS 写「WorkBuddy」87 条，
+    评级器传 end_id「workbuddy」⇒ 字符串不等 ⇒ ①通道 num=0——「尺没量到」被当成「对象真缺」。
+    ⚠️ 只收同组变体（VARIANTS 值相同者）⛔不跨组（否则 Trae/Trae CN/Trae Work 互撞）；
+    ⛔排除 <4 字符短变体（wb/zw/tl 等易假匹配）。
+    """
+    names = {tool}
+    try:
+        import importlib.util
+        _p = os.path.expanduser("[记忆共享中心]/技能配置/system-logger/scripts/normalize_tool.py")
+        _spec = importlib.util.spec_from_file_location("_ntool", _p)
+        _m = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_m)
+        _canon = _m.VARIANTS.get(_m.norm_key(tool)) or (tool if tool in _m.ALLOWLIST else None)
+        if _canon:
+            names.add(_canon)
+            for _k, _v in _m.VARIANTS.items():
+                if _v == _canon and len(_k) >= 4:
+                    names.add(_k)
+    except Exception:
+        pass
+    return names
+
+
+def _name_pat(tool):
+    """端名集合 → 正则（大小写不敏感·整词优先）"""
+    return re.compile("|".join(re.escape(n) for n in sorted(_tool_names(tool), key=len, reverse=True)),
+                      re.IGNORECASE)
+
+
 def ch1_growthbox(tool, win, dates):
     """① 错误→成长箱：来源 AI=<tool> 且 Logged 日期在窗口内。"""
     num, den, src = 0, 0, []
+    _pat1 = re.compile(r"来源 AI\*\*:\s*(" +
+                       "|".join(re.escape(n) for n in sorted(_tool_names(tool), key=len, reverse=True)) + ")",
+                       re.IGNORECASE)
     for name in os.listdir(LEARNINGS) if os.path.isdir(LEARNINGS) else []:
         if not name.endswith(".md") or name.startswith("INDEX"):
             continue
@@ -65,8 +102,12 @@ def ch1_growthbox(tool, win, dates):
         if not t:
             continue
         src.append(name)
-        for block in re.split(r"\n## \[", t):
-            if f"**来源 AI**: {tool}" in block or f"来源 AI**: {tool}" in block:
+        # 2026-10-23 切块口径根治：原式只切 `## [`（二级标题）·⛔不认 `### [`（三级标题·LEARNINGS.md 近期记录的实际方言）
+        #   ⇒ 整份文件被当成一块·取块内第一处 Logged（他人旧记录）⇒ 本端新记录一条数不到（实测 num=0·den=1）
+        #   ⛔ 改前口径与 growth_box_schema_check.py v2.3.4「方言兼容·`### [ID]` 同认」不一致（两台仪器口径打架）
+        #   ✅ 改法：每个记录头（二级或三级）独立成块 ⇒ 逐条判 Logged·本端记录算数
+        for block in re.split(r"\n(?=#{2,3}\s+\[)", t):
+            if _pat1.search(block):
                 den += 1
                 m = re.search(r"\*\*Logged\*\*:\s*(\d{4}-\d{2}-\d{2})", block)
                 if m and m.group(1) in dates:
@@ -95,12 +136,44 @@ def ch3_stance_cards(tool, win, dates):
     return num_cards + num_rows, len(cards) + len(rows), ["AI学习库/INDEX.md", "step3-first-review-log.md"]
 
 
+def own_attribution(tool, dates):
+    """本端自有产物计数（端归属归因·观察口径·2026-10-23 反哺 R-20261023-01 补信号）。
+
+    背景：②规范反哺日志 与 ③立场卡 INDEX/初审台账 是**跨端共享面**，条目不带端归属字段
+    ⇒ 他端产物可代偿本端达标（端级等级假绿来源：机械推导 L7 而本端②③自有产物=0）。
+    本函数只加『条目内含端名标记』这一正交信号：
+      - num（ch2/ch3 的全局池计数）**口径不变** ⇒ 不扰他端既有评级结论；
+      - own（本端自有）另计，供端级定档区分「本端自有达标」与「共享池代偿达标」。
+    端标记缺失的存量条目仍落在全局池 ⇒ 其归因不可机械判定 ⇒ 须显形（见输出 note_own）。
+    """
+    own = {}
+    t = _read(FANBU)
+    if t:
+        blocks = [b for b in re.split(r"\n## ", t) if b.strip()]
+        _p2 = _name_pat(tool)
+        own["②铁律反哺"] = sum(1 for b in blocks if any(d in b[:200] for d in dates) and _p2.search(b))
+    ti = _read(INDEX)
+    if ti:
+        rows = [l for l in ti.splitlines() if re.match(r"^\|\s*(立场卡#[SK]\d+)\s*\|", l)]
+        _p3 = _name_pat(tool)
+        own["③立场卡反哺"] = sum(1 for l in rows if _p3.search(l) and any(d in l for d in dates))
+    tr = _read(REVIEW)
+    if tr:
+        rows = [l for l in tr.splitlines() if re.match(r"^\|\s*\d+\s*\|", l)]
+        own["③立场卡反哺"] = own.get("③立场卡反哺", 0) + sum(
+            1 for l in rows if _p3.search(l) and any(d in l for d in dates))
+    return own
+
+
 def _syslog_section(tool, date):
     p = os.path.join(SYSLOG_DIR, f"系统日志_{date}.md")
     t = _read(p)
     if not t:
         return "", 0, 0
-    m = re.search(rf"^##\s+{re.escape(tool)}\s*$([\s\S]*?)(?=^##\s|\Z)", t, re.M)
+    _pat2 = re.compile(r"^##\s+(?:" +
+                       "|".join(re.escape(n) for n in sorted(_tool_names(tool), key=len, reverse=True)) +
+                       r")\s*$([\s\S]*?)(?=^##\s|\Z)", re.M | re.IGNORECASE)
+    m = _pat2.search(t)
     sec = m.group(1) if m else ""
     entries = len([l for l in sec.splitlines() if l.strip() and not l.startswith(("-", ">", "①", "②", "③", "④", "⑤"))])
     reflections = sec.count("[童灵思考]") + sec.count("[童灵反思]")
@@ -120,7 +193,9 @@ def ch45_syslog_reflection(tool, win, dates, ledger_rows):
 
 
 def load_ledger(tool, dates):
-    p = LEDGER_FMT % TOOL_LEDGER_KEY.get(tool, tool.lower())
+    key = TOOL_LEDGER_KEY.get(tool, tool.lower())
+    root = os.path.expanduser(TOOL_LEDGER_ROOT.get(key, "~/.workbuddy"))
+    p = os.path.join(root, f"doenglingz_guard_state_{key}.json")
     rows = []
     for line in _read(p).splitlines():
         try:
@@ -157,7 +232,19 @@ def main():
         {"ch": "⑤反思沉淀", "num": max(h5, e5), "den": max(len(ledger_rows), e5), "src": ",".join(s45),
          "note": "台账 ts_l7_reflection 命中 %d / 台账 %d 行；产物=当日 [童灵思考] %d（2026-10-21 起 产物∪台账取或·动作即凭证）" % (h5, len(ledger_rows), e5)},
     ]
-    out = {"tool": a.tool, "window_days": a.days, "ledger": ledger_path, "ledger_rows": len(ledger_rows), "channels": ch}
+    own = own_attribution(a.tool, dates)
+    # ①④⑤ 天然按端取数（来源 AI=<tool> / 系统日志段名）⇒ own==num
+    # ②③ 为跨端共享面 ⇒ own=条目内含端归属标记者（🌐反哺端 / 🔧反哺工具 / 分区标题 / INDEX来源列）
+    own["①错误→成长箱"] = n1
+    own["④系统日志"] = max(h4, e4)
+    own["⑤反思沉淀"] = max(h5, e5)
+    for _c in ch:
+        _c["own"] = own.get(_c["ch"], _c["num"])
+    out = {"tool": a.tool, "window_days": a.days, "ledger": ledger_path, "ledger_rows": len(ledger_rows),
+           "channels": ch, "own": own,
+           "note_own": "own=本端自有产物计数（条目内含端名标记·按端归因）；num=全局池计数（既有口径·本轮未改·不扰他端评级结论）"
+                       "；②③为跨端共享面 ⇒ num-own 之差=代偿读数·不得作本端定档依据（反哺 R-20261023-01·E9.2 待你终审）"
+                       "；评级器读数三态：own>0=✅本端自证／num>0且own=0=🟠共享池·本端不可自证（不截断·不记绿）／num=0=🟡证据零（截断）"}
     if a.json:
         print(json.dumps(out, ensure_ascii=False, indent=1))
         return

@@ -17,7 +17,10 @@ $PKG = $PSScriptRoot
 # 子进程用哪个 PowerShell.exe：Windows 上 powershell.exe(5.1) 最贴近端用户实况，
 # 缺失时回退 pwsh（便于在非 Windows 开发机上冒烟自测）
 $PSH = (Get-Command powershell -ErrorAction SilentlyContinue).Source
-if (-not $PSH) { $PSH = (Get-Command pwsh -ErrorAction SilentlyContinue).Source }
+if (-not $PSH) {
+  # 排除版本化 WindowsApps 路径（商店更新即死路径·正则 Microsoft\.PowerShell_）
+  $PSH = (Get-Command pwsh -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch 'Microsoft\.PowerShell_' } | Select-Object -First 1).Source
+}
 $SB = Join-Path $env:RUNNER_TEMP "blt-sandbox"
 if (-not $env:RUNNER_TEMP) { $SB = Join-Path ([System.IO.Path]::GetTempPath()) "blt-sandbox" }
 $MC = Join-Path $SB "mc"

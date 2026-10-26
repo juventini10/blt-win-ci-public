@@ -194,7 +194,11 @@ def already_routed(text: str, target_text: str) -> bool:
 
 
 def mark_routed(text: str):
-    h = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()[:16]
+    # 加锁未验锁同型案收口（2026-10-26·五环节环P0负例N6实证）：原实现 hash(text.strip())
+    # 与查重侧 hash(normalize(text)) 口径不一——污染毛坯被净化写盘后，重跑本钩
+    # 「文本已落盘」比对失败（净化版≠原文）、hash 比对也失败（两种 hash），去重整链失效。
+    # 修法=双方统一走 normalize 口径（读侧 already_routed 不动，写侧对齐）。
+    h = hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
     state = {}
     try:
         if os.path.isfile(STATE_PATH):
@@ -210,13 +214,54 @@ def mark_routed(text: str):
         pass
 
 
+# 写侧止漏·第二阶段（2026-10-26 五环节环 P0）：过滤「执行痕迹混入毛坯」新污染形态。
+# 病形实证：残差#395（签名行+令牌）、#419/#424（整棵TSL树+待你块灌进毛坯区）——
+# 均为 AI 手动 Write 当轮照抄所致，钩子路轮同走本函数即同闸（单一执法面）。
+# 判据保守（宁漏不误伤）：强形态=行首锚定即删（树符/围栏/🔖/📐/签名——/【童灵·/待你）；
+# 弱形态=须带运行时专有 token（TSL-stamp / TSL 机械核验），通用词「seal」不误删。
+# 丢弃量进「写侧滤痕」注记——可观测不可吞（毛坯语义正文永不触碰）。
+_TREE_LINE_RE = re.compile(r'^\s*(├|│|└)')
+_STAMP_LINE_RE = re.compile(r'(TSL-stamp|TSL 机械核验)')
+_SIG_LINE_RE = re.compile(r'^\s*——\s*你的')
+_TOKEN_LINE_RE = re.compile(r'^\s*(🔖|📐)')
+_PLACARD_LINE_RE = re.compile(r'^\s*【童灵·|^\s*📌\s*\*{0,2}待你')
+
+
+def sanitize_blind(text):
+    """返回 (纯净正文, 丢弃行数)。代码围栏整块丢弃；单行痕迹按锚删。
+    保守判据（N1负例实证教训）：待你/档位行只删标记行本身，⛔不吞后续行——
+    无围栏的待你块若跟正文，宁可漏删污染，不可误删毛坯（漏=可观测·误删=不可逆）。"""
+    kept, dropped, in_fence = [], 0, False
+    for ln in text.splitlines():
+        s = ln.strip()
+        if not s:
+            continue
+        if s.startswith('```'):
+            in_fence = not in_fence
+            dropped += 1
+            continue
+        if in_fence:
+            dropped += 1
+            continue
+        if (_PLACARD_LINE_RE.match(s) or _TREE_LINE_RE.match(ln)
+                or _STAMP_LINE_RE.search(s) or _SIG_LINE_RE.match(ln)
+                or _TOKEN_LINE_RE.match(s)):
+            dropped += 1
+            continue
+        kept.append(s)
+    return "\n".join(kept), dropped
+
+
 def build_entry(index: int, date: str, description: str) -> str:
     # 写侧止漏（2026-10-10·悬置清账专项§待推进2）：多行 description 曾直接内插单行
     # f-string，首个换行即击穿 `- 毛坯描述:` 字段契约——10-06 六条 `**` 占位条目实证
     # （正文溢出到字段外，分诊工具报「形态违规」，见 悬置区分诊报告-2026-10-10.md §四）。
     # 修法=首行后各非空行缩进 2 空格续行（markdown 同列表项，§1.6 冻结 schema 字段名零改动；
     # 读侧配对=suspend_zone_triage.field() 折叠续行）。空行丢弃防块断裂。
-    lines = [ln.strip() for ln in description.strip().splitlines() if ln.strip()]
+    clean, dropped = sanitize_blind(description)
+    lines = [ln for ln in clean.splitlines() if ln.strip()]
+    if dropped:
+        lines.append("（写侧滤痕：本条路由时丢弃 %d 行执行痕迹，毛坯语义正文未触碰）" % dropped)
     desc_block = "\n  ".join(lines) if lines else "(空)"
     return (
         f"### 残差#{index:03d} · {date}\n"

@@ -18,4 +18,6 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | **Microsoft Agentic Philosophers** | 🟡 | 多Agent哲学家辩论架构 | 多视角模式 |
 | **Socrates 2.0** (ScienceDirect) | 🟡 | AI引导的CBT式苏格拉底对话 | 对话结构 |
 | **三明智 L3双Agent架构** (2026) | 🟢 | 盲审+文件传递+交叉验证 | 多Agent架构复用 |
+| **Du et al. Multi-Agent Debate** (MIT/Google, 2024) | 🟢 | 多Agent辩论奠基作——Agent数/轮数增加收益递减；Agent多样性影响效果 | 多视角规模选择理论锚（v3.11.0） |
+| **Debate or Vote?** (NeurIPS 2025) | 🟢 | 七基准实测：多数投票≈多Agent辩论效果 | 第三条路定位——不辩不投·矛盾并置·收敛权交人（v3.11.0） |
 | **Skill架构规范v5.15** | 🟢 | 四层契约+安全声明+禁止行为+T5防御 | v3.0→v3.5.1多轮合规迭代 |

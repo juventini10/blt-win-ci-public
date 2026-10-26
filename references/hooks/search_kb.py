@@ -223,7 +223,14 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 import re, glob, math, json, subprocess, itertools
 from datetime import datetime
-import fcntl  # 重建锁（2026-10-22 缺片根治·并发双writer串行化·同2021系统日志fcntl根治同型）
+try:  # 跨平台重建锁（2026-10-23 v2.2.10 Win 阻断根治·CPython 无 fcntl）
+    import fcntl
+    def _flock_ex(fd): fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    def _flock_un(fd): fcntl.flock(fd, fcntl.LOCK_UN)
+except ImportError:  # Windows：msvcrt 按字节区间加锁，语义降级但不崩（best-effort 不 hang）
+    import msvcrt
+    def _flock_ex(fd): msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # 抢锁失败抛 OSError，交调用方重试
+    def _flock_un(fd): pass  # 字节区间锁随 fd 关闭自动释放
 
 HOME = _MC  # 兼容下游引用
 POOL_DIR = os.path.join(_MC, "知识库", "知识池")
@@ -961,7 +968,7 @@ def build_docs():
         _got = False
         while _t.time() < _deadline:
             try:
-                fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                _flock_ex(lockf.fileno())
                 _got = True
                 break
             except OSError:
@@ -1003,7 +1010,7 @@ def build_docs():
                 return docs
         finally:
             try:
-                fcntl.flock(lockf, fcntl.LOCK_UN)
+                _flock_un(lockf.fileno())
             finally:
                 lockf.close()
     except Exception as _e:

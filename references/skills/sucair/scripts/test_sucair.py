@@ -99,3 +99,24 @@ class TestRuleSingleSource(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestG4AndAuthorV4170(unittest.TestCase):
+    """v4.17.0 R4/R3：G4 归一口径锚点（防声明与实盘再脱钩）+ builder author 中立化默认值。"""
+
+    def test_g4_same_language_variants_same_key(self):
+        import dedup_recall as dr
+        self.assertEqual(dr.normalize("Agent 记忆"), dr.normalize("Agent记忆"))
+        self.assertEqual(dr.normalize("Agent　記憶"), dr.normalize("Agent記憶"))  # 全角空格归一剥除；全角字母不归一（口径如实）
+
+    def test_g4_cross_script_known_limit(self):
+        import dedup_recall as dr
+        # 中英跨书写体系不归一（dedup-merge-gate ⓪ Known Limitation 的实盘锚——若未来加别名表，须同步改本用例与口径文）
+        self.assertNotEqual(dr.normalize("agent memory"), dr.normalize("Agent记忆"))
+
+    def test_builder_author_neutral_default(self):
+        fm = nv.build_card_frontmatter("测试书", {}, 1, "测试标题", "测试话题",
+                                        "概念", "**原文依据**：测试引文", "2026-10-25",
+                                        category="测试领域", tags=["测试话题"], kb_no="#Z9001")
+        d = fm if isinstance(fm, dict) else nv.parse_frontmatter(nv.dump_frontmatter(fm))
+        self.assertEqual(d.get("author") if hasattr(d, "get") else None, "用户")

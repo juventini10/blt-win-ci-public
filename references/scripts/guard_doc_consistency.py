@@ -787,7 +787,22 @@ def run_selftest():
             "- **v0.1.3 新增第三道（疑问词裸奔）**：空格+子标题乙（必绿·供 C8）\n"
             "- **v2.0.1（2026-10-11·Qoder CN·条目壬）**：完整条目甲（真撞号·必红·供 C9）\n"
             "- **v2.0.1（2026-10-11·WorkBuddy·条目癸）**：完整条目乙（真撞号·必红·供 C9）\n"
+            # ── v1.4 扩面（2026-10-23·两段式版本号纳入 + 版本条目形态限定）──
+            "- **v1.9（2026-10-13·Qoder CN·条目壬）**：两段式甲（真撞号·必红·供 C10）\n"
+            "- **v1.9（2026-10-13·Qoder CN·条目癸）**：两段式乙（真撞号·必红·供 C10）\n"
+            "- **v1.135（2026-10-07·Zwork·条目子）**：两段式丙（真撞号·必红·供 C10）\n"
+            "- **v1.135（2026-10-07·Qoder CN·条目丑）**：两段式丁（真撞号·必红·供 C10）\n"
+            "- **v1.135-Q（2026-10-07·Qoder CN·条目寅）**：带端后缀（与裸号并存·L53 正解·必绿·供 C11）\n"
+            "- **v2.0 新增**：无括号非版本条目（题目条目·必绿·供 C12）\n"
+            "- **v2.0 新增**：无括号非版本条目二（同号·仍必绿·供 C12）\n"
+            "- **v3.7 追加说明（无日期·非版本条目）**：无日期括号（必绿·供 C13）\n"
+            "- **v3.7 追加说明二（无日期·非版本条目）**：同号·仍必绿（必绿·供 C13）\n"
             "本文提及 v1.3.999 但不构成条目（非 bullet·必绿）\n")
+        # C14 夹具：发布库/ 下两段式撞号（随包快照非活源·判据⑦ 专属排除）
+        _pub = os.path.join(_td, "发布库", "记忆架构"); os.makedirs(_pub)
+        open(os.path.join(_pub, "发布件.md"), "w", encoding="utf-8").write(
+            "- **v4.0（2026-04-23）**：发布快照条目甲\n"
+            "- **v4.0（2026-04-21）**：发布快照条目乙（真撞号但属发布库·必绿·供 C14）\n")
         open(os.path.join(_mb, "dup_seed.md"), "w", encoding="utf-8").write(
             "#### 3.4·扩F 甲律（正例锚）\n正文\n#### §3.4·扩F 乙律（同号病灶）\n"
             "## 条文 7 丙\n## 条文 7 丁\n## 条文 28\n## 条文 28·附 合法派生\n"
@@ -824,6 +839,19 @@ def run_selftest():
              "版本 v0.1.3" not in _c),
             ("C9 两条各自完整的 `v2.0.1（端·条目）` → 仍报红（⛔ 豁免不收纵到放过真撞号）",
              _c.get("版本 v2.0.1") == 2),
+            # ── v1.4 扩面（2026-10-23·MiniMax Code 端·两段式纳入 + 版本条目形态限定）──
+            ("C10 两段式 `v1.9（日期·端）` 两次 → 报红（扩面真病灶：09 表原 4 组撞号即此形态）",
+             _c.get("版本 v1.9") == 2),
+            ("C10b 两段式 `v1.135（日期·端）` 两次 → 报红（06 号原撞号形态）",
+             _c.get("版本 v1.135") == 2),
+            ("C11 两段式带端后缀 `v1.135-Q` 与裸号并存 → 不判撞（L53「后加者让号加端后缀」正解）",
+             "版本 v1.135-Q" not in _c),
+            ("C12 `**v2.0 新增**`（无括号·非版本条目·eval-set 实测形态）→ 不判撞（防扩面假红）",
+             "版本 v2.0" not in _c),
+            ("C13 `**v3.7 追加说明（无日期）**`（括号无日期·非版本条目）→ 不判撞（版本条目形态限定）",
+             "版本 v3.7" not in _c),
+            ("C14 `发布库/` 下两段式撞号 → 不判（随包快照非活源·判据⑦专属排除·⛔不改共用排除表）",
+             "版本 v4.0" not in _c),
         ]
         _sh.rmtree(_mb, ignore_errors=True)
     # —— ⑧ 官方源引用符号在位性夹具（2026-10-11 v1.2.253·Hermes 行号漂移案）——
@@ -836,11 +864,16 @@ def run_selftest():
             "VALID_HOOKS = {'pre_llm_call'}\n\ndef invoke_hook(hook_name):\n    return []\n")
         open(os.path.join(_ag, "turn_context.py"), "w", encoding="utf-8").write(
             "from agent.title_generator import start_title_upgrade\n")
+        # 本端自有脚本（治尺夹具·假红根因形态：自家符号与官方源引用同窗）
+        _loc = os.path.join(_repo, "脚本中心"); os.makedirs(_loc)
+        open(os.path.join(_loc, "local_script.py"), "w", encoding="utf-8").write(
+            "def local_only_symbol():\n    return 1\n\nLOCAL_ONLY_CONST = 2\n")
         open(os.path.join(_repo, "ref_seed.md"), "w", encoding="utf-8").write(
             "见 `hermes_cli/plugins.py` 的 `invoke_hook()` 派发钩子（真符号·必绿）\n"
             "`VALID_HOOKS` 是内核合法集（真符号·必绿）\n"
             "调 `turn_context.py` 的 `start_title_upgrade`（真符号·必绿）\n"
             "`hermes_cli/plugins.py` 的 `totally_fake_symbol_xyz` 不在源里（假符号·紧邻官方 .py·必红·判据有牙）\n"
+            "官方源 `plugins.py` 旁有本端 `local_only_symbol` 与编造的 `another_fake_symbol_xyz`（同窗·自家符号必绿+编造必红）\n"
             "他端 `UserPromptSubmit`/`Stop` 事件对照（他端口径词·豁免不红）\n"
             "共用件要 `transcript_path`·而 Hermes 没有该字段（否定语境·豁免不红）\n")
         _save_dir, _save_core = _OFFICIAL_SRC_DIR, dict(_OFFICIAL_CORE)
@@ -854,6 +887,8 @@ def run_selftest():
         dd = [
             ("D1 真符号 `invoke_hook` 在位 → 不报（防假绿·判据有效性）", ("plugins.py", "invoke_hook") not in _bad),
             ("D2 假符号 `totally_fake_symbol_xyz` 编造 → 报红（真病灶形态·判据有牙）", ("plugins.py", "totally_fake_symbol_xyz") in _bad),
+            ("D4 本端自有符号 `local_only_symbol`（本地 .py 有·官方源无）与官方源引用同窗 → 不报（治尺·假红根治）", ("plugins.py", "local_only_symbol") not in _bad),
+            ("D5 同窗编造符号 `another_fake_symbol_xyz`（本地 .py 也无）→ 仍报红（豁免不放松·与 D4 同窗对偶）", ("plugins.py", "another_fake_symbol_xyz") in _bad),
             ("D3 他端口径词 `UserPromptSubmit`/`Stop` → 豁免不报（跨端对照词非官方符号·防假红）", ("plugins.py", "UserPromptSubmit") not in _bad and ("plugins.py", "Stop") not in _bad),
             ("D4 否定语境 `transcript_path`（没有该字段） → 豁免不报（论证缺失·符号查无是论点·防假红）", ("turn_context.py", "transcript_path") not in _bad),
         ]
@@ -898,7 +933,21 @@ def check_article_duplication(repo_root):
     annex = re.compile(r"^\s*[·・\-—]?\s*附")   # 附条（条文28附 / 条文33附）=合法派生号·不算撞号
     subhead = re.compile(r"^#{2,6}\s*§?\s*(\d+(?:\.\d+)*)\s*·?\s*扩([A-Z])(?![A-Za-z])")
     # C 形态：bullet 版本号（捕获版本串·含可选端后缀）
-    clogver = re.compile(r"^- \*\*(v\d+\.\d+\.\d+(?:-[A-Za-z]+)?)")
+    # ⚠️ v1.4 扩面（2026-10-23·MiniMax Code 端·09 表撞号根治轮）：
+    #   原正则 `v\d+\.\d+\.\d+` **只认三段式** ⇒ 大量**两段式**账本（v1.9 / v1.135 / v1.11 /
+    #   v2.70 / v1.201 …）的撞号**恒静默全绿**（判据盲区·尺没量到 ≠ 对象真缺）。
+    #   实证：09-童灵上岗岗位登记表 实有 4 组撞号（v1.9/v1.14/v1.15/v1.16 各 2 次·两条内容
+    #   各不相同=真撞号）却全程不被本判据捕获；同型漏判面含 06 号 v1.135、三明治 v1.11。
+    #   ✅DO 扩面：两段式一并纳入（C 形态升 D 形态）。
+    #   ⛔ 扩面必须配「版本条目形态」限定，否则假红淹没真告警（判据变紧必配对偶夹具）：
+    #     仅当版本号后紧跟「（」**且括号内含 YYYY-MM-DD** 才算版本条目。
+    #     反例实证：`eval-set.md` 的 `- **v2.0 新增**`（×5）＝题目条目非版本号·
+    #     `Skill路由引擎/CHANGELOG.md` 的 `- **v0.1.3 做法（收敛后的正解）**`＝同版本多子条目。
+    #     ⛔ 无日期限定则全库 10 文件误报（其中 3 个是发布库·撞号语义不同）。
+    clogver = re.compile(r"^- \*\*(v\d+\.\d+(?:\.\d+)?(?:-[A-Za-z]+)?)")
+    # 版本条目形态限定（v1.4 扩面新增）——括号内须含日期，否则非版本条目
+    _verdate = re.compile(r"\d{4}-\d{2}-\d{2}")
+
     # ⚠️ 同版本多子条目豁免（v1.3 扩面实证·2026-10-11）：
     #   判据⑦ C 形态首跑逮到 4 处**假红**——`- **v1.14.9·C6熔断器…**` 与
     #   `- **v1.14.9·YAML触发词…**` 同一版本号下记**多条改动**（一个版本含多项变更
@@ -908,7 +957,17 @@ def check_article_duplication(repo_root):
     #      （`- **v0.1.3 做法（收敛后的正解）**` 这类版本号后接空格+子标题的也属同类）
     #   ⛔ DO NOT 放宽成「同号一律不判」——那会把**真撞号**（两条各自完整的版本条目
     #      用同一号）也放过 = 判据自毁。区分点：**有无子标题后缀**。
-    _subtail = re.compile(r"^(v\d+\.\d+\.\d+(?:-[A-Za-z]+)?)\s*(?:[·・]|\s)")
+    _subtail = re.compile(r"^(v\d+\.\d+(?:\.\d+)?(?:-[A-Za-z]+)?)\s*(?:[·・]|\s)")
+    # ── 判据⑦ 专属排除域（v1.4 扩面·2026-10-23）──────────────────────────
+    #   ⛔ **只对判据⑦ 生效·⛔ 不并入 `_EXCL_DIRS`**——`_EXCL_DIRS` 是判据⑦⑧ 共用的
+    #   同源排除表（⛔ 不给两判据造两个真相面），并入会让判据⑧（官方源引用符号在位性）
+    #   一并失去发布库覆盖 = **造新盲区**（比漏判更危险）。
+    #   排除理由：`发布库/` = **随包快照非活源**（先例＝`philosophy_radar.py`
+    #   `EXCLUDE_SUBSTR=("发布库",)`·经皮叔 2026-10-02 授权走默认）——发布件
+    #   「已发布不追溯改写」⇒ 其中的历史撞号**不可修也不该由本判据持续报警**。
+    #   实测：Qclaw 版 `v4.0` ×2（2026-04-21 / 2026-04-23）是 4 月存量真撞号，
+    #   ⛔ 不在本端责任域（他端发布件）⇒ 判据不报，另由端归属交接机制承接。
+    _CLOG_EXCL_TOP = {"发布库"}
     # ── 扫描域（v1.3 扩面·2026-10-11 全域）────────────────────────────────
     # 原 glob 前缀 `记忆蓝图/` ⇒ 同族账本散在他处时**恒静默全绿**（判据盲区同族病）。
     # 实测分布（扩域前）：记忆蓝图 117 条/11 文件、技能配置 48/8、发布库 42/10、
@@ -928,6 +987,11 @@ def check_article_duplication(repo_root):
             if not fn.endswith(".md"):
                 continue
             fp = os.path.join(dp, fn)
+            # v1.4 扩面：判据⑦ 专属排除域（`发布库/` = 随包快照非活源·见 `_CLOG_EXCL_TOP` 注释）
+            #   ⛔ 只在判据⑦ 生效·⛔ 不改 `_EXCL_DIRS`（判据⑧ 仍须扫发布库·⛔不造新盲区）
+            _rel_parts = os.path.relpath(fp, repo_root).split(os.sep)
+            if _rel_parts[0] in _CLOG_EXCL_TOP:
+                continue
             try:
                 lines = open(fp, encoding="utf-8", errors="replace").read().splitlines()
             except OSError:
@@ -950,7 +1014,12 @@ def check_article_duplication(repo_root):
                     # ⚠️ 判据只看「版本号后是否紧跟子标题分隔符」·⛔ 不放开到「同号一律不判」
                     #    （那会放过真撞号：两条各自完整的版本条目用同一号）。
                     if not _subtail.match(ln.lstrip("- *").strip()):
-                        nums.append("版本 " + mv.group(1))
+                        # v1.4 扩面（2026-10-23）：**版本条目形态限定**——括号内须含日期。
+                        #   无日期 ⇒ 非版本条目（如 `**v2.0 新增**` 题目条目 / `**v0.1.3 做法（…）**`
+                        #   同版本多子条目）⇒ 不计入撞号分母（防扩面引入假红）。
+                        #   ⛔ 有日期但缺「（」的形态（如 `**v1.9 追加说明**`）同样不判。
+                        if _verdate.search(ln):
+                            nums.append("版本 " + mv.group(1))
             if not nums:
                 continue
             dups = {k: v for k, v in collections.Counter(nums).items() if v > 1}
@@ -997,12 +1066,61 @@ _STOPWORDS = {'py', 'md', 'the', 'and', 'for', 'doc', 'note', 'from', 'import', 
 #   （病名=判据不分「肯定引用」vs「否定引用」·否定语境里符号查无是应该的）
 _NEGATION_CONTEXT_RE = re.compile(r'没有|不传|缺少|无该字段|查无|不存在|无此字段|不持有|未持有|而非|而不是')
 
+# —— 治尺（2026-10-23·MiniMax Code 端·判据⑧ 假红根治）——
+# 病根：判据⑧ 取「官方源 .py 引用」前后 ±60 字符窗口内的反引号符号逐个验在官方源，
+#   但**同一行**往往还并列着**本端自有符号**（自家守卫的函数名·本就不该在官方源）
+#   ⇒ 被误判「漂移」＝**假红**。实证：守卫编写规范.md:1363 内 `plugins_dispatch.py`
+#   引用合法·但同句 40 字符后的本端守卫函数名被算给了官方源文件 ⇒ 报 1 处漂移；
+#   本端 2026-10-23 自写交接单 §八之三 时**同型复发** ⇒ 读数 1→2 处
+#   ⇒ 该型假红只要尺不改就会复发（任何人写完判据的账都会再触发一次）。
+# 正解：符号若在本端自有脚本源里**真实存在** ⇒ 它不是「官方源引用」⇒ 不判漂移。
+#   ⛔ 窄口径：只认 def/class/大写常量·**不放宽成「本地出现过的字眼都算」**
+#   ⛔ 懒加载：仅当有符号未在官方源命中时才扫本地源（常态零成本·进程内缓存）
+#   ⛔ 不改 _EXCL_DIRS（共用排除表·并入会连带失守其他判据覆盖＝造新盲区）
+_LOCAL_SCRIPT_SUBDIRS = ("脚本中心", "技能配置", "数字分身", "自定义层")
+_LOCAL_DEF_RE = re.compile(r'^\s*(?:def|class)\s+([A-Za-z_]\w*)', re.M)
+_LOCAL_CONST_RE = re.compile(r'^([A-Z_][A-Z0-9_]{2,})\s*[:=]', re.M)
+_LOCAL_SYMBOLS_CACHE = None
+
+
+def _local_script_symbols(repo_root):
+    """本端自有脚本符号集（def/class/大写常量·窄口径）·懒加载·进程内缓存。
+
+    治尺（2026-10-23·判据⑧ 假红根治）：本端自有符号（自家守卫/脚本的函数名）
+    出现在官方源引用的 ±60 字符窗口内 ⇒ 被误判漂移。符号若在本端自有源里真实存在
+    ⇒ 它不是「官方源引用」⇒ 不判漂移（他端口径词/否定语境豁免之外的第三条豁免）。
+    """
+    global _LOCAL_SYMBOLS_CACHE
+    if _LOCAL_SYMBOLS_CACHE is not None:
+        return _LOCAL_SYMBOLS_CACHE
+    syms = set()
+    for sub in _LOCAL_SCRIPT_SUBDIRS:
+        root = os.path.join(repo_root, sub)
+        if not os.path.isdir(root):
+            continue
+        for dp, dns, fns in os.walk(root):
+            dns[:] = [d for d in dns if d not in _EXCL_DIRS and not d.startswith('.')]
+            for fn in fns:
+                if not fn.endswith('.py'):
+                    continue
+                try:
+                    with open(os.path.join(dp, fn), encoding="utf-8", errors="replace") as f:
+                        text = f.read()
+                except OSError:
+                    continue
+                syms.update(_LOCAL_DEF_RE.findall(text))
+                syms.update(_LOCAL_CONST_RE.findall(text))
+    _LOCAL_SYMBOLS_CACHE = syms
+    return syms
+
 
 def check_official_ref_integrity(repo_root):
     """⑧ 官方源引用符号在位性。返回 [(docpath, filename, symbol, lineno)] · 符号不在位=漂移。
 
     白名单制：只验 6 个官方核心文件（_OFFICIAL_CORE）·非官方同名文件不验（basename 唯一≠官方源）。
     符号查全局官方符号集（union）·⛔ 不按命名文件单查（一行可引多文件）。
+    第三条豁免（治尺 2026-10-23·MiniMax Code 端）：本端自有脚本符号（def/class/大写常量·
+    本地源里真实存在）不判漂移——它不是「官方源引用」（判据⑧ 假红根治·窄口径·见 _local_script_symbols）。
     """
     # 建全局官方符号集（union of 白名单文件的所有 def/常量/集合元素）
     official_symbols = set()
@@ -1056,6 +1174,11 @@ def check_official_ref_integrity(repo_root):
                     for tok in toks:
                         # 符号在位判：查全局官方符号集（union）·⛔ 不按命名文件单查
                         if tok in official_symbols:
+                            continue
+                        # 治尺（2026-10-23·MiniMax Code 端·判据⑧ 假红根治）：本端自有符号豁免
+                        #   （病根块见 _local_script_symbols 上方·符号若在本端自有源里真实存在
+                        #     ⇒ 它不是「官方源引用」⇒ 不判漂移·⛔窄口径不放宽）
+                        if tok in _local_script_symbols(repo_root):
                             continue
                         # 否定语境豁免：窗口内若含否定词（没有/不传/查无…）= 文档在论证「该符号缺失」
                         #   ⇒ 查无是论点本身·不判漂移

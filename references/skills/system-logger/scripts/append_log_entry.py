@@ -51,6 +51,159 @@ LOGDIR_DEFAULT = os.path.expanduser("[记忆共享中心]/工作日志/系统日
 #   读取时指纹不一即重算——年龄只做上限兵，指纹做新鲜度本体。解态：只有强制重算才拿得到旧值。
 GUARD_CACHE = os.path.expanduser("~/.cache/systemlogger/guard_line.txt")
 
+# —— 写入端留存的条目原文副本（2026-10-23·MiniMax Code 端·治尺轮）——
+#   病根：条目被并发吞没后，人工恢复依赖「写入端会话回显原文」（步骤 5.8 第 3 优先级）
+#   ⇒ 恢复依赖人记得 + 凭会话回显拼装 = 半记忆依赖 ⇒ 跨端/跨轮不可靠。
+#   正解：**写入时即落一份原文副本** ⇒ 恢复变成机械实录回读（⛔不凭记忆重写）。
+#   副本路径由 seal token 决定（确定性路径）⇒ 台账无须加列（⛔不扩列·不动前 6 列口径）。
+#   副本目录在 ~/.cache（缓存面·非权威真源）：权威仍是系统日志文件本体。
+ENTRY_COPY_DIR = os.environ.get("SYSLOG_ENTRY_CACHE") or os.path.join(
+    os.path.dirname(GUARD_CACHE), "entries")
+ENTRY_COPY_TTL_DAYS = 7
+
+
+def _entry_copy_path(token):
+    """副本路径 = 确定性映射（token → 路径）⇒ 回验段可独立定位，无需台账加列。"""
+    return os.path.join(ENTRY_COPY_DIR, "%s.md" % token)
+
+
+def _save_entry_copy(token, content):
+    """写入条目原文副本（吞没后据此机械重建）。
+
+    ⛔ 副本路径由 token 决定 · ⛔ 先写副本再追加正文 ⇒ 追加被吞时副本已存在。
+    ⛔ 不含任何 AI 构造内容 = 写入那一刻的逐字原文（与追加内容同一变量）。
+    """
+    try:
+        os.makedirs(ENTRY_COPY_DIR, exist_ok=True)
+        p = _entry_copy_path(token)
+        tmp = "%s.tmp.%d" % (p, os.getpid())
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(tmp, p)
+        return p
+    except Exception:
+        return None
+
+
+def _prune_entry_copies(days=ENTRY_COPY_TTL_DAYS):
+    """副本 TTL 清理（缓存面·非权威）。
+
+    ⛔ 只删本目录内**文件名匹配 8 位 hex token**且 mtime 超期的文件 ⇒ 不误伤他物。
+    ⛔ 保留期 7 天：覆盖「当日内吞没 + 次日修复」窗口（自愈只需近端副本）。
+    """
+    import re as _re
+    _pat = _re.compile(r"^[0-9a-f]{8}\.md$")
+    try:
+        if not os.path.isdir(ENTRY_COPY_DIR):
+            return 0
+        cutoff = time.time() - days * 86400
+        n = 0
+        for fn in os.listdir(ENTRY_COPY_DIR):
+            if not _pat.match(fn):
+                continue
+            p = os.path.join(ENTRY_COPY_DIR, fn)
+            try:
+                if os.path.isfile(p) and os.path.getmtime(p) < cutoff:
+                    os.remove(p)
+                    n += 1
+            except OSError:
+                pass
+        return n
+    except Exception:
+        return 0
+
+
+def _rebuild_orphan_seals(logfile, tokens):
+    """用写入端留存的原文副本重建被吞条目（⛔不凭记忆重写）。
+
+    返回 (已重建列表, 无副本可重建列表)。
+    ⛔ 重建内容 = 副本逐字原文（含原 seal 行）⇒ 不产生新 seal、不改写事实。
+    ⛔ 幂等：重建前确认该 seal 当前确不在文件里 ⇒ 绝不产生重复条目。
+    ⛔ 持同一把锁 ⇒ 与 reconcile 的 replace 不交叠（⛔父进程不持锁时再 spawn reconcile）。
+    """
+    repaired, unrepairable = [], []
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from systemlog_lock import log_lock
+    except Exception:
+        return [], list(tokens)
+    for tok in tokens:
+        p = _entry_copy_path(tok)
+        marker = "- **seal**：%s" % tok
+        try:
+            if not os.path.exists(p):
+                unrepairable.append(tok)
+                continue
+            with open(p, encoding="utf-8") as f:
+                content = f.read()
+            if marker not in content:
+                unrepairable.append(tok)  # 副本不含本 seal ⇒ 不是它的副本
+                continue
+            with log_lock(logfile):
+                with open(logfile, encoding="utf-8", errors="replace") as f:
+                    cur = f.read()
+                if marker in cur:
+                    continue  # 已被补（并发他方）⇒ 幂等跳过
+                _insert_entry_into_group(logfile, cur, content)
+            repaired.append(tok)
+        except Exception:
+            unrepairable.append(tok)
+    return repaired, unrepairable
+
+
+def _insert_entry_into_group(logfile, cur, content):
+    """把重建的条目插回它应属的 `## <工具>` 组内（⛔不甩在文件末尾悬空）。
+
+    归属真源 = 条目自带的 `- **工具**：X` 字段（与 reconcile 同口径）。
+
+    规范结构（与 reconcile 产出逐字同形·实证今日日志）：
+        `## <组头>` + 空行 + `### <条目标题>` + 空行 + 字段行… + `- **seal**：x`
+    ⛔ 副本不含组头（否则文件里会出现第二张概览表 + 第二个组头·实证探针 T4 差 118 字节）
+    ⛔ 重建后条目归位在组内（⛔不悬在文末）
+    """
+    m = re.search(r"^\s*-\s*\*\*工具\*\*\s*[:：]\s*(.+?)\s*$", content, re.M)
+    tool = m.group(1).strip() if m else ""
+    lines = cur.splitlines(keepends=True)
+    if not tool:
+        # 无工具字段 ⇒ 兜底追加到文末（⛔不猜归属·只保证条目不丢）
+        with open(logfile, "a", encoding="utf-8") as f:
+            f.write(content)
+        return
+    hdr = re.compile(r"^## %s\s*$" % re.escape(tool))
+    start = None
+    for i, ln in enumerate(lines):
+        if hdr.match(ln.rstrip("\n")):
+            start = i
+            break
+    if start is None:
+        # 组不存在 ⇒ 新建组头再放条目（⛔组头裸 `## X`·⛔不加 emoji/括号注释）
+        tail = []
+        while lines and lines[-1].strip() == "":
+            tail.insert(0, lines.pop())
+        new_lines = lines + ["", "## %s" % tool, "", content] + tail
+        with open(logfile, "w", encoding="utf-8") as f:
+            f.write("".join(new_lines))
+        return
+    # 组已存在 ⇒ 插到该组末尾（下一个 `## ` 之前）
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if lines[j].startswith("## "):
+            end = j
+            break
+    seg = lines[start + 1:end]           # 组内现有内容（不含组头）
+    # 规范结构：组头后隔一空行才进条目块（⛔组头与首条目之间必须有空行）
+    if not seg or seg[0].strip() != "":
+        seg = ["\n"] + seg
+    else:
+        seg = list(seg)
+    # 去掉组内尾部空行（重建条目自带结尾）⇒ 避免末尾叠加空行
+    # ⛔ 只删「条目块之后」的空行，⛔保留组头后的首个空行（上面已保证它在 seg[0]）
+    while len(seg) > 1 and seg[-1].strip() == "":
+        seg.pop()
+    new_lines = lines[:start + 1] + seg + [content] + lines[end:]
+    with open(logfile, "w", encoding="utf-8") as f:
+        f.write("".join(new_lines))
+
 
 def _guard_script_path():
     """changelog_guard.sh 定位（2026-10-14 根治谎报「未安装」）。
@@ -160,10 +313,69 @@ def run_guard_line():
     return guard_line
 
 
+def repair_orphans_mode(logdir):
+    """独立巡检模式（v3.20.0·2026-10-23·MiniMax Code 端·治尺轮）。
+
+    背景：孤儿 seal 的自动修复此前只能被动挂在写入路径（下次写入时才触发）⇒
+    「当天最后一条被吞没」永远等不到修复。独立模式让修复**不依赖任何后续写入**
+    ⇒ 可挂定时任务（愿景①全自动化：机制自动运转，不依赖人记得）。
+
+    判据口径与写入路径完全一致：签发账本枚数 vs 文件内命中数，扣掉 VOID（去重删副本）。
+    ⛔ 无副本的残余只报不猜（⛔凭记忆重写=编造）。
+    """
+    dt = datetime.now()
+    today = dt.strftime("%Y-%m-%d")
+    logfile = os.path.join(logdir, "系统日志_%s.md" % today)
+    if not os.path.exists(logfile):
+        print("ℹ️ 当日日志不存在（%s）——无可巡检项" % os.path.basename(logfile))
+        return 0
+    lg = os.environ.get("SYSLOG_SEAL_LEDGER") or os.path.join(os.path.dirname(GUARD_CACHE), "seal_ledger.log")
+    mine = []
+    if os.path.exists(lg):
+        with open(lg, encoding="utf-8", errors="replace") as sf:
+            for l in sf:
+                c = l.rstrip("\n").split("\t")
+                if (len(c) >= 5 and c[2] == os.path.basename(logfile) and str(today) in c[1]
+                        and c[4] == os.path.dirname(os.path.abspath(logfile))):
+                    mine.append(c[0])
+    with open(logfile, encoding="utf-8", errors="replace") as ff:
+        body = ff.read()
+    void = set()
+    vp = os.path.join(os.path.dirname(lg), "seal_void.log")
+    if os.path.exists(vp):
+        with open(vp, encoding="utf-8", errors="replace") as vf:
+            for v in vf:
+                vc = v.rstrip("\n").split("\t")
+                if len(vc) >= 4 and vc[3] == os.path.basename(logfile):
+                    void.add(vc[0])
+    lost = [x for x in mine if x not in body and x not in void]
+    if not lost:
+        print("✅ 孤儿巡检：%d 枚已签发 seal 全部在文件里（无吞没）" % len(mine))
+        return 0
+    repaired, unfixed = _rebuild_orphan_seals(logfile, lost)
+    if repaired:
+        try:
+            subprocess.run(
+                [sys.executable, os.path.join(os.path.dirname(__file__), "reconcile_overview.py"), logfile],
+                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except Exception:
+            pass
+    print("⚠️ 孤儿巡检：%d/%d 枚已签发却不在文件里（疑被并发整文件回写吞没）" % (len(lost), len(mine)))
+    if repaired:
+        print("✅ 已用写入端原文副本自动重建 %d 枚：%s" % (len(repaired), repaired))
+    if unfixed:
+        print("❌ %d 枚无原文副本（写入端跑的是旧版脚本）⇒ 需人工按步骤 5.8 用会话回显原文重建，"
+              "⛔凭记忆重写：%s" % (len(unfixed), unfixed))
+    return 1 if unfixed else 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tool", required=False, help="tool name (normalized allowlist value)")
     ap.add_argument("--logdir", default=LOGDIR_DEFAULT)
+    ap.add_argument("--allow-dup", action="store_true",
+                    help="v3.19.1: 显式放行同标题短窗重复追加（默认拒写防双签发·反模式13 触发源闸）")
     ap.add_argument("--reflection", action="store_true",
                     help="添加 [童灵思考] 前缀（童灵→童灵心智活动汇报·蒸馏管道扫描标记）")
     ap.add_argument("--guard-line", action="store_true",
@@ -172,6 +384,9 @@ def main():
                     help="v3.13.0: 检测 AI 回复是否包含流程完成令牌（🔖 流程完成令牌：{hash}）。"
                          "传入回复文本文件路径，或用 - 从 stdin 读取。exit 0=包含令牌（流程完成），"
                          "exit 1=不包含令牌（流程未完成，需重新 relay 验证块）。")
+    ap.add_argument("--repair-orphans", action="store_true",
+                    help="v3.20.0: 独立巡检模式——扫描当日日志的签发账本，机械重建被并发吞没的条目"
+                         "（用写入端留存的原文副本·⛔不凭记忆重写）。可挂 cron 定期跑。")
     args = ap.parse_args()
 
     if args.guard_line:
@@ -182,6 +397,8 @@ def main():
 
     if args.verify_reply:
         return verify_reply_token(args.verify_reply)
+    if args.repair_orphans:
+        return repair_orphans_mode(args.logdir)
     if not args.tool:
         print("error: --tool 必填（--guard-line 模式除外）", file=sys.stderr)
         return 2
@@ -272,8 +489,16 @@ def main():
             print("ℹ️ v3.17.7 机械兜底：条目体用非###标题（reconcile切块锚=###）→标题层级矫正，题文不变", file=sys.stderr)
         elif body.strip():
             _fl = re.search(r"^\s*(\S.*)$", body, re.M)
-            body = "### " + _fl.group(1).strip()[:60] + "\n\n" + body[_fl.end():].lstrip("\n")
-            print("ℹ️ v3.17.7 机械兜底：条目体无任何标题→首行补 ### 标题（截60字）", file=sys.stderr)
+            _first = _fl.group(1).strip()
+            if re.match(r"^-\s*\*\*[^*]+\*\*\s*[:：]", _first):
+                # v3.19.6（沙箱 T6 实锤）：首行是字段行→⛔不吞作标题——旧行为首行整体吃进标题，
+                # 字段行静默消失（落盘 7/8 + 标题变"- **类型**：分析"垃圾值）。兜底应"补"不该"吃"：
+                # 生成中性可追溯标题，字段原样保全。
+                body = "### 未命名条目（%s）\n\n%s" % (now_hm, body.lstrip("\n"))
+                print("ℹ️ v3.19.6 兜底修正：条目体无标题且首行是字段行→不吞作标题（防字段丢失）·生成中性标题，字段保全", file=sys.stderr)
+            else:
+                body = "### " + _first[:60] + "\n\n" + body[_fl.end():].lstrip("\n")
+                print("ℹ️ v3.17.7 机械兜底：条目体无任何标题→首行补 ### 标题（截60字）", file=sys.stderr)
     if _new:
         _ins = "".join(s + "\n" for s in _new)
         # 插入点=**首个既有字段行之前**（而非紧跟标题）——避免标题下的空行被留在字段中间，
@@ -293,6 +518,46 @@ def main():
         return 2
 
     logfile = os.path.join(args.logdir, "系统日志_%s.md" % today)
+
+    # v3.19.1 防双写闸（Poka-Yoke 设计端·反模式13 触发源根治：双签发→去重删副本→seal 断联）：
+    #   同文件存在同标题条目且完成时间 ≤10 分钟 → 拒写；确属新任务同名 → --allow-dup 显式放行。
+    if os.path.exists(logfile):  # allow_dup 也进块：只跳拒写不跳检测，两态都要留痕（v3.19.2 自测逮出：整块跳过=allow 无痕=校准数据缺半边）
+        _m_title = re.search(r"^### (.+)$", body, re.M)
+        if _m_title:
+            _t = _m_title.group(1).strip()
+            try:
+                with open(logfile, encoding="utf-8", errors="replace") as _df:
+                    _lines = _df.read().splitlines()
+            except OSError:
+                _lines = []
+            _hit = None
+            for _i, _l in enumerate(_lines):
+                if _l.strip() == "### " + _t:
+                    for _j in range(_i + 1, min(_i + 16, len(_lines))):
+                        _m2 = re.match(r"^-\s*\*\*完成\*\*\s*[:：]\s*(\d{2}):(\d{2})", _lines[_j])
+                        if _m2:
+                            _hit = _m2.group(1) + ":" + _m2.group(2)
+                            break
+                    if _hit:
+                        break
+            if _hit:
+                _h2m = int(_hit[:2]) * 60 + int(_hit[3:])
+                _nowm = int(now_hm[:2]) * 60 + int(now_hm[3:])
+                _delta = _nowm - _h2m
+                if 0 <= _delta <= 10:
+                    # v3.19.2 数据留痕：两态均落 dup_gate.jsonl——窗口阈值校准靠实盘数据不靠人记得（愿景①③）
+                    try:
+                        import json as _json
+                        with open(os.path.join(os.path.dirname(GUARD_CACHE), "dup_gate.jsonl"), "a", encoding="utf-8") as _dg:
+                            _dg.write(_json.dumps({"ev": "allow" if args.allow_dup else "reject",
+                                                    "ts": "%s %s" % (today, now_hm), "gap_min": _delta,
+                                                    "title": _t[:50], "tool": args.tool}, ensure_ascii=False) + "\n")
+                    except OSError:
+                        pass  # 留痕失败不阻塞主流程（同 seal_ledger 口径）
+                    if not args.allow_dup:
+                        print("error: 同标题条目 %d 分钟前已写入（完成 %s）→ 拒写防双签发（反模式13 触发源闸）。"
+                              "确属新任务同名：加 --allow-dup 显式放行。" % (_delta, _hit), file=sys.stderr)
+                        return 3
 
     # Grouping: tool group header must be unique in the whole file (v3.10.6 根治:
     # tail-window 判定缺陷——组头在文件中部时末尾窗口看不到，误加重复组头，8/12 连犯两次).
@@ -323,16 +588,39 @@ def main():
     import hashlib as _hl, secrets as _sk
     _seed = "%s%s%s%s" % (today, now_hm, args.tool, _sk.token_hex(8))
     token_hash = _hl.sha256(_seed.encode("utf-8")).hexdigest()[:8]
-    content = header + body.rstrip("\n") + "\n" + "- **seal**：%s\n" % token_hash
+    # 条目本体（不含 header）= 重建时需要逐字回读的最小单元。
+    # ⛔ header（概览表 + `## 工具` 组头）**不入副本**——重建时若把 header 一起追加，
+    #   文件里会出现第二张概览表 + 第二个组头（实证·探针 T4 差 118 字节）。
+    #   组头归属由 reconcile 按条目自带的「工具」字段建组/归位（归属真源=工具字段）。
+    entry_body = body.rstrip("\n") + "\n" + "- **seal**：%s\n" % token_hash
+    content = header + entry_body
     try:
         _cache_dir = os.path.dirname(GUARD_CACHE)
         os.makedirs(_cache_dir, exist_ok=True)
         with open(os.path.join(_cache_dir, "last_token.txt"), "w", encoding="utf-8") as _tf:
             _tf.write(token_hash)
+        # 端间版本可观测（2026-10-23·MiniMax Code 端·治尺轮）：台账行尾加一列
+        #   **本脚本内容指纹** ⇒ 事后可机械判定「各端副本是不是同一版」
+        #   （hash 不同 = 版本漂移·⛔不必维护版本号·⛔不依赖人记得同步）
+        #   ⛔ 只在行尾追加一列·⛔前 6 列一字不动 ⇒ 旧解析器（取第 1 段比对）不受影响
+        try:
+            with open(os.path.abspath(__file__), "rb") as _sfp:
+                _script_fp = _hl.sha256(_sfp.read()).hexdigest()[:8]
+        except OSError:
+            _script_fp = "unknown"
         with open(os.environ.get("SYSLOG_SEAL_LEDGER") or os.path.join(_cache_dir, "seal_ledger.log"), "a", encoding="utf-8") as _lf:
-            _lf.write("%s\t%sT%s\t%s\t%s\t%s\n" % (token_hash, today, now_hm, os.path.basename(logfile), args.tool, os.path.dirname(os.path.abspath(logfile))))
+            _lf.write("%s\t%sT%s\t%s\t%s\t%s\t%s\n" % (token_hash, today, now_hm, os.path.basename(logfile), args.tool, os.path.dirname(os.path.abspath(logfile)), _script_fp))
     except Exception:
         pass  # 落盘失败不阻塞写入主流程；verify 时按"无签发记录"降级处理
+
+    # —— 写入端留存的条目原文副本（2026-10-23·MiniMax Code 端·治尺轮）——
+    #   ⛔ 必须在 append **之前**落副本：条目被并发吞没时，副本仍在本机 ⇒ 可机械重建。
+    #   ⛔ 副本 = 追加内容的逐字原文（含原 seal 行）⇒ 重建不改写事实、不产生新 seal。
+    #   ⚠️ 副本目录在 ~/.cache（缓存面）：机器重装/清缓存后副本不在 ⇒ 回验降级为人工路径（诚实降级）。
+    if _save_entry_copy(token_hash, entry_body) is None:
+        # v3.19.6：副本落盘失败显形（旧实现静默吞）——副本是吞没自愈的重建依据，断链无人知=自愈静默失效
+        print("⚠️ 条目原文副本落盘失败（吞没自愈的重建依据缺失·主流程继续）——请检查 %s 可写性" % ENTRY_COPY_DIR, file=sys.stderr)
+    _prune_entry_copies()
 
     # O_APPEND atomic append — concurrent writers never overwrite each other.
     # 加共享锁：与 reconcile 的 read→replace 互斥，防并发 append 被 os.replace 换 inode 吞掉
@@ -353,6 +641,31 @@ def main():
             print("⚠️ reconcile 未收敛（exit %d）——概览计数可能滞后，建议手动跑 reconcile_overview.py 查看详情" % r.returncode, file=sys.stderr)
     except Exception as e:
         print("⚠️ reconcile 调用异常：%s（概览计数可能滞后）" % e, file=sys.stderr)
+
+    # —— 吞没自愈（2026-10-23·MiniMax Code 端·治尺轮·根治跨端并发丢条）——
+    #   病根：端间副本版本漂移 ⇒ 他端若跑**未取锁的旧版**脚本，其 append 可落在
+    #   reconcile 的 read→replace 窗口内被换 inode 吞掉（实证 2026-10-23 16:20
+    #   Qoder CN 端条目：seal 已签发却不在文件里 ⇒ 孤儿 seal ⇒ 当天后续写入持续误报）。
+    #   正解：append 后**回读自验**——自己的 seal 必须在文件里；不在 ⇒ 补写。
+    #   ⛔ 补写前先确认当前文件里确实没有本 seal ⇒ 绝不产生重复条目
+    #   ⛔ 补写持同一把锁 ⇒ 与 reconcile 的 replace 不交叠
+    #   ⚠️ 残余窗口：未取锁的他端 reconcile 若在本次自验之后才动手 ⇒ 仍可能吞本条
+    #     ⇒ 端间副本版本对齐（各端都跑带锁版）才是根治面·已出核对单
+    _seal_marker = "- **seal**：%s" % token_hash
+    for _try in range(3):
+        try:
+            with open(logfile, encoding="utf-8", errors="replace") as _rf:
+                _cur = _rf.read()
+        except OSError:
+            _cur = ""
+        if _seal_marker in _cur:
+            break
+        with log_lock(logfile):
+            with open(logfile, "a", encoding="utf-8") as f:
+                f.write(content)
+        print("⚠️ 吞没自愈：追加内容未见于文件（疑被并发 replace 吞没）——补写第 %d 次" % (_try + 1), file=sys.stderr)
+    else:
+        print("⚠️ 吞没自愈：补写 3 次仍未确认落盘（seal=%s）——该条可能缺失，请人工核对" % token_hash, file=sys.stderr)
 
     # v3.10.24(2026-09-01·你"系统日志写半天"架构解耦): changelog_guard 检测行
     # 不再在写入路径同步内嵌（全树扫描 ~7s×每次写入=主凶）——改由 AI 在验证块
@@ -377,7 +690,7 @@ def emit_verify_block(logfile, today, now_hm, tool, body, token_hash):
     """机械产出回复验证块（diff 块）。AI 只许逐字 relay，接触不到构造权。
 
     段2 的全部行（📍文件/⏰时间/🔧工具/📋校验/📋变更日志检测/🔖流程完成令牌）均由脚本算值填，
-    与 SKILL.md 步骤5 模板逐字一致。设计消除错误：AI 无法改写/表格化/增删任何行。
+    与 flow-write.md 步骤5 模板逐字一致。设计消除错误：AI 无法改写/表格化/增删任何行。
 
     v3.13.0(2026-09-02·回复完整性令牌机制): 验证块末尾新增「🔖 流程完成令牌」——
     唯一 hash（sha256(time+random)前8位），AI 不能伪造。SKILL.md 声明：系统日志流程完成的
@@ -424,10 +737,51 @@ def emit_verify_block(logfile, today, now_hm, tool, body, token_hash):
                         _mine.append(_c[0])
         with open(logfile, encoding="utf-8", errors="replace") as _ff:
             _body = _ff.read()
-        _lost = [x for x in _mine if x not in _body]
+        _void = set()
+        _vp = os.path.join(os.path.dirname(_lg), "seal_void.log")
+        if os.path.exists(_vp):
+            with open(_vp, encoding="utf-8", errors="replace") as _vf:
+                for _v in _vf:
+                    _vc = _v.rstrip("\n").split("\t")
+                    if len(_vc) >= 4 and _vc[3] == os.path.basename(logfile):
+                        _void.add(_vc[0])
+        _lost = [x for x in _mine if x not in _body and x not in _void]
         if _lost:
-            seals_line = ("❌ 自签 seal 回验：%d/%d 枚已签发却不在文件里（疑被并发整文件回写吞没）%s"
-                          " —— 按步骤 5.8 用会话回显原文重建，⛔凭记忆重写" % (len(_lost), len(_mine), _lost[:6]))
+            # —— 自动重建（2026-10-23·MiniMax Code 端·治尺轮）——
+            #   病根：孤儿 seal 的恢复依赖「写入端会话回显原文」（人工/记忆依赖·跨端不可靠）。
+            #   正解：写入端留有原文副本 ⇒ 恢复 = 机械回读副本 ⇒ 不凭记忆重写。
+            #   ⛔ 重建前确认该 seal 确不在文件里（幂等）· ⛔ 持同一把锁。
+            #   ⚠️ 残余（无副本）：写入端跑的是旧版脚本（没留副本）⇒ 只能人工·如实报出。
+            _repaired, _unfixed = _rebuild_orphan_seals(logfile, _lost)
+            if _repaired:
+                with open(logfile, encoding="utf-8", errors="replace") as _ff2:
+                    _body = _ff2.read()
+                _unfixed = [x for x in _unfixed if x not in _body]
+                # 重建后需重跑 reconcile 让概览计数与分组归位（⛔父进程不持锁时再 spawn）
+                try:
+                    subprocess.run(
+                        [sys.executable, os.path.join(os.path.dirname(__file__), "reconcile_overview.py"), logfile],
+                        check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    )
+                except Exception:
+                    pass
+            if _repaired and _unfixed:
+                # v3.19.6：双态并存时合并呈现——旧实现 ❌ 行整体覆盖 ✅ 行，重建成果被吞（验证块只见 ❌）
+                seals_line = ("⚠️ 自签 seal 回验：已按原文副本自动重建 %d 枚（%s）；另有 %d 枚无副本须人工按步骤 5.8 重建（%s）"
+                              "——⛔凭记忆重写；若确属去重删副本：systemlog_entry_rm.py 留 VOID 记录（本检自动认）"
+                              % (len(_repaired), _repaired[:6], len(_unfixed), _unfixed[:6]))
+            elif _repaired:
+                seals_line = ("✅ 自签 seal 回验：已按写入端原文副本自动重建 %d 枚被吞条目（%s）"
+                              % (len(_repaired), _repaired[:6]))
+            elif _unfixed:
+                seals_line = ("❌ 自签 seal 回验：%d/%d 枚已签发却不在文件里（疑被并发整文件回写吞没）%s"
+                              " —— 写入端无原文副本（该端跑的是旧版脚本）⇒ 按步骤 5.8 用会话回显原文重建，"
+                              "⛔凭记忆重写；若确属去重删副本：systemlog_entry_rm.py 留 VOID 记录（本检自动认）"
+                              % (len(_unfixed), len(_mine), _unfixed[:6]))
+            else:
+                seals_line = ("❌ 自签 seal 回验：%d/%d 枚已签发却不在文件里（疑被并发整文件回写吞没）%s"
+                              " —— 按步骤 5.8 用会话回显原文重建，⛔凭记忆重写；若确属去重删副本："
+                              "systemlog_entry_rm.py 留 VOID 记录（本检自动认）" % (len(_lost), len(_mine), _lost[:6]))
     except Exception as _e:
         seals_line = "⚪ 自签 seal 回验：未执行（%s）" % type(_e).__name__
     # v3.14.0：令牌已在写入前生成，并已内嵌进条目（- **seal**：行）+ 记入 seal_ledger.log
@@ -460,7 +814,7 @@ def verify_reply_token(reply_path):
     - 不包含令牌 → exit 1（流程未完成，需重新 relay 验证块）
 
     这是防错层兜底（事后检测），不是防误层根治（事前消除）。
-    防误层根治是：SKILL.md 声明「系统日志流程完成的唯一标志是回复末尾包含此令牌」，
+    防误层根治是：flow-write.md 步骤5 声明「系统日志流程完成的唯一标志是回复末尾包含此令牌」，
     把 relay 验证块从「行为要求」升级为「流程完成的必要条件」。
 
     诚实边界：纯 AI 环境不存在「绝对物理杜绝」——AI 仍然可以选择不 relay 验证块，
@@ -493,7 +847,9 @@ def verify_reply_token(reply_path):
             issued = None
         _ledger_hit = None
         try:
-            _lp = os.path.join(os.path.dirname(GUARD_CACHE), "seal_ledger.log")
+            # v3.19.6（沙箱 T2e 实锤）：与写入路径(L603)/自签回验(L719)/巡检(L332)同口径认
+            # SYSLOG_SEAL_LEDGER 覆盖——旧版读死默认路径，覆盖账本里的合法令牌被误报"伪造"。
+            _lp = os.environ.get("SYSLOG_SEAL_LEDGER") or os.path.join(os.path.dirname(GUARD_CACHE), "seal_ledger.log")
             if os.path.exists(_lp):
                 for _line in open(_lp, encoding="utf-8"):
                     if _line.split("\t", 1)[0].strip() == token:

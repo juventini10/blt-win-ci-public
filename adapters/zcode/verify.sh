@@ -86,7 +86,7 @@ if [ -x "$HOOK_DST" ]; then
 elif [ -x "$HOOK_MAIN_CAND" ]; then
   ok "正本在册(Skill路由引擎·2026-10-04 T0迁移态); 旧位墓碑兜底=$HOOK_DST"
 elif [ -f "$HOOK_DST" ]; then
-  warn "旧位仅墓碑桩(exit 0 兜底)且正本不在 $MEMORY_CENTER/开发工具——建议核对迁移态"
+  warn "旧位仅墓碑桩(exit 0 兜底)且正本不在 作者侧旧位——建议核对迁移态"
 else
   bad "钩子脚本缺失: ${HOOK_DST}——请跑 setup.sh"
 fi

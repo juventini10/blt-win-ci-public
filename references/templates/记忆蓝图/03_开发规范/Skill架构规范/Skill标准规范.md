@@ -3,21 +3,26 @@ author: 皮叔
 title: Skill 标准规范
 type: reference
 status: active
-version: v5.17
-date: 2026-07-11
+version: "v6.2.5"
+date: 2026-10-23
 summary: Skill编写的质量结构机制标准（Reference层）
 source: 记忆蓝图/03_开发规范/Skill架构规范/Skill标准规范.md
 complies_with: 文件格式规范 v2.0.0
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
+component: "reference"
+spec_set: "v6.0.0"
+read_when: ["写/改 SKILL.md 的 YAML 与结构", "查执行层机制", "查安全十维", "查评估与测试"]
+not_for: ["从 0 设计 Skill 的流程", "T5 理论推导"]
 ---
 
 # Skill 标准规范（Reference层）
 
 > ✍️ **作者**：皮叔
-> **所属体系**：Skill架构规范 v5.10 · Diátaxis"实操"象限
+> **所属体系**：Skill 架构规范 v6.0.0 · Diátaxis“实操”象限
 > **本文件内容**：YAML元数据 / 文件结构 / 渐进披露 / 执行层机制 / 安全十维 / 评估与测试 / 多Skill共存
-> **何时读**：写Skill时按需查阅具体规则
-> **版本**：v5.17（2026-10-13·§6.2 增"自测须 hermetic＋环境类断言须变异探针取证"，来源＝成长箱反哺 R-20261013-02）｜原 v5.16（随架构规范同步升版）| **变更**：2026-08-08 +§1 when_to_use/disable-model-invocation 字段 +路由信息专用原则 +§6.8 区分度门禁（来源：Description 强路由研究·权威对照 2026-08）
+> **何时读**：写 / 改 SKILL.md 时按需查阅具体规则
+> **不读的后果**：字段缺失、执行机制选错、评估口径不一致。
+> 返回入口/任务页表：[Skill 架构规范](Skill架构规范.md)
 
 ---
 
@@ -56,7 +61,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | `conflicts` | 互斥的Skill |
 | `license` | 协议 |
 | `upstream` | 更新来源路径或URL | 自建=本地路径，SkillHub安装=registry URL，fork=原始repo |
-| `role` | 复杂度类型声明（engine/host/leaf/methodology，默认 leaf）——D5 角色维度解耦用（见Skill架构规范§2.3 D5） |
+| `role` | 复杂度类型声明（engine/host/leaf/methodology，默认 leaf）——D5 角色维度解耦用（见 [D5 角色维度解耦](pages/05-antipatterns-and-examples.md#§D5 角色维度解耦)） |
 | `modifiable` | AI是否可修改此Skill | `true` / `false` / `ask` |
 | `when_to_use` | 承载"何时用"细节的自由文本（触发场景/输入形态/边界） | description 腾出空间给触发词，细节下沉此字段（对齐 Anthropic 开放标准） |
 | `disable-model-invocation` | `true`=任务型（仅用户显式触发，如 skill-forge）/ `false`=参考型（默认，模型按上下文自动判断） | 任务型防误触发：高频词 Skill 声明 true 后不再被模型擅自调用 |
@@ -412,6 +417,7 @@ skill-name/
 | Alternatives记录 | — | — | ✅有 |
 
 > 质量分级定义见 `Skill设计模式.md` §4
+> **口径**：本表所有比率均为百分比；Skill 质量主分见 §6.7，对外恒为百分制 100。
 
 **证据可追溯率**：输出中每条价值判断附带可验证依据的比例。评估方法：随机抽取10条输出，逐条检查"是否有证据支撑"。每缺少一条依据扣10%。
 
@@ -434,7 +440,7 @@ skill-name/
 
 ### 6.5 T5对抗性测试（v2.0 — 独立维度，满分20）
 
-> T5是独立于T1-T4主维度（满分100）的对抗性成熟度评估。T1-T4评估"该有的防御写了没"，T5评估"攻击面的防御声明到位没"。两者评分逻辑统一（加法制），但分数独立报告。
+> T5是独立于主分（百分制 100）的对抗性成熟度评估，自身按 20 分制计分。T1-T4 评估"该有的防御写了没"，T5 评估"攻击面的防御声明到位没"。两者评分逻辑统一（加法制），但分数独立报告：⛔T5 分不并入主分，换算成百分数（`T5/20*100`）仅用于跨面对比，不得替代主分。
 
 **测试范围**：四象限×11项攻击面（+1项可选记忆投毒），满分20分。
 
@@ -447,7 +453,7 @@ skill-name/
 
 **等级**：≥18 S级 / 14-17 A级 / 8-13 B级 / 0-7 C级。
 
-**理论来源**：OWASP LLM Top 10 2025 / OWASP Agentic Top 10 2026 / MITRE ATLAS / NIST AI 100-2。详见Skill架构规范§二附。
+**理论来源**：OWASP LLM Top 10 2025 / OWASP Agentic Top 10 2026 / MITRE ATLAS / NIST AI 100-2。详见 [T5 对抗性测试理论基础](pages/06-t5-adversarial.md#§T5 对抗性测试理论基础)。
 
 **检测局限性**：基于关键词匹配（非运行时攻击模拟）。有防御声明 ≠ 实际防御有效。未来版本计划引入LLM-based红队测试。
 
@@ -475,7 +481,8 @@ skill-name/
 
 skill_eval.py 是规范的**可执行镜像**，其自身设计受两条硬约束：
 
-- **满分=100 不可动**：新增维度必须在 100 内重分配权重（集中权重字典 + `assert sum(WEIGHTS)==100` 物理防超），⛔DO NOT 简单加总导致满分溢出（v2.2 曾因 +5 分变 105，已修）。
+- **对外主分恒为百分制 100**：不论实现内部如何加权，对外报出的主分一律 0-100，换算公式 `round(权重分/权重和*100,1)`。权重和属实现细节（当前两份实现分别为 100 与 149），⛔DO NOT 把权重和写进规范正文或当契约引用；新增维度只改内部权重分配，不改对外满分语义。
+- **多实现登记（当前两份）**：`clock-loop/scripts/skill_eval.py`（20 维·WEIGHTS 锁 100·发布门禁/Phase X）与 `skill-rehab/scripts/skill_eval.py`（7 层·权重和 149 归一化·康复诊断）。检查集不同，⛔跨实现比较绝对分；跨实现只比达标态（必改/P0 全过 + ≥85）。
 - **评分只反映文件设计端（幂等）**：流程类规则（如 §6.6 修改前备份）属**开发者行为层**，其真值不在文件内、而在操作历史上。✅DO 由**改前自动备份钩子（hook）** 强制拦截，而非由评测维度扣分——否则评分非幂等（同文件不同时间得分不同）。若评测仅作提醒，降级为「非计分警告」。
 - **评估集门禁（§6.1）以 `references/eval-set.md` 为唯一判定对象**，内联评估集不计入门禁通过。
 

@@ -1,7 +1,7 @@
-# 五层记忆系统 · 布洛陀 2.2.10 多平台版
+# 五层记忆系统 · 布洛陀 2.2.11 多平台版
 
 > **33道题，让你手上的 AI 工具真正理解你。**
-> v2.1：适配 **8 端**（包内 8 端适配层，用户面 7 端可装（Trae Work 新版适配未完·暂不亮牌；LobsterAI 适配收尾中·暂不推荐）——WorkBuddy / Qoder CN（含 Qoder CN IDE） / Trae Work / ZCode / 豆包 / Hermes / LobsterAI（未适配完毕） / Zwork（AutoClaw 新客户端·平台托管型·对账吸收模式））
+> v2.1：适配 **9 端**（包内 9 端适配层，用户面 8 端可装（LobsterAI 适配收尾中·暂不推荐）——WorkBuddy / Qoder CN（含 Qoder CN IDE） / Trae CN（原 Trae Work 已合并单端） / **MiniMax Code（Plugin Hook 端）** / ZCode / 豆包 / Hermes / LobsterAI（未适配完毕） / Zwork（AutoClaw 新客户端·平台托管型·对账吸收模式））
 >
 > **每端装完你手上会多出什么**（别只看"支持"两个字）：
 >
@@ -9,7 +9,8 @@
 > |:---|:---|:---|
 > | WorkBuddy | 系统文件 + 38 个自动值守钩子 | **「自定义指令」粘贴进设置框 1 步** |
 > | Qoder CN（含 Qoder CN IDE） | 规则三文件 + 钩子自动注入 | 无 |
-> | Trae Work | 规则三文件 + 30min 自动巡检 | 无 |
+> | Trae CN | 规则三文件 + 6 事件钩子（25 件） | 无 |
+> | MiniMax Code | 系统文件三合一（AGENTS.md + user.md + MEMORY.md）+ 3 事件钩子（17 条·Stop 走 JSON 契约适配器） | 无（⚠️ **用默认会话**·长期记忆只对内置默认会话开放） |
 > | ZCode | 规则三文件 + 7 事件钩子 + 数据清理 | 无 |
 > | Hermes | 规则三文件 + **18 个插件**（人格注入 / 路由 / 守卫 / 台账） | 无 |
 > | LobsterAI（未适配完毕） | 规则三文件 + 4 个插件 | 无 |

@@ -21,10 +21,10 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>[记忆共享中心]/记忆琥珀/engine/logs/amber-fswatch.out.log</string>
+    <string>[日志中心]/amber-fswatch.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>[记忆共享中心]/记忆琥珀/engine/logs/amber-fswatch.err.log</string>
+    <string>[日志中心]/amber-fswatch.err.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

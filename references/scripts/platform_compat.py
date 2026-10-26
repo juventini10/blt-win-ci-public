@@ -5,7 +5,8 @@
 检测：.sh/.ps1 双平台配对、编码(UTF-8无BOM)、换行符(\r\n残留)、
       shebang 正确、路径分隔符（反斜杠残留）、
       单平台路径假设（检查⑩·1.6）、发布者工具泄漏（检查⑪·1.6）、
-      共享中心目录名硬编码（检查⑫·1.6）、孪生件形状对账（检查⑬·条文68·2026-10-21）。
+      共享中心目录名硬编码（检查⑫·1.6）、孪生件形状对账（检查⑬·条文68·2026-10-21）、
+      空/近空脚本件（检查⑭·2026-10-23 v2.2.10 Win 阻断根治·件数守恒≠内容守恒）。
 退出码：0=通过  1=有缺陷  2=参数错误
 """
 import ast
@@ -321,6 +322,51 @@ def _is_in_try_block(tree: ast.AST, target: ast.AST) -> bool:
     return False
 
 
+def _import_is_guarded(src: str, node: ast.AST, parents: dict) -> bool:
+    """该导入节点是否有有效守卫（v2.2.10 根治·替代全文信号豁免）。
+
+    守卫三形态：
+      ① 祖先 Try 且任一 handler 捕 ImportError/ModuleNotFoundError/Exception/裸 except；
+      ② 祖先 If 且 test 源码引用 sys.platform 或 os.name（嵌套平台条件导入）；
+      ③ 同代码块内**前置兄弟语句**是平台 If（`if not sys.platform...: return`
+         早退守卫后再 import——path_migration_sweep_guard.py:105 pwd 实证形态）。
+    ⛔ 不认「全文任意位置出现平台信号」——100KB 脚本里一处 sys.platform 曾把
+    整文件的导入检查全部豁免（search_kb.py L226 fcntl 实证·Windows import 即崩）。
+    """
+    def _is_platform_if(n):
+        if not isinstance(n, ast.If):
+            return False
+        seg = ast.get_source_segment(src, n.test) or ""
+        return "sys.platform" in seg or "os.name" in seg
+
+    cur = parents.get(node)
+    while cur is not None:
+        if isinstance(cur, ast.Try):
+            for h in cur.handlers:
+                if h.type is None:  # 裸 except
+                    return True
+                names = []
+                if isinstance(h.type, ast.Name):
+                    names = [h.type.id]
+                elif isinstance(h.type, ast.Tuple):
+                    names = [e.id for e in h.type.elts if isinstance(e, ast.Name)]
+                if any(n in ("ImportError", "ModuleNotFoundError", "Exception") for n in names):
+                    return True
+        if _is_platform_if(cur):
+            return True
+        # ③ 前置兄弟平台守卫：仅当 node 是 cur 的直接子节点时，看它之前的
+        #    直接兄弟（⛔不看导入位置之后的 If——那不算守卫·防误免）
+        _direct = list(ast.iter_child_nodes(cur))
+        if any(s is node for s in _direct):
+            for sib in _direct:
+                if sib is node:
+                    break
+                if _is_platform_if(sib):
+                    return True
+        cur = parents.get(cur)
+    return False
+
+
 def check_unix_only_imports(pkg: Path) -> list:
     """P1（2026-08-11 反哺）：跨平台 .py 顶层 import Unix-only 模块且无守卫→Windows 崩溃。
     背景：Qoder系加强包 route_unknown_unknown.py 旧版顶层 `import fcntl`（仅 Unix），
@@ -343,7 +389,17 @@ def check_unix_only_imports(pkg: Path) -> list:
             tree = ast.parse(src, filename=str(f))
         except SyntaxError:
             continue
-        has_platform_signal = ("sys.platform" in src) or ("os.name" in src) or ("import platform" in src)
+        # 2026-10-23 v2.2.10 Win 阻断根治：旧判据 has_platform_signal（全文出现
+        # sys.platform/os.name 即豁免整文件）被 100KB 的 search_kb.py 一票绕过——
+        # 它 L510 有 sys.platform，L226 的 import fcntl 便无人看守 ⇒ Windows import 即崩。
+        # 修法：豁免从「全文信号」收窄为「该导入节点的祖先链守卫」——
+        #   ① 祖先 Try 且 handler 捕 ImportError/ModuleNotFoundError/Exception/裸 except；或
+        #   ② 祖先 If 且 test 源码含 sys.platform/os.name（平台条件导入）。
+        # ⛔ 不再认「全文任意位置出现平台信号」——那一票豁免曾被一次打穿（判据缺陷≠包缺陷）。
+        parents = {}
+        for _p in ast.walk(tree):
+            for _c in ast.iter_child_nodes(_p):
+                parents[_c] = _p
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 mods = [a.name.split(".")[0] for a in node.names]
@@ -354,8 +410,8 @@ def check_unix_only_imports(pkg: Path) -> list:
             hit = [m for m in mods if m in UNIX_ONLY_MODULES]
             if not hit:
                 continue
-            if _is_in_try_block(tree, node) or has_platform_signal:
-                continue  # 有守卫，安全
+            if _import_is_guarded(src, node, parents):
+                continue  # 该导入确有守卫，安全
             issues.append(f"Unix-only导入无守卫[{','.join(hit)}]: {f.relative_to(pkg)}:{node.lineno}")
     return issues
 
@@ -591,6 +647,58 @@ def check_script_center_reachability(pkg: Path) -> list:
                 issues.append("承诺路径端用户不可达(脚本中心/%s 不在包内): %s:%d" % (x, rel, i + 1))
     return issues
 
+
+
+def check_skill_index_surface(pkg: Path) -> list:
+    """SKILL 索引行 ≡ 包内文件（2026-10-25·作者侧 QA 不随包的机制位）。
+
+    病根（2026-10-25 实捕）：作者侧 QA 入口（run.sh / orchestration_check.sh）已从包面移除，
+    但各 Skill 的 SKILL.md 附件索引是**手写**的，仍列着这些入口 → 端用户看到不可用路径。
+    一次性人工清理会衰减；本检查把「索引承诺 ≡ 包内文件」变成每次发版的对账。
+
+    判据：
+      ① 只看 `references/skills/*/SKILL.md` 的表格行（索引/入口表）；
+      ② 反引号内或首列的 `scripts/*.{sh,py,ps1}` 或根 `run.sh` 视为「承诺路径」；
+      ③ 目标文件必须在同 Skill 包内存在；
+      ④ 缺失时，该行或后 3 行内含「作者侧/不随包/未随包分发/不随发布包」→ 显式豁免；
+      ⑤ 其余缺失 = FAIL（下一次同类漂移当场红）。
+
+    负例探针：临时 Skill 写入 `| scripts/不存在.sh |`，本函数必须返回 1 项。
+    """
+    import re as _re
+    skills_dir = pkg / "references" / "skills"
+    if not skills_dir.is_dir():
+        return []
+    pat = _re.compile(r"^(?:scripts/[A-Za-z0-9_./\u4e00-\u9fa5\-]+\.(?:sh|py|ps1)|run\.sh)$")
+    markers = ("作者侧", "不随包", "未随包分发", "不随发布包")
+    issues = []
+    for sk_dir in sorted(p for p in skills_dir.iterdir() if p.is_dir()):
+        sk_md = sk_dir / "SKILL.md"
+        if not sk_md.is_file():
+            continue
+        try:
+            lines = sk_md.read_text(encoding="utf-8").splitlines()
+        except (UnicodeDecodeError, PermissionError):
+            continue
+        for i, line in enumerate(lines):
+            if not line.strip().startswith("|"):
+                continue
+            toks = _re.findall(r"`([^`]+)`", line)
+            cells = line.split("|")
+            first = cells[1].strip() if len(cells) > 1 else ""
+            if pat.match(first):
+                toks.append(first)
+            for tok in toks:
+                tok = tok.strip()
+                if not pat.match(tok):
+                    continue
+                if (sk_dir / tok).is_file():
+                    continue
+                window = "\n".join(lines[i:i + 4])
+                if any(m in window for m in markers):
+                    continue
+                issues.append("%s: 索引承诺 %s 不在包内（作者侧件请标「作者侧·不随包」）" % (sk_dir.name, tok))
+    return sorted(set(issues))
 
 
 DATA = Path(__file__).resolve().parent / "platform_compat_data"  # L3 棘轮基线唯一写点（人工 CLI 调用）
@@ -830,6 +938,67 @@ def check_twin_section_parity(pkg: Path) -> list:
     return vpc.twin_check(pkg)
 
 
+# 脚本类文件最小实体尺寸（字节）——低于此值判「近空/残桩」（检查⑭）
+_MIN_SCRIPT_BYTES = 512
+# 合法小文件白名单（逐条有据·⛔不静默跳过·新增须附理由）
+_EMPTY_OK = {"__init__.py"}
+# 合法小件豁免（按包内相对路径·逐条有据·显形不静默·2026-10-23 首跑真包实证三件）
+_SMALL_OK_PATHS = {
+    "安装兜底.bat": "Win安装兜底启动器·ASCII-only设计·功能性小件",
+    "references/成就系统/achievement_notify.sh": "macOS成就通知·osascript单行功能性小件",
+    "references/成就系统/scripts/check_achievements.sh": "成就检测包装器·exec python功能性小件",
+}
+# 最近一次运行的豁免显形记录（main 打印·⛔不静默跳过）
+_LAST_EXEMPT = []
+# 守护件功能锚：*-install-task.ps1 必须含其一（证明是真脚本不是空壳）
+_GUARDIAN_ANCHORS = ("schtasks", "Register-ScheduledTask", "New-ScheduledTaskTrigger")
+
+
+def check_empty_or_stub_scripts(pkg: Path) -> list:
+    """检查⑭（2026-10-23 v2.2.10 Win 阻断根治）：发布面脚本件空/近空检测。
+
+    背景：v2.2.10 发布 zip 内 distill-scheduler-install-task.ps1 只剩 3 字节
+    纯 BOM——文件在、guardians.json 声明它、INSTALL.md 引导注册它，五腿判据全绿；
+    而空 ps1 被 PS 当合法脚本执行、退出码 0 ⇒ 蒸馏调度守护静默不跑。
+    **件数守恒 ≠ 内容守恒**——本检查补「内容非空」这条腿。
+
+    判定：
+      · *.ps1/*.sh/*.bat 任一 < 512B ⇒ FAIL（白名单除外·逐条有据）
+      · *.py 近空 FAIL，__init__.py 等合法空件白名单放行
+      · *-install-task.ps1 全族除尺寸外必须含功能锚（schtasks/Register-ScheduledTask…）
+    """
+    issues = []
+    for f in pkg.rglob("*"):
+        if not f.is_file():
+            continue
+        if "__pycache__" in f.parts or ".git" in f.parts or f.name.endswith(".bak"):
+            continue
+        suffix = f.suffix.lower()
+        if suffix not in (".py", ".ps1", ".sh", ".bat"):
+            continue
+        if f.name in _EMPTY_OK:
+            continue
+        try:
+            size = f.stat().st_size
+        except OSError:
+            continue
+        rel = f.relative_to(pkg)
+        if rel.as_posix() in _SMALL_OK_PATHS:
+            _LAST_EXEMPT.append(f"小件豁免[{size}B]: {rel.as_posix()} — {_SMALL_OK_PATHS[rel.as_posix()]}")
+            continue
+        if size < _MIN_SCRIPT_BYTES:
+            issues.append(f"近空脚本件[{size}B<{_MIN_SCRIPT_BYTES}B]: {rel}")
+            continue
+        if f.name.endswith("-install-task.ps1"):
+            try:
+                text = f.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if not any(a in text for a in _GUARDIAN_ANCHORS):
+                issues.append(f"守护件无功能锚(schtasks/Register-ScheduledTask): {rel}")
+    return issues
+
+
 def main():
     only_author = "--only-author-path" in sys.argv
     _p0 = [x for x in sys.argv[1:] if not x.startswith("--")]
@@ -857,10 +1026,12 @@ def main():
         ("发布者工具泄漏(检查⑪·advisory·枚举不完备)", check_publisher_tool_leak(pkg), True),
         ("作者侧路径引用未声明(检查⑪-治本)", check_author_path_undeclared(pkg)),
         ("Unix-only导入守卫(P1)", check_unix_only_imports(pkg)),
+        ("空/近空脚本件(检查⑭·v2.2.10根治)", check_empty_or_stub_scripts(pkg)),
         ("安装器双端资产对称(P1)", check_installer_asset_parity(pkg)),
         ("Windows裸python调用(P1)", check_windows_bare_python(pkg)),
         ("共享中心目录名硬编码(检查⑫)", check_hardcoded_center_name(pkg)),
         ("承诺路径可达性(检查⑪-白名单)", check_script_center_reachability(pkg)),
+        ("SKILL 索引≡包内文件(作者侧QA不随包)", check_skill_index_surface(pkg)),
         ("跨平台脚本配对·派生式(L1)", check_script_pairing_derived(pkg)),
         ("stdin编码对等(L2)", check_stdin_encoding(pkg)),
         ("占位符路径形态卫生(L3)", check_placeholder_shape_hygiene(pkg)),
@@ -885,6 +1056,11 @@ def main():
         else:
             print(f"  ✅ {name}: 通过")
 
+    if _LAST_EXEMPT:
+        print()
+        print("  ℹ️ 小件豁免显形（逐条有据·⛔非静默跳过）：")
+        for _e in _LAST_EXEMPT:
+            print(f"     {_e}")
     print()
     if all_issues:
         print(f"❌ 跨平台检查未通过：{len(all_issues)} 项缺陷")

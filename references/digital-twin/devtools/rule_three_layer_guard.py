@@ -15,6 +15,10 @@ rule_three_layer_guard.py — 守卫「记忆规则三层文件」版本号 + �
     read_transcript 只兜 list 未兜 dict → `d["message"]` 直供正则抛 TypeError，整条守卫在 Stop 上
     崩死（实测 7 次，连带 ④⑤⑥ 与三层一致性检查在受影响会话中从未执行）。修法=dict 解包内层
     content/role + 非 str 归一跳过；④⑤取「末条助手消息」须文本非空，防 tool_use 空条目使检查名存实亡。
+    接入扩展（2026-10-25·MiniMax Code 第 21 端）：④-静态 调度层巡查由三端扩为四端——
+    新增 MiniMax Code 端（落 ~/.minimax/AGENTS.md·本端无 MEMORY.md 注入面·与 ZCode 端同构）；
+    本端 AGENTS.md 同轮补「🔑 触发句（D4 门禁·该读没读）」段（触发句 + 指向铁律版「加载时机」索引）。
+    ⚠ 本件为共享件·发布库/win-ci/Github 发布版共 16 处活副本（本轮改后与真源指纹分叉）→ 出副本核对单交各面自取自核（列归属签名制）。
 
 检查不变量：
     ① 版本号：三文件头部 `> 版本：vX.Y` 必须相等
@@ -76,6 +80,26 @@ DOUBAO_MEMORY_PATH = os.path.join(os.path.expanduser("[记忆共享中心]"), "�
 # ZCode 端注入通道（2026-09-12 接入：ZCode 实测 MEMORY.md 不注入·唯一常驻通道=AGENTS.md，
 # 故布线巡查落 AGENTS.md 而非 MEMORY.md——与童灵 K2 切片落点同构）
 ZCODE_AGENTS_PATH = os.path.join(HOME, ".zcode", "AGENTS.md")
+# MiniMax Code 端注入通道（2026-10-25 接入：第 21 端·本端无 MEMORY.md 注入面·
+# 唯一常驻通道=AGENTS.md，故布线巡查落 AGENTS.md——与 ZCode 端同构）
+MINIMAX_AGENTS_PATH = os.path.join(HOME, ".minimax", "AGENTS.md")
+# ── 端配置根目录（在场判据）·抽成模块常量 ⇐ 夹具可注入（2026-10-25 治尺）──
+# 病：d4_static 里豆包/ZCode/MiniMax 三端的在场目录原先从 HOME **内联硬算** ⇒
+#   夹具改不动 ⇒ 「端不在本机」场景**根本没被测到**（自测 12/16·T6a/b/c 全红·实测根因）。
+#   治法：四端配置根目录一律模块级常量 ⇒ 运行期可注入 ⇒ 缺席/在场两态真能测。
+DOUBAO_CFG_DIR = os.path.join(os.path.expanduser("[记忆共享中心]"), "豆包办公系统文件")
+ZCODE_CFG_DIR = os.path.join(HOME, ".zcode")
+MINIMAX_CFG_DIR = os.path.join(HOME, ".minimax")
+# ── 端在场判据（2026-10-25·MiniMax Code 端·端缺席治尺）────────────────────
+# 病：d4_static 对「四端调度层文件」逐端硬判存在性 ⇒ 在**只装了其中一端**的机器上，
+#   缺席端一律报「调度层文件缺失」⇒ **跨端假红**（实测：只装 ZCode 的机器 ⇒ 报 WB/豆包/MiniMax 三端缺失）。
+#   ⛔ 该病是**既存病**（WB/豆包/ZCode 三元组时代就有）·不是本轮引入 —— 但本轮加第四端会再添一条。
+#   ⚠️ 影响面真存在：该守卫挂在 LobsterAI / Qoder CN / Trae Work 三端（发布面 capability 实证），
+#      这三端所在机器通常**不装** WB/豆包/ZCode/MiniMax Code ⇒ 副本一旦带第四端行 ⇒ 那些端立刻报红。
+# 治法（治尺·不放松真检测）：
+#   **端不在本机 ⇒ 跳过该端**（端缺席 ≠ 端失守）；**端在场但接线没做 ⇒ 仍报红**。
+#   在场判据＝该端**配置根目录**存在（比调度层文件存在更宽·端装了但文件没落=真失守仍要报）。
+#   ⇒ 端在但文件缺 ⇒ 报红（真失守）｜端不在 ⇒ 跳过（假红归零）｜端在且接线缺失 ⇒ 报红（真病灶）
 TIELU_FILE = os.path.join(BASE, "用户基本规则-铁律版.md")
 def _first_existing(*names):
     """取第一个真实存在的路径；全不存在 ⇒ 返回第一个（供报「文件缺失」用）。"""
@@ -185,16 +209,27 @@ def read_transcript(path):
 
 
 def d4_static():
-    """④-静态：调度层触发句布线 + 铁律版 加载时机索引存在性（WB + 豆包办公 + ZCode 三端）。
-    WB 布线标记=「触发句」/「D4」；豆包办公端标记=「铁律骨架」；ZCode 端标记=「三层触发链」
+    """④-静态：调度层触发句布线 + 铁律版 加载时机索引存在性（WB + 豆包办公 + ZCode + MiniMax Code 四端）。
+    WB 布线标记=「触发句」/「D4」；豆包办公端标记=「铁律骨架」；ZCode 端标记=「三层触发链」；
+    MiniMax Code 端标记=「触发句」（本端 AGENTS.md 已补 D4 触发句段·2026-10-25·同 ZCode 形态）
     （落 AGENTS.md——ZCode 实测 MEMORY.md 不注入，唯一常驻通道=AGENTS.md，2026-09-12 接入）。
-    豆包端无钩子（rule_fragment_inject 不可复刻），静态布线检查为机制在场兜底，warn-only 不阻断。"""
+    豆包端无钩子（rule_fragment_inject 不可复刻），静态布线检查为机制在场兜底，warn-only 不阻断。
+
+    **端缺席跳过**（2026-10-25·端缺席治尺）：端**不在本机**⇒ 跳过该端（端缺席 ≠ 端失守），
+    端**在场**但调度层文件缺/未接线 ⇒ 仍报红（真失守不放过）。
+    治的是既存跨端假红（只装一端的机器上其余端一律报缺失）——⛔不放松真检测。"""
     results = []
-    for name, mp in (
-        ("WB", MEMORY_PATH),
-        ("豆包办公", DOUBAO_MEMORY_PATH),
-        ("ZCode", ZCODE_AGENTS_PATH),
+    skipped = []
+    for name, mp, cfg_dir in (
+        ("WB", MEMORY_PATH, _CFG_ROOT),
+        ("豆包办公", DOUBAO_MEMORY_PATH, DOUBAO_CFG_DIR),
+        ("ZCode", ZCODE_AGENTS_PATH, ZCODE_CFG_DIR),
+        ("MiniMax Code", MINIMAX_AGENTS_PATH, MINIMAX_CFG_DIR),
     ):
+        # 端不在本机 ⇒ 跳过（不判红）——2026-10-25 端缺席治尺
+        if not os.path.isdir(cfg_dir):
+            skipped.append(name)
+            continue
         if not os.path.exists(mp):
             results.append(f"{name}端 调度层文件缺失")
             continue
@@ -215,7 +250,10 @@ def d4_static():
     bad = [r for r in results if "正确" not in r]
     if bad:
         return False, "；".join(bad)
-    return True, "三端调度层 触发句→铁律版加载时机索引 布线正确（" + "；".join(results) + "）"
+    # 全部在场端都通过；缺席端显形（不判红·但可见）
+    if skipped:
+        return True, "四端调度层 触发句→铁律版加载时机索引 布线正确（" + "；".join(results) + "）｜缺席端跳过：" + "、".join(skipped) + "（端不在本机·非失守）"
+    return True, "四端调度层 触发句→铁律版加载时机索引 布线正确（" + "；".join(results) + "）"
 
 
 # stdin 单次解析缓存：D4 与 ⑤ 同一次 Stop 调用共享，避免第二次 read() 拿到空 stdin
@@ -431,6 +469,7 @@ def self_test():
         m.MEMORY_PATH = os.path.join(tmp, "no_memory.md")
         m.DOUBAO_MEMORY_PATH = os.path.join(tmp, "no_db.md")
         m.ZCODE_AGENTS_PATH = os.path.join(tmp, "no_zcode.md")
+        m.MINIMAX_AGENTS_PATH = os.path.join(tmp, "no_minimax.md")
 
     def run_json():
         buf = io.StringIO()
@@ -480,6 +519,102 @@ def self_test():
         except Exception:
             ck("T5d 摘要版None不误红(max_drift=False)", False)
             ck("T5d 摘要版不入失效名单(unresolved=[])", False)
+
+        # T6 端缺席治尺（2026-10-25·MiniMax Code 端）——**四向夹具**：
+        #   ① 端**不在本机**（配置根目录不存在）⇒ 跳过该端（不得判红）——治既存跨端假红
+        #      （只装一端的机器上其余端一律报「调度层文件缺失」= 假红·该守卫挂在 LobsterAI/Qoder CN/Trae Work 三端）
+        #   ② 端**在场**（配置根目录存在）但调度层文件缺 ⇒ 仍须报红（端缺席治尺不得放松真检测）
+        #   ③ 端**在场**且接线完整 ⇒ 判绿
+        #   ④ 端**在场**、文件在但**接线没做**（无触发句）⇒ 仍须报红（治的是「缺席」不是「失守」）
+        #   ⚠️ 夹具要点（实测踩坑·2026-10-25）：
+        #     a) 须让**配置根目录不存在**（不是只把文件路径指空）——只指空文件路径＝「端在场但文件缺」＝②场景。
+        #     b) 须让**四端配置根目录全部可注入**——原实现里豆包/ZCode/MiniMax 三端从 HOME **内联硬算**，
+        #        夹具改不动 ⇒ 「端缺席」场景根本没被测到（真源已治：抽成模块常量 DOUBAO_CFG_DIR/ZCODE_CFG_DIR/MINIMAX_CFG_DIR）。
+        #     c) 须让 **TIELU_FILE 含「加载时机」索引**——d4_static 在靶子层会早退（返回「铁律版 缺加载时机」），
+        #        端侧结果根本没被比到 ⇒ ②的 ok=False 会「撞对」而文案断言必失败。
+        _cfg = os.path.join(tmp, "endirs")
+        os.makedirs(_cfg, exist_ok=True)
+        _absent = os.path.join(tmp, "absent_endirs")  # 故意不创建＝端不在本机
+        # 伪铁律版（含「加载时机」索引⇒d4_static 靶子层不早退）
+        _tielu_t6 = os.path.join(tmp, "tielu_t6.md")
+        with open(_tielu_t6, "w", encoding="utf-8") as _f:
+            _f.write("版本：v8.16\n铁律-001 铁律-022\n22条硬约束\nAI执行铁律（22条·不可违反）\n加载时机\n")
+        # 端状态统一注入器：cfg_dirs=四端配置根目录·files=四端调度层文件路径
+        _END_KEYS = ("MEMORY_PATH", "DOUBAO_MEMORY_PATH", "ZCODE_AGENTS_PATH", "MINIMAX_AGENTS_PATH",
+                     "_CFG_ROOT", "DOUBAO_CFG_DIR", "ZCODE_CFG_DIR", "MINIMAX_CFG_DIR", "TIELU_FILE")
+
+        def _end_state(cfg_dirs, files):
+            (m.MEMORY_PATH, m.DOUBAO_MEMORY_PATH, m.ZCODE_AGENTS_PATH, m.MINIMAX_AGENTS_PATH,
+             m._CFG_ROOT, m.DOUBAO_CFG_DIR, m.ZCODE_CFG_DIR, m.MINIMAX_CFG_DIR, m.TIELU_FILE) = \
+                files[0], files[1], files[2], files[3], cfg_dirs[0], cfg_dirs[1], cfg_dirs[2], cfg_dirs[3], _tielu_t6
+
+        _abs_files = (os.path.join(_absent, "wb", "MEMORY.md"),
+                      os.path.join(_absent, "db", "MEMORY.md"),
+                      os.path.join(_absent, ".zcode", "AGENTS.md"),
+                      os.path.join(_absent, ".minimax", "AGENTS.md"))
+        _abs_dirs = (os.path.join(_absent, "wb"), os.path.join(_absent, "db"),
+                     os.path.join(_absent, ".zcode"), os.path.join(_absent, ".minimax"))
+        _save_end = {}
+
+        def _t6_run(cfg_dirs, files):
+            """注入端状态 → 跑一次 → 还原（任何异常都还原·不留脏状态）"""
+            nonlocal _save_end
+            for _k in _END_KEYS:
+                _save_end[_k] = getattr(m, _k)
+            try:
+                _end_state(cfg_dirs, files)
+                return run_json()
+            finally:
+                for _k, _v in _save_end.items():
+                    setattr(m, _k, _v)
+
+        # ① 全端缺席（配置根目录不存在）⇒ d4_static 必判绿
+        try:
+            _r = _t6_run(_abs_dirs, _abs_files)
+            ck("T6a 全端缺席⇒d4_static 判绿(ok=True)", _r.get("d4_static", {}).get("ok") is True)
+            ck("T6a 缺席端显形于 msg（含「缺席端跳过」）",
+               "缺席端跳过" in _r.get("d4_static", {}).get("msg", ""))
+        except Exception:
+            ck("T6a 全端缺席⇒d4_static 判绿(ok=True)", False)
+            ck("T6a 缺席端显形于 msg（含「缺席端跳过」）", False)
+        # ② 端在场但文件缺（配置根存在·调度层文件不存在）⇒ 必报红
+        try:
+            _r = _t6_run((_cfg, _cfg, _cfg, _cfg),
+                         (os.path.join(_cfg, "no_wb.md"), os.path.join(_cfg, "no_db.md"),
+                          os.path.join(_cfg, "no_zcode.md"), os.path.join(_cfg, "no_minimax.md")))
+            ck("T6b 端在场但调度层文件缺⇒仍报红(ok=False)", _r.get("d4_static", {}).get("ok") is False)
+            ck("T6b 报红文案含「调度层文件缺失」",
+               "调度层文件缺失" in _r.get("d4_static", {}).get("msg", ""))
+        except Exception:
+            ck("T6b 端在场但调度层文件缺⇒仍报红(ok=False)", False)
+            ck("T6b 报红文案含「调度层文件缺失」", False)
+        # ③ 端在场且接线完整 ⇒ 判绿
+        try:
+            _wired = os.path.join(_cfg, "wired.md")
+            with open(_wired, "w", encoding="utf-8") as _f:
+                _f.write("触发句：见铁律版 加载时机\n加载时机\n")
+            _r = _t6_run((_cfg, _cfg, _cfg, _cfg), (_wired, _wired, _wired, _wired))
+            _d4 = _r.get("d4_static", {})
+            ck("T6c 端在场且接线完整⇒判绿(ok=True)", _d4.get("ok") is True)
+            ck("T6c 接线完整时四端均显形「布线正确」",
+               _d4.get("msg", "").count("端 布线正确") == 4)
+        except Exception:
+            ck("T6c 端在场且接线完整⇒判绿(ok=True)", False)
+            ck("T6c 接线完整时四端均显形「布线正确」", False)
+        # ④ 端在场·文件在·但接线没做 ⇒ 仍须报红（治的是「缺席」不是「失守」）
+        try:
+            _unwired = os.path.join(_cfg, "unwired.md")
+            # ⚠️ 伪文件正文**不得含**「触发句/D4/铁律骨架/三层触发链」任一字样——
+            #    否则 has_wire 判据被喂饱 ⇒ 撞进下一分支（文案变「未指向加载时机」）⇒ 夹具失准。
+            with open(_unwired, "w", encoding="utf-8") as _f:
+                _f.write("端调度层空壳文件\n（本端未接入调度层）\n")
+            _r = _t6_run((_cfg, _cfg, _cfg, _cfg), (_unwired, _unwired, _unwired, _unwired))
+            ck("T6d 端在场但接线未做⇒仍报红(ok=False)", _r.get("d4_static", {}).get("ok") is False)
+            ck("T6d 报红文案含「该读没读门禁未布线」",
+               "该读没读门禁未布线" in _r.get("d4_static", {}).get("msg", ""))
+        except Exception:
+            ck("T6d 端在场但接线未做⇒仍报红(ok=False)", False)
+            ck("T6d 报红文案含「该读没读门禁未布线」", False)
 
         # T4 崩溃回归：drift 非空（承 T5b 场景 max_drift=True）+ --deliver → 不得 TypeError + 告警送达
         delivered.clear()

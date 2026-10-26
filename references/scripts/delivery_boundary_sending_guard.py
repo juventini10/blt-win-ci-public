@@ -5,7 +5,7 @@
 delivery_boundary_sending_guard.py — LobsterAI 端专属：外发边界守卫（message_sending 面）
 
 为什么本端要另立一面（端独占质变·2026-10-06）：
-  · delivery_boundary_guard.py（Stop 面）跑在 agent_end——**回复那时已经发出去��**，只能留账。
+  · delivery_boundary_guard.py（Stop 面）跑在 agent_end——**回复那时已经发出去了**，只能留账。
   · OpenClaw 独占面 `message_sending` 在**发送那一刻**拿到 `content` 正文本体
     ⇒ 可改写/可取消（Modify / gate），是 WB settings.json 端**不存在**的面。
   · 同一套判据（取舍词在、声明词缺），换到发送面前 = 从「事后留痕」升级为「当场拦下」。

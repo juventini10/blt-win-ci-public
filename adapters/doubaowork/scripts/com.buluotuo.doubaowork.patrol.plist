@@ -14,8 +14,8 @@
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>[记忆共享中心]/脚本中心/.patrol/launchd_doubaowork.log</string>
+    <string>[日志中心]/launchd_doubaowork.log</string>
     <key>StandardErrorPath</key>
-    <string>[记忆共享中心]/脚本中心/.patrol/launchd_doubaowork.err</string>
+    <string>[日志中心]/launchd_doubaowork.err</string>
 </dict>
 </plist>

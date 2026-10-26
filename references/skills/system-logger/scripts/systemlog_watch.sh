@@ -15,7 +15,12 @@ LOGFILE="$DIR/.watch.log"
 # 串行化提交（根治"守护提交 vs 手动提交"锁域分裂：与 git_commit_safe.sh 共享 .git-commit.lock）
 # 守护与手动提交统一走同一 flock → 同机跨进程真串行 → 消除 .git/objects 并发写争用（EPERM on tmp_obj）
 # 失败放行·不阻塞守护（守护首要职责是归一化/自愈，checkpoint 提交只是固化·不达标则下次事件再试）
-GCS="[记忆共享中心]/脚本中心/git_commit_safe.sh"
+# git_commit_safe 定位（2026-10-23 皮叔令「必须修」：脚本中心阶段3移位后本行曾写死旧路→存在性假→长期走兜底=提交串行降级；
+# 同 append_log_entry._guard_script_path 先例——候选序取首个存在件，旧路保留作回滚兼容）
+GCS=""
+for _cand in "[记忆共享中心]/脚本中心/git_commit_safe.sh" "[记忆共享中心]/脚本中心/git_commit_safe.sh"; do
+  [ -f "$_cand" ] && { GCS="$_cand"; break; }
+done
 gcs_commit() {
   local msg="$1" f="$2"
   if [ -x "$GCS" ]; then
@@ -123,7 +128,7 @@ while true; do
           fi
           echo "$post" >"$st"
           # 📸 自动 git checkpoint（2026-08-22·§3.4 自查声明验证协议反哺·证据全程固化·
-          #    2026-08-24 第一性原理最优解：单文件粒度 git commit -- $f）：
+          #    2026-08-24 第一性原理最优解：单文件粒度 git commit -- ${f}）：
           # 正常写入（条目数未塌缩）后立即把该文件提交入 git——用 git 原生单文件提交语法
           # （commit -- <pathspec>）把原子单位从"暂存区"降到"单文件"：无论 staged 区混入多少他端 WIP，
           # 本文件都独立入 git 历史，与他端暂存内容完全解耦。事故窗口从"两次人工提交之间"缩到"单次写入"，

@@ -46,12 +46,22 @@ def _declare_src_match(path, src):
         return True
     import re as _re
     tag = _re.sub(r"[._\-]", "", os.path.basename(os.path.dirname(path))).lower()
-    return tag == _re.sub(r"[_\-]", "", src.lower())
+    s = _re.sub(r"[_\-]", "", src.lower())
+    # 2026-10-24 根治：端目录名 ≠ 端 src 名（Qoder Desktop 配置根=.qoder，src=qoderdesktop）。
+    # 旧实现直接等值比较 → 台账真存在也读不到，L3 恒⚪「均不可读」。别名与写端同表登记。
+    aliases = {
+        "qoderdesktop": {"qoder", "qoderdesktop"},
+    }
+    return tag in aliases.get(s, {s})
 GUARD_STATE = os.path.join(os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy"),
                            "doenglingz_guard_state.json")
 CACHE = os.environ.get("TSL_VERIFY_CACHE") or os.path.expanduser("~/.cache/tsl_verify")   # env=测试隔离缝（对齐 closeout 同名先例·守卫规范 §3.9）
 W3_LEDGER = os.path.join(BASE, "脚本中心/logs/runtime/w3_inject_ledger.jsonl")  # 2026-10-07 W3根治：读侧对齐写侧(doenglingz_inject_prompt L489)——写读分根即假红
-__version__ = "v0.11.9"
+__version__ = "v0.11.10"
+#   v0.11.10（2026-10-24·Qoder Desktop·L3 声明台账读写同源根治）：
+#     写端：Qoder Stop 补挂 doenglingz_level_declare_guard.py（配置根=$HOME/.qoder）；
+#     读端：_declare_src_match 加 qoderdesktop→{qoder,qoderdesktop} 别名——旧等值比较
+#     把 .qoder 台账判成“不可读”，L3 恒⚪。烟测：guard 临时根落账 + 别名 True。
 #   v0.11.9（2026-10-11·ZCode 童灵·L7-3 serve 账认账·任务卡队列③挂账清偿）：
 #     _kb_trail_since 原只认 source=cli → CLI 快通道（kb_serve 常驻引擎·2026-10-11 上线）
 #     落的 source=serve 账被 L7-3 判据过滤 = 归属断（当日两度实证 L7-3 红）。
@@ -371,7 +381,10 @@ def l7_rows(since, day, logf):
         #   夹具照抄了解析器而不是真机（§3.0·5「夹具须照抄真机行形状」的同型复现），
         #   后果=当日真实反哺条目永远 invisible，L7-2 连"他方N笔"都数不出来。
         #   修法=分隔符两形都收（：或|），时分可选；无时分按 00:00 保守归他方（⛔不顶账·与扫描 log 同律）。
-        mm = re.search(r"📅\s*日期\s*[：|]\s*(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}))?", l)
+        #   v0.11.11（2026-10-24·ZCode）：[：|] 补半角冒号 → [：|:]——flow-E Schema 字段行生产侧为半角
+        #   `日期: HH:MM`（全角/半角 bypass 同族第四型·v3.16.0 C6 / flow-write [:：] 同案），实测当日 5 条
+        #   真反哺全 invisible；仪器修后再判对象（S1090）。
+        mm = re.search(r"📅\s*日期\s*[：|:]\s*(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}))?", l)
         if not mm:
             continue
         if mm.group(2):

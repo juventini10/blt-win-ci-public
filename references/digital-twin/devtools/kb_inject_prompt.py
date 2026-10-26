@@ -33,6 +33,7 @@ import os
 import json
 import time
 import signal
+import contextlib
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SOCK_PATH = os.path.join(BASE, "kb.sock")
@@ -152,7 +153,9 @@ def _log_degrade(event, detail=""):
 def is_kb_scene(task):
     """轻量意图门（与 audit_search_kb 同口径·单一真源 ROUTE_TABLE·惰性加载）。
     命中任意桶任一关键词 = 知识场景 → 才检索；未命中 → 空输出（零检索开销）。"""
-    from search_kb import ROUTE_TABLE
+    # 诊断行不得进 prompt（hook 契约：未命中=空输出）——import 期 stdout 转 stderr
+    with contextlib.redirect_stdout(sys.stderr):
+        from search_kb import ROUTE_TABLE
     hits = []
     for b in ROUTE_TABLE:
         kw = [k for k in b["keywords"] if k in task]
@@ -172,7 +175,8 @@ def _serve_search(task):
         s.settimeout(50.0)
         _sock = SOCK_PATH
         try:
-            import search_kb as _SK
+            with contextlib.redirect_stdout(sys.stderr):
+                import search_kb as _SK
             _es = os.path.join(_SK._ENGINE_DIR, "scripts", "kb.sock")
             if os.path.exists(_es):
                 _sock = _es
@@ -232,22 +236,24 @@ def _inject(task):
     # ── 硬截止：整段注入（快通道 + 回退冷跑）一笔账，到点即放行 ──
     _arm_deadline()
     try:
-        # ① 快通道：常驻引擎一并做意图门+检索（毫秒级）；not None 即采纳
+        # ① 意图门先行（2026-10-23 修·寒暄误注入根治）：快通道与回退同口径，
+        #    未命中知识场景直接放行——引擎语义兜底不得越过本地关键词门。
+        hits = is_kb_scene(task)
+        if not hits:
+            return
+        # ② 快通道：常驻引擎检索（毫秒级）；not None 即采纳
         served = _serve_search(task)
         _tick("after_serve")   # 闹钟若已在 recv 内触发，这里补刀，⛔不让回退冷跑裸奔
         if served is not None:
-            scores, bucket_names, _nat_served = served
+            scores, _bucket_names, _nat_served = served
             if not scores:
-                return  # 引擎判非知识场景（或零召回）→ 放行
+                return  # 引擎零召回 → 放行
+            bucket_names = [b for b, _ in hits]
             if _append_trail:
                 _append_trail(task, scores, bucket_names, source="serve", nat=_nat_served)
             _emit(scores, bucket_names)
             return
-        # ② 回退：本地冷跑（本进程已在 .venv-st 内·import search_kb 即完整语义检索）
-        #    意图门先行：未命中知识场景 → 空输出（预筛成本≈0，避免全量检索延迟）
-        hits = is_kb_scene(task)
-        if not hits:
-            return
+        # ③ 回退：本地冷跑（本进程已在 .venv-st 内·import search_kb 即完整语义检索）
         _log_degrade("hook_fallback_inprocess")  # daemon 不可达→进进程检索（向量/BM25 由 search_kb 决定）
         _tick("before_cold_import")  # 冷跑前最后一道闸：模型载入不可中断，只能提前挡
         try:

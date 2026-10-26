@@ -172,6 +172,25 @@ _SEMANTIC_EXEMPT = {
 }
 
 
+# -- 垃圾触发词否决（2026-10-25 队列④观察期·kami 根治）--
+# 病因：纯英文 description 的 skill（kami）经中文向 extract_words 切出 `.`/`or` 等
+#   语法碎片当触发词 -> 任何含句点或含 or 子串的 task 被假命中并判 miss。
+#   审计账本 117 行 kami 预测 100% 由 `.`(108)+`or`(40) 驱动。
+# 依 router.py 血泪教训：不改 extract_words 提取逻辑，只在 hit() 判定层否决。
+_EN_STOPWORDS = {"or", "and", "the", "of", "to", "in", "on", "a", "an", "is", "at", "by", "as", "be"}
+
+
+def _is_junk_trig(w):
+    """垃圾触发词判据：纯标点/符号（无任何字母数字汉字）或英文语法虚词（小写停用词）。"""
+    if not w:
+        return True
+    if not re.search(r"[A-Za-z0-9\u4e00-\u9fff]", w):
+        return True
+    if w.lower() in _EN_STOPWORDS:
+        return True
+    return False
+
+
 def semantic_tags(trig):
     """从触发短语 + 核心词素表生成语义标签（散列兜底通道）.
     返回：原触发短语(整词) ∪ 命中核心词素表的所有词素。
@@ -434,11 +453,11 @@ def hit(skill, text):
     desc = get_desc(skill)
     trig, excl = extract_words(desc)
     mention, m_evidence = _is_self_mention(text, desc)
-    hit_words = [w for w in trig if w and w in text]
+    hit_words = [w for w in trig if w and not _is_junk_trig(w) and w in text]
     if not hit_words:
         # 降级：语义标签散列通道（自然语言离散结构兜底）
         tags = semantic_tags(trig)
-        hit_words = [t for t in tags if t and t in text
+        hit_words = [t for t in tags if t and t in text and not _is_junk_trig(t)
                      and not (t not in trig and (skill, t) in _SEMANTIC_EXEMPT)]
     if not hit_words:
         return False, [], []
@@ -499,6 +518,11 @@ _GATE_NEG = [
     ("meta-aletheia", "帮我分析一下这两个 git 提交是否还存在，存在就按愿景根治"),
     ("triwich", "《毛泽东书信选集》也有重复的呀，那你检查一下。如果是重复的，你就评估哪个是最好的，就留一个。"),
 ]
+# 垃圾触发词否决回归：含句点/英文虚词的 task 曾 100% 假命中 kami，否决后必完全不命中。
+_GATE_NOHIT = [
+    ("kami", "Please continue with the conversation based on the summary.", "含句点英文句不等于排版请求"),
+    ("kami", "安装信息必须更新到 2.2.7，对比 GitHub 上一次发布版是否变化", "版本号句点不等于 kami"),
+]
 _DIARY_MARKS = _DIARY_DOMAIN       # ⛔ 回归器另写一份日记词表＝两把尺子（同 QCN-20261015-002 病）
 
 
@@ -515,6 +539,11 @@ def _gate_regression():
     for skill, t in _GATE_NEG:
         hit_ok, hw, ev = hit(skill, _sanitize(t))
         ck("N %s 必拦｜%s" % (skill, t[:22]), (not hit_ok) and bool(hw), "未被否决（闸失明）→ %s" % ev)
+
+    for skill, t, why in _GATE_NOHIT:
+        hit_ok, hw, ev = hit(skill, _sanitize(t))
+        ck("X %s 必不命中｜%s" % (skill, why), (not hit_ok) and (not hw),
+           "垃圾触发词否决失效 -> hw=%s ev=%s" % (hw, ev))
 
     if not os.path.isfile(_CORPUS):
         print("  ⚪ C 真语料回归跳过（语料不存在：%s·⛔静默当过）" % _CORPUS)
@@ -560,6 +589,14 @@ def _gate_regression():
         globals()["_broad_object_veto"] = orig
         globals()["_entity_mgmt_veto"] = orig2
     ck("M 变异（短路否决）后负例全部复活 ⇒ 否决真在被算", all(back), str(back))
+    orig_j = globals()["_is_junk_trig"]
+    globals()["_is_junk_trig"] = lambda w: False          # 变异：短路垃圾否决
+    try:
+        junk_back = [hit(s, _sanitize(t))[0] for s, t, _ in _GATE_NOHIT]
+    finally:
+        globals()["_is_junk_trig"] = orig_j
+    ck("M2 变异（短路垃圾否决）后 kami 假命中复活，垃圾否决真在被算",
+       all(junk_back), str(junk_back))
     print("自检结论：%s" % ("全绿 ✅" if ok else "有红 ❌（改表后未过回归=不得上线）"))
     return 0 if ok else 1
 

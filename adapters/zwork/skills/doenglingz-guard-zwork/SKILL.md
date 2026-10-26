@@ -75,7 +75,7 @@ grep -c "buluotuo:execution-guidelines-v1" ~/个人AI档案/AutoClaw/AGENTS.md
 D3 上岗回合末·调用端专属校验器并**逐行 relay stdout**（⛔自绘/改层状态/只写指针行）：
 
 ```bash
-python3 ~/个人AI档案/脚本中心/zwork_tsl_verify.py --window 30
+python3 ~/个人AI档案/脚本中心/分身/zwork_tsl_verify.py --window 30
 ```
 
 - 树恒定归**回复末段**（后验对账·正文评估→TSL树→产出签名→署名）。

@@ -455,7 +455,9 @@ def _in_pending_table(lines, title):
     本不在出清名单的候选（其字样出现在别行的摘要格里）误判命中并写了孤儿行——误闭=擅自
     压掉别人的真候选，比不闭更糟。截断形态用 cell(title,40)，与渲染处同一定义。"""
     for l in lines:
-        if not l.startswith("| ") or "\u23F3待确认" not in l:
+        # v3.5.0：⏳待确认（未出清）与 ✅已处理（状态通道留痕·两表联动后形态）都算在册——
+        # 联动把 pending 行改 ✅ 后，原「只认 ⏳」判据会让 strict 拒写裁决行（互斥锁死）。
+        if not l.startswith("| ") or ("⏳待确认" not in l and "✅已处理（状态通道留痕）" not in l):
             continue
         parts = [c.strip() for c in re.split(r"(?<!\\)\|", l)[1:-1]]
         if len(parts) >= 3 and key_match(parts[2], title):
@@ -537,10 +539,33 @@ def close_candidate(title, verdict="不记", reason="", path=None):
     sep = next((i for i in range(head, len(lines)) if re.match(r"^\|[-: |]+\|$", lines[i])), None)
     if sep is None:
         print("error: 已处理节缺表格分隔行——拒写", file=sys.stderr); return 2
+    # v3.5.0 两表联动（QCN-20261011-028 家族第二型根治·内部记录·幂等分支之前=重跑即补联动）：
+    # 裁决落状态通道时同步把「待确认候选」表命中行状态列改已处理——消费方（启动自检）以 pending
+    # 表 ⏳ 为准，只写已处理表不改 pending 行 = 出清假闭环（复扫 ⏳=0 永不达成·2026-10-24 实测）。
+    # 最小破坏（E9 反模式）：改状态不删行（可追溯），摘要/来源列不动。
+    PEND_MARK = chr(0x23F3) + "待确认"
+    DONE_MARK = "✅已处理（状态通道留痕）"
+    pend_head = next((i for i, l in enumerate(lines) if l.startswith("## 待确认候选")), None)
+    linked = 0
+    if pend_head is not None:
+        for j in range(pend_head, head):
+            l = lines[j]
+            if not l.startswith("| ") or PEND_MARK not in l:
+                continue
+            parts = re.split(r"(?<!\\)\|", l)
+            if len(parts) > 3 and key_match(parts[3].strip(), title):
+                lines[j] = l.replace(PEND_MARK, DONE_MARK, 1)
+                linked += 1
+        if linked == 0 and any(PEND_MARK in l for l in lines[pend_head:head] if l.startswith("| ")):
+            print("⚠️ 两表联动零命中：待确认表存在 ⏳ 行但无 key_match 命中——标题形态可能有出入，复扫前人工核对",
+                  file=sys.stderr)
     if any(l.startswith("| ") and len(re.split(r"(?<!\\)\|", l)) > 2
            and key_match(re.split(r"(?<!\\)\|", l)[1].strip(), title)
            for l in lines[head:]):
-        print(f"ℹ️ 幂等：「{title[:30]}」已在已处理表，未重复追加"); return 0
+        print(f"ℹ️ 幂等：「{title[:30]}」已在已处理表，未重复追加")
+        _p.write_text("\n".join(lines), encoding="utf-8")
+        print(f"✅ 两表联动 {linked} 行（幂等路径也回写 pending 状态·补齐历史假闭环）")
+        return 0
     if _CLOSE_STRICT and not _in_pending_table(lines, title):
         print(f"error: 标题「{title[:40]}」在文件中零命中——⛔ 拒绝写入（拼错或候选已被清理，不造孤儿行）",
               file=sys.stderr)

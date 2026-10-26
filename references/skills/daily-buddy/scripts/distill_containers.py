@@ -262,7 +262,7 @@ source: 月报蒸馏（distill_containers.py生成骨架）
 
 ## 用户自述（原文）
 
-【待填充】从日记中提取你的原文表述。
+【待填充】从日记中提取用户原文表述。
 
 ## 自省提醒
 
@@ -299,7 +299,7 @@ source: 月报蒸馏（distill_containers.py生成骨架）
 
 ## 认知象限
 
-**未知已知**（默认值；回避模式本质是你未完全意识到的规避，不标则兜底未知已知；取值∈{{已知已知,已知未知,未知已知,未知未知}}）
+**未知已知**（默认值；回避模式本质是用户未完全意识到的规避，不标则兜底未知已知；取值∈{{已知已知,已知未知,未知已知,未知未知}}）
 
 ## 对质状态
 
@@ -517,7 +517,10 @@ def main():
     parser.add_argument("--force", action="store_true", help="强制覆盖已存在的骨架文件")
     try:
         args = parser.parse_args()
-    except SystemExit:
+    except SystemExit as e:
+        # --help 的 SystemExit(0) 必须原样放行（v3.52.6·否则 help 被误报为参数错误）
+        if e.code == 0:
+            raise
         sys.exit(1)
 
     if not args.generate and not args.verify:

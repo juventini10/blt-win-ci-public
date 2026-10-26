@@ -1,8 +1,17 @@
-# 运行时态不入版本库（v4.4.10 建·v4.4.13 R5-N3 锁改通配——手抄枚举=第三把锁必漏网）
+# 运行时态处置规则（v4.4.10 建·v4.4.13 锁改通配·v4.12.13 名实更正）
+# 原一句「运行时态不入版本库」把两类件混写，且与实盘相反（独立复核 N-5 实锤）：
+#   甲类【可再生命】＝基线/指纹/编译缓存/系统垃圾 → 不入版本库（换机重跑即重建）；2026-10-25 已把 11 件历史误入库的基线/指纹移出索引。
+#   乙类【审计链件】＝seal.log / followup_ledger.log / scan_ledger.log / steps 键文件 → **故意保持版本库跟踪**：它们是封口哈希链、回访销账、守卫 S4 台账对账与落盘锁判据的账本本体；而 knowledge_backup.sh 只暂存已跟踪文件，取消跟踪＝主动放弃其容灾=换机断链、历史轮证据不可复原。
+#   因此下面三行 ⛔不是排除规则的例外清单，而是"必须跟踪"的意图留痕（防将来被 untrack 后 ignore 永久静默）：
+!scripts/seal.log
+!scripts/followup_ledger.log
+!scripts/scan_ledger.log
 scripts/seal.log
 scripts/followup_ledger.log
+scripts/scan_ledger.log
 **/*.lock
 **/__pycache__/
+**/.DS_Store
 # v1.5.6（T1 根治）契约漂移指纹台账·运行时态·换机重跑即重建（对齐 seal.log/followup_ledger.log 策略）
 .seal_fingerprint
 

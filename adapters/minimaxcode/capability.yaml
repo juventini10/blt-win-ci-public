@@ -1,0 +1,129 @@
+# MiniMax Code 能力矩阵（2026-10-25 入包·第 13 端·Plugin Hook 端）
+# 端形态：Plugin Hook 端——注册面 = ~/.minimax/plugins/<插件名>/hooks/hooks.json
+#   由插件 manifest（.minimax-plugin/plugin.json）的 "hooks": ["hooks/hooks.json"] 数组声明挂点，
+#   宿主按插件装载并派发。⛔ 不是 settings.json / cli/config.json / openclaw.json / 独立 hooks.json。
+# ⚠️ hooks.json 的写点唯一 = 本端 setup.sh（安装器 ③ 跳过，防双写）；安装器 ② 照常部署 hooks 副本
+platform: minimaxcode
+config_root: "~/.minimax"
+display_name: "MiniMax Code"
+emoji: "🐰"
+# ── 注册面声明（顶层键·与 autoclaw/lobsterai 同约定·⛔不嵌进 capabilities）──
+hooks_registration_face: "minimax_plugin_hooks"  # 注册面分派键（⛔按 settings.json 判＝全件假红）
+hooks_registration: "setup"            # 安装器 ③ 跳过·由本端 setup.sh 写插件 hooks.json（单一写点·防双写）
+capabilities:
+  rules_inject: false       # 本端无 rules/ 目录注入通道；常驻注入走 AGENTS.md 平台 MUST 拼接块
+  agents_full_inject: true  # AGENTS.md 全文注入通道（全局 + 工作区双层拼接·平台 MUST 包裹）
+  hooks_event: true         # 插件 hooks.json 3 事件实挂（UserPromptSubmit/Stop/SessionStart）
+  hook_stdout_inject: true  # UPS/SessionStart stdout → 注入本轮（实测 <plugin-hook-context> 可投递）
+  settings_json: false      # ⛔ 本端无 settings.json 注册面——注册面在插件内
+  awareness: true           # memory/ + sessions/ + doenglingz_* 状态件落点
+  skill_symlink: true       # ✅ 端上 ~/.minimax/skills 是整目录软链 → 记忆中心 技能配置/（唯一真源）⇒ 走软链通道
+  custom_directive: true    # 执行准则走 AGENTS.md 纪律段（平台 MUST 层）
+  launchd_patrol: false     # 本端无 launchd；巡检走 SessionStart 钩子健康聚合器
+  setup_dispatch: "setup"   # 显式声明由安装器委派端 setup.sh（⛔不写 manual＝不静默委派）
+  install_entry: "setup.sh"
+
+# ─── 五系统文件端自适配声明（条文32·承载名≠注入名·名映射由 setup.sh 承担）───
+# ⚠️ 本端 AGENTS.md 是「单文件三合一」：SOUL + IDENTITY + 自定义指令 同文件分段
+#    ⇒ 三键同指一个文件（条文32 值三形态允许）·⛔不拆三件（拆了就脱离平台拼接机制）
+system_file_paths:
+  SOUL.md: "AGENTS.md"
+  IDENTITY.md: "AGENTS.md"
+  自定义指令: "AGENTS.md"
+  USER.md: "memory/user.md"
+  MEMORY.md: "agents/mavis/memory/MEMORY.md"
+
+# ── 缺失语义（install_receipt.py 唯一输入·按键声明·⛔不做跨端模板）────────────
+missing_semantics:
+  rules_inject: n_a         # 本端无 rules/ 目录面（常驻走 AGENTS.md·agents_full_inject 承担）
+  agents_full_inject: required
+  hooks_event: required
+  hook_stdout_inject: required
+  settings_json: n_a        # 本端无 settings.json 面
+  awareness: optional
+  skill_symlink: optional   # 软链指向 <MC>/技能配置/<name>（唯一真源）·与 traecn 同款
+  custom_directive: required
+  launchd_patrol: n_a       # 本端无 OS 定时器；巡检走 SessionStart 钩子
+
+# ─── 条文33 · 端侧功能面映射声明（2026-10-25 实盘盘点·17 条命令）───
+# 口径：17 条 = UPS 6 + Stop 8 + SessionStart 3（⛔命令条数≠功能件数·
+#   Stop 8 条是「适配器包裹形态」——接入率分子按【被包脚本名】计，不按命令条数计）
+# src 分派：references/scripts（脚本中心投影）/ references/digital-twin/devtools（分身 devtools 投影）
+hooks_surface:
+  delivered:
+    # —— UserPromptSubmit（6 条·直挂 text 通道）——
+    - {script: doenglingz_inject_prompt.py, event: UserPromptSubmit, src: references/digital-twin/devtools, component: twin}
+    - {script: rule_fragment_inject.py, event: UserPromptSubmit, src: references/scripts, note: 铁律硬墙}
+    - {script: minimaxcode_title_namer.py, event: UserPromptSubmit, src: references/scripts, note: 端专属·标题命名}
+    - {script: route_inject_prompt.py, event: UserPromptSubmit, src: references/scripts}
+    - {script: route_miss_feeder.py, event: UserPromptSubmit, src: references/scripts}
+    - {script: kb_inject_prompt.py, event: UserPromptSubmit, src: references/scripts}
+    # —— Stop（8 条·全部经 minimaxcode_hook_adapter.py 包裹）——
+    # ⚠️ wrapper 必记：宿主 Plugin Hook 的 Stop 契约要求 stdout 为单个 JSON 对象，
+    #    共享守卫的纯文本 stdout 会被宿主判 HOOK_INVALID_OUTPUT 直接丢弃（=挂载在·产出不到=假绿）。
+    - {script: doenglingz_guard.py, event: Stop, src: references/digital-twin/devtools, component: twin, wrapper: minimaxcode_hook_adapter.py}
+    - {script: route_unknown_unknown.py, event: Stop, src: references/scripts, wrapper: minimaxcode_hook_adapter.py}
+    - {script: audit_search_kb.py, event: Stop, src: references/scripts, wrapper: minimaxcode_hook_adapter.py}
+    - {script: route_audit.py, event: Stop, src: references/scripts, wrapper: minimaxcode_hook_adapter.py}
+    - {script: route_guard_audit.py, event: Stop, src: references/scripts, wrapper: minimaxcode_hook_adapter.py}
+    - {script: feedback_detect.py, event: Stop, src: references/scripts, wrapper: minimaxcode_hook_adapter.py}
+    - {script: rule_three_layer_guard.py, event: Stop, src: references/scripts, wrapper: minimaxcode_hook_adapter.py, note: 铁律硬墙}
+    - {script: card_id_guard.py, event: Stop, src: references/scripts, wrapper: minimaxcode_hook_adapter.py}
+    # —— SessionStart（3 条·⛔不裹适配器：实测零 HOOK_INVALID_OUTPUT·纯文本可投递）——
+    - {script: memory_pointer_reachability_guard.py, event: SessionStart, src: references/scripts}
+    - {script: crossend_guard.py, event: SessionStart, src: references/scripts}
+    - {script: minimaxcode_health_aggregator.py, event: SessionStart, src: references/scripts, note: 端专属·健康聚合}
+    - {script: minimaxcode_skill_link_reconciler.py, event: SessionStart, src: references/scripts, note: 端专属·Skill链接对账补链（值侧·补真源新增Skill自动可见）}
+  gaps: []
+
+# ─── 端专属钩子登记（安装器 ② 部署 + ③ 由 setup 注册·两处同源）───
+# 格式沿用 ROSTER 五元组：[event, loc, srcdir, main, deps]
+# ⚠️ 主件名 = 被包脚本名（⛔不是适配器名）——适配器是 wrapper 不是主件
+extra_hooks:
+  - ["UserPromptSubmit", ".", "references/digital-twin/devtools", "doenglingz_inject_prompt.py", []]
+  - ["UserPromptSubmit", ".", "references/scripts", "rule_fragment_inject.py", ["rule_triggers_loader.py", "rule_triggers.yaml", "hook_protocol.py"]]
+  - ["UserPromptSubmit", ".", "references/scripts", "minimaxcode_title_namer.py", ["session_title_utils.py"]]
+  - ["UserPromptSubmit", ".", "references/scripts", "route_inject_prompt.py", ["router.py", "format_contract.py", "hook_protocol.py"]]
+  - ["UserPromptSubmit", ".", "references/scripts", "route_miss_feeder.py", []]
+  - ["UserPromptSubmit", ".", "references/scripts", "kb_inject_prompt.py", ["runtime_paths.py"]]
+  - ["Stop", ".", "references/digital-twin/devtools", "doenglingz_guard.py", []]
+  - ["Stop", ".", "references/scripts", "route_unknown_unknown.py", []]
+  - ["Stop", ".", "references/scripts", "audit_search_kb.py", []]
+  - ["Stop", ".", "references/scripts", "route_audit.py", ["router.py"]]
+  - ["Stop", ".", "references/scripts", "route_guard_audit.py", []]
+  - ["Stop", ".", "references/scripts", "feedback_detect.py", []]
+  - ["Stop", ".", "references/scripts", "rule_three_layer_guard.py", ["rule_triggers_loader.py", "rule_triggers.yaml", "hook_protocol.py"]]
+  - ["Stop", ".", "references/scripts", "card_id_guard.py", []]
+  - ["SessionStart", ".", "references/scripts", "memory_pointer_reachability_guard.py", []]
+  - ["SessionStart", ".", "references/scripts", "crossend_guard.py", []]
+  - ["SessionStart", ".", "references/scripts", "minimaxcode_health_aggregator.py", []]
+  - ["SessionStart", ".", "references/scripts", "minimaxcode_skill_link_reconciler.py", []]
+
+# ─── 数字分身功能面映射（可选组件但"可选≠缺声明"·条文16 降级不阻塞）───
+twin_surface:
+  injection:
+    - {what: K2 core_slice + L6 恒驻核, carrier: "<DATA_DIR>/AGENTS.md 童灵段（平台 MUST 拼接块·⛔包内不带静态分身核）"}
+    - {what: 域切片 L2-L5 按需装载, carrier: "Skill doenglingz-slice-nav（实体直落 <DATA_DIR>/skills/）"}
+    - {what: W1 上岗注入, hook: doenglingz_inject_prompt.py（UserPromptSubmit）}
+  guards:
+    - {what: 守护三查（8要素/试金石/切片新鲜度）, carrier: "Skill doenglingz-guard（实体直落）+ Stop 钩子 doenglingz_guard.py（经 JSON 适配器）"}
+    - {what: 档位声明守卫, hook: doenglingz_level_declare_guard.py, note: ⛔本端未实挂·本轮按 gap 显形}
+  tsl:
+    - {what: TSL 清单注入, hook: tsl_echo_hook.py, note: ⛔本端未实挂·本轮按 gap 显形}
+    - {what: TSL 收口, hook: tsl_closeout_guard.py, note: ⛔本端未实挂·本轮按 gap 显形}
+    - {what: TSL 产树, hook: tsl_tree_hook.py, note: ⛔本端未实挂·本轮按 gap 显形}
+  reach:
+    - {what: 岗位3触达, hook: doenglingz_skill_onduty_tier_promote.py, note: ⛔本端未实挂·本轮按 gap 显形}
+  gaps:
+    - "分身域 5 件（level_declare/tsl_echo/tsl_closeout/tsl_tree/skill_onduty）本端实盘未挂载·宿主 Plugin Hook 事件面无对应挂点证据·按 gap 显形·不谎称已支持"
+
+# ─── 钩子路由（SSOT 指向·不复制矩阵内容·防双本账漂移）───
+hooks_ssot: "[记忆共享中心]/记忆蓝图/04_系统文件设计/布洛陀脚本架构设计哲学/01-脚本架构设计通用规范.md#二·七"
+hooks_validator: "install_scripts.py --verify --platform minimaxcode"
+
+post_install_message: |
+  ✅ MiniMax Code 安装完成。
+  · 系统文件由端 setup 落盘（AGENTS.md 三合一 + memory/user.md + agents/mavis/memory/MEMORY.md）；钩子副本由安装器部署，**注册面 = 插件 bulutuo-guards 的 hooks.json**（由端 setup 写入）。
+  · ⚠️ 请用**默认会话**（不选自定义 agent）使用：布洛陀长期记忆通道（MEMORY.md）只对内置默认会话开放，选自定义 agent 会话拿不到长期记忆与用户画像。
+  · 若提示插件 hooks 未生效：重启 MiniMax Code 后生效（钩子清单按插件装载）。
+  · 校验命令：python3 install_scripts.py --verify --platform minimaxcode "<记忆共享中心>"

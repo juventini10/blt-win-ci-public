@@ -43,7 +43,7 @@ import sys
 import tempfile
 from datetime import date, datetime, timedelta
 
-VERSION = "1.1.0"
+VERSION = "1.1.2"
 
 HOME = os.path.expanduser("~")
 BASE = os.path.expanduser("[记忆共享中心]")
@@ -225,7 +225,7 @@ def load_staging():
             continue
         fp = re.search(r"\*\*指纹\*\*：([0-9a-f]{16})", b)
         src = re.search(r"\*\*来源信号\*\*：\s*(S\d)", b)
-        st = re.search(r"\*\*状态\*\*：\s*([⏳✅❌])", b)
+        st = re.search(r"\*\*状态\*\*：\s*(?:([⏳✅❌🟡])|(已审))", b)  # v1.1.2修：v1.1.1补🟡后仍漏"已审·xxx"文字态（10-04批次判词无emoji→被打回⏳假pending）。判据字符类必须≡文件实际形态集合——本文件两天内同坑两犯，教训进CHANGELOG
         fs = re.search(r"\*\*首次发现\*\*：(\d{4}-\d{2}-\d{2})", b)
         entries.append({
             "id": "CAND-%s-%s" % (hm.group(1), hm.group(2)),
@@ -233,7 +233,7 @@ def load_staging():
             "title": hm.group(2).strip(),
             "fingerprint": fp.group(1) if fp else "",
             "source": src.group(1) if src else "",
-            "status": st.group(1) if st else "⏳",
+            "status": (st.group(1) or "✅") if st else "⏳",  # 「已审」形态计✅已处理
             "first_seen": fs.group(1) if fs else "%s-%s-%s" % (hm.group(1)[:4], hm.group(1)[4:6], hm.group(1)[6:]),
         })
     return entries, threshold, adj

@@ -7,7 +7,9 @@
 #   3. 清理 = 同日只留1份 + 7天保留 + major永久
 #   4. 去重 = 内容哈希相同则跳过（防止 touch 误触发）
 
-set -euo pipefail
+# zhangyan#5 根治（2026-10-26）：去 -e 保 -u/-pipefail——白名单含单个不可读文件时
+# set -e 会让整轮备份静默全灭；改为逐文件容错（cp 失败记 MISSING 继续跑）。
+set -uo pipefail
 
 AMBER_DIR="[记忆共享中心]/记忆琥珀"
 WHITELIST="[记忆共享中心]/记忆琥珀/engine/amber-whitelist.txt"
@@ -118,7 +120,7 @@ do_backup() {
   local bak_name="${basename}_${timestamp}_${hash6}.bak"
   local bak_path="$AMBER_DIR/$bak_name"
 
-  cp "$file" "$bak_path"
+  cp "$file" "$bak_path" || { log "失败: $file"; MISSING=$((MISSING + 1)); return 1; }
   log "已备份: $file → $bak_path"
 }
 
@@ -223,7 +225,7 @@ backup_one() {
   timestamp=$(date '+%Y%m%d-%H%M%S')
   local bak_name="${bn}_${timestamp}_${current_hash}.bak"
   local bak_path="$AMBER_DIR/$bak_name"
-  cp "$file" "$bak_path"
+  cp "$file" "$bak_path" || { log "失败: $file"; MISSING=$((MISSING + 1)); return 1; }
   log "已备份: $file → $bak_path"
   BACKED_UP=$((BACKED_UP + 1))
 }

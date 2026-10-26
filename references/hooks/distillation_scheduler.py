@@ -161,6 +161,30 @@ def check_overdue(expected_dates: dict, today: date = None) -> list:
     return overdue
 
 
+CAND_FILE = str(Path.home() / "[记忆共享中心]/未知未知/待确认候选.md")  # 源文件无import os·用已有Path惯例（负例B0逮出）
+CAND_BACKLOG_THRESHOLD = 15  # ≈1.5倍单批正常量（10/批），超=消费面停摆信号
+
+
+def check_candidate_backlog() -> int:
+    """候选积压探针：未处置候选条数（候选集-处置集，与看板消化判定v2同口径）。
+    读失败/文件缺失返回0——探针⛔永不拖垮调度器主流程（失败默认放行同route纪律）。"""
+    try:
+        import re as _re
+        text = open(CAND_FILE, encoding="utf-8").read()
+        secs = _re.findall(r'## (\d{4}-\d{2}-\d{2}) 候选[^\n]*\n((?:- 残差#[^\n]*\n?)+)', text)
+        if not secs:
+            return 0
+        day, body = secs[-1]
+        disposed = set()
+        for m in _re.finditer(r'^## \d{4}-\d{2}-\d{2} 处置[\s\S]*?(?=^## |\Z)', text, _re.M):
+            disposed.update(_re.findall(r'残差#(\d+)', m.group(0)))
+        for m in _re.finditer(r'<!-- DISPOSED: ([^>]*)-->', text):
+            disposed.update(_re.findall(r'#(\d+)', m.group(1)))
+        return len([x for x in _re.findall(r'^- 残差#(\d+)', body, _re.M) if x not in disposed])
+    except Exception:
+        return 0
+
+
 def generate_todo_section(overdue: list, today_str: str) -> str:
     """生成待做蒸馏区域的Markdown内容"""
     today = date.today()
@@ -195,7 +219,31 @@ def generate_todo_section(overdue: list, today_str: str) -> str:
         "3. 蒸馏完成后，对应Skill的C6/终检步骤自动更新蒸馏中心已完成记录",
         "4. 下月1号脚本自动重新检查，已完成的待做项自动清除",
         "5. ⛔本区域由脚本机械生成，禁止手动编辑标记之间的内容",
-        "6. 🔍 资产体检（X-AST）同批特注：非蒸馏系 Loop 路径——①次序=排蒸馏三项之后逐条触发（月首单窗多任务，串行防对冲）；②标准=kb-checkup.md 第五节四维度谓词表已是现成标准，clock-loop 阶段1照此展示、你确认后才跑（阶段1不可跳过·PAT-047）；③销账=H路径报告归档 kb_tests/*资产体检报告* 后更新本账行，非 Skill C6 通道", 
+        "6. 🔍 资产体检（X-AST）同批特注：非蒸馏系 Loop 路径——①次序=排蒸馏三项之后逐条触发（月首单窗多任务，串行防对冲）；②标准=kb-checkup.md 第五节四维度谓词表已是现成标准，clock-loop 阶段1照此展示、你确认后才跑（阶段1不可跳过·PAT-047）；③销账=H路径报告归档 kb_tests/*资产体检报告* 后更新本账行，非 Skill C6 通道",
+    ])
+
+    # 候选积压特注（2026-10-26 皮叔令「补，不能留空」·五环节环消费点烟雾报警器）：
+    # 达阈值才现身（不达=零噪声）；账权不变——候选处置走看板/一屏两键，不进蒸馏流程
+    backlog = check_candidate_backlog()
+    if backlog >= CAND_BACKLOG_THRESHOLD:
+        lines.append(
+            f"7. ⚠️ 候选积压特注：待确认候选未处置 **{backlog} 条**（阈值{CAND_BACKLOG_THRESHOLD}）"
+            "——消费面（看板hero/一屏两键）疑似停摆，请扫 未知未知/待确认候选.md 处置；"
+            "本特注为只读探针（distillation_scheduler 每日档自动），⛔非第六蒸馏项，月报1.6兜底不受影响"
+        )
+    # 飞轮复核逾期探针（2026-10-26 根治：提醒面月度 vs 断链阈值14天频率错配）
+    try:
+        dlog = str(Path.home() / "[记忆共享中心]/数字分身/scripts/drift_check_remind.log")
+        fm = re.findall(r'距你最近一次复核 (\d{4}-\d{2}-\d{2}) 已 (\d+) 天', open(dlog, encoding="utf-8").read())
+        if fm and int(fm[-1][1]) >= 14:
+            lines.append(
+                f"8. 🔴 飞轮断链特注：距你最近复核 {fm[-1][0]} 已 {fm[-1][1]} 天（阈值14）"
+                "——抽检包在 steps/抽检包-*.md 待勾（10张≈10分钟·✅认可/❌推翻+理由），复核到账本行即自清；"
+                "本探针=日频主动面，补'提醒面不扩'四层的月度盲区（02§三断链兜底·禁止静默停转）"
+            )
+    except Exception as e:
+        lines.append("8. ⚠️ 飞轮探针读取异常（%s）——探针自身失明的显形位" % type(e).__name__)
+    lines.extend([
         "",
         END_MARKER,
     ])

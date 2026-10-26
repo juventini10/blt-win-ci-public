@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-  退出码：7=环境自检失败（沙箱假python·审查P2-3补）
+  退出码：9=环境自检失败（沙箱假python·2026-10-24 修正：原写 7 与执行位 sys.exit(9) 及 dbenv 族表不符）
 成就封口独立验证脚本（不在 AI 复盘主调用链上，可独立校验）
 - 读取日记 review_sealed_sig 字段
 - 基于当日真实成就数据重新计算签名
@@ -53,7 +53,7 @@ def extract_seal_from_diary(diary_file):
     match = re.search(r"review_sealed_sig:\s*(.+)", yaml_block)
     if not match:
         return None, "review_sealed_sig 字段缺失（未封口）"
-    raw = match.group(1).strip()
+    raw = match.group(1).strip().strip('"').strip("'")  # 容忍 YAML 合法引号形态（唯一写方不带引号·读侧不因形态误判）
     parts = raw.split(":")
     if len(parts) < 2:
         return None, f"签名格式异常: {raw}"
@@ -151,6 +151,9 @@ def _self_test():
 
 
 def main():
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("用法：verify_achievement_seal.py [--date YYYY-MM-DD] [--self-test]")
+        return 0
     if not dbenv.self_check(verbose=True):
         sys.exit(9)
     target_date = date.today()

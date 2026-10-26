@@ -3,20 +3,26 @@ author: 皮叔
 title: Skill 模板与来源
 type: reference
 status: active
-version: v5.8
-date: 2026-07-13
+version: "v6.2.5"
+date: 2026-10-23
 summary: Skill结构模板与理论来源参考
 source: 记忆蓝图/03_开发规范/Skill架构规范/Skill模板与来源.md
 complies_with: 文件格式规范 v2.0.0
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
+component: "templates"
+spec_set: "v6.0.0"
+read_when: ["填 SKILL.md 结构模板", "查理论来源"]
+not_for: ["选设计模式", "评质量分级"]
 ---
 
 # Skill 模板与来源
 
 > ✍️ **作者**：皮叔
-> **所属体系**：Skill架构规范 v5.8
+> **所属体系**：Skill 架构规范 v6.0.0
 > **本文件内容**：Skill结构模板 + 来源与参考
 > **何时读**：填模板时查 / 查阅理论来源时
+> **不读的后果**：结构缺段、来源不明。
+> 返回入口/任务页表：[Skill 架构规范](Skill架构规范.md)
 
 ---
 

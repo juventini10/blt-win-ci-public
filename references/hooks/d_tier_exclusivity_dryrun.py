@@ -22,7 +22,7 @@ try:
     import sys as _v9sys; _v9sys.stdout.reconfigure(encoding="utf-8"); _v9sys.stderr.reconfigure(encoding="utf-8"); _v9sys.stdin.reconfigure(encoding="utf-8")
 except Exception: pass
 # 版本载体（与 doenglingz_inject_prompt.py 同律：版本以盘上常量为真源，⛔以文档手写号为准）
-__version__ = "v1.1"  # v1.1：加 D7/D8（标签≡实盘）＋四处同步漂移对账＋第二种变异
+__version__ = "v1.3"  # v1.3(2026-10-26·D2收敛配套)：D2 探测前缀同步为「【童灵域切片命中·」（仅层标题·正文已不灌）·06 §1.6 三态表 D2 行同步；v1.2(2026-10-24·贴错根治批配套)：分类器双名兼容——确认块段首「启动确认块」→注入器已更名「启动确认指令」（存量4红根因·A/B 备份对照实证与注入器 v1.27 改动无关）；否定式逗号后缀用例期望随切片词表现况刷新为 D2（否定判据本体=不升 D3 不变）。
 
 # ── A5 去硬码（2026-10-18·来源唯一性迁移）：路径经 runtime_paths 单一出口 ──
 #   ⛔ 字面 [记忆共享中心]/数字分身/... 硬码；键值改由 runtime_paths.json 供给（改根不改脚本）。
@@ -102,7 +102,7 @@ CASES = [
     # 否定语境真阴性（2026-10-03·你「第一性原理根治」）：W1 v1.14 的召唤词宾语尾特判
     # 原式 `not tail and _is_trigger_tail` 只在「童灵」位于句尾时生效，病句里它跟逗号
     # ⇒ 特判失效 ⇒ 直呼抢先上岗 ⇒ 否定豁免被盖掉。此组为该类假绿的照妖镜。
-    ("否定式提及+逗号后缀→仅 D1（10-03 病句）", "我没有启动童灵，只是想问为什么", {"D1标签", "D1义务"}),
+    ("否定式提及+逗号后缀→不升 D3（10-03 病句·2026-10-24 期望刷新：切片词表现含'为什么'→正档=D2·否定判据本体=无 D3 段）", "我没有启动童灵，只是想问为什么", {"D2义务"}),
     ("否定式提及·原判例→仅 D1（10-01 病句）", "这一轮的对话我没有启动童灵啊", {"D1标签", "D1义务"}),
     ("否定式·助词隔开→仅 D1（10-03 扩窗病句）", "我不是在启动童灵，我是在问", {"D1标签", "D1义务"}),
     ("否定式·前半否定+后半直呼→D3（v1.14 保留判例）", "我没启动童灵。童灵，你来", {"D3段"}),
@@ -133,7 +133,7 @@ def seg_names(out):
         s = blk.strip()
         if not s:
             continue
-        if s.startswith("【启动确认块"):
+        if s.startswith("【启动确认块") or s.startswith("【启动确认指令"):
             if "【童灵·D3 全量模式】" in s or "【童灵·D3 上岗模式" in s:
                 got.add("D3段")
             elif "【童灵·D1 常驻模式" in s:
@@ -150,10 +150,8 @@ def seg_names(out):
             got.add("D2义务")
         elif s.startswith("【童灵档位排序裁决】"):
             got.add("旧裁决段")
-        elif s.startswith("【童灵人格基座"):
-            got.add("基座段")
-        elif s.startswith("【童灵域切片·"):
-            got.add("切片内容")
+        elif s.startswith("【童灵域切片命中·"):
+            got.add("D2义务")
     return got
 
 
@@ -202,7 +200,7 @@ def sweep(script):
         env = {"DONGLINGZ_SLICES_DIR": fx} if name.startswith("D8") else None
         out_raw = run_target(script, prompt, env)
         g = seg_names(out_raw)
-        if name.startswith("D7") and "【童灵域切片·" not in out_raw:
+        if name.startswith("D7") and "【童灵域切片命中·" not in out_raw:
             bad_extra = ["D7 声称 D2 却没有切片正文"]
         elif name.startswith("D8") and "降级留痕" not in out_raw:
             bad_extra = ["D8 未显形降级留痕（读失败被静默吞）"]
@@ -219,9 +217,9 @@ def sweep(script):
             bad.append("应为 %s，实为 %s" % (sorted(want_tiers), sorted(tiers)))
         if "旧裁决段" in g:
             bad.append("旧排序裁决段复活（该段与 §1.6 互斥律方向相反）")
-        # 档位包含关系：D2 须仍带基座+切片；D3 不重复贴基座（全量自带）
-        if tiers == {"D2"} and not ({"基座段", "切片内容"} <= g):
-            bad.append("D2 缺基座或切片（§1.6：D2＝基座+命中切片）")
+        # 档位包含关系：D2 须带命中切片声明（仅层标题·正文已不灌·2026-10-26 皮叔令）；D3 不重复贴基座
+        if tiers == {"D2"} and not ({"D2义务"} <= g):
+            bad.append("D2 缺命中切片声明（§1.6 收敛：D2＝命中切片声明·仅层标题·正文已删）")
         bad += bad_extra
         rows.append((name, sorted(tiers), bad))
         if bad:

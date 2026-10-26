@@ -23,7 +23,7 @@ MC="${AMBER_MC:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 # P13#3 根治（2026-10-19·真库泄监）：无 AMBER_MC 时靠脚本自定位——launchd 语境下
 # 该回退可算出真实档案库并静默监听。保留回退（作者机设计）但必须显形告警 + 拒 HOME 缺省。
 if [ -z "${AMBER_MC:-}" ]; then
-  echo "[WARN] AMBER_MC 未注入，回退自定位 MC=$MC（launchd 拉起必须经 plist 注入 AMBER_MC+HOME·P13#3）" >&2
+  echo "[WARN] AMBER_MC 未注入，回退自定位 MC=${MC}（launchd 拉起必须经 plist 注入 AMBER_MC+HOME·P13#3）" >&2
 fi
 # P13#1：端配置根（谁调用谁定根·step3-done 单一权威，⛔写死 .workbuddy 全端默认）
 _CFGROOT=""
@@ -43,6 +43,17 @@ INTERVAL="${AMBER_INTERVAL:-15}"
 mkdir -p "$LOG_DIR"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$WATCH_LOG"; }
+
+# 启动截断（zhangyan#8·2026-10-26）：守护日志超5MB保留尾1000行，防无界增长
+# （实现承 amber_backup.sh log() 同款：cat 截断不删 inode·多写者 O_APPEND 安全）
+if [ -f "$WATCH_LOG" ]; then
+  _sz=$(wc -c < "$WATCH_LOG" 2>/dev/null | tr -d ' ')
+  if [ "${_sz:-0}" -gt 5242880 ]; then
+    tail -n 1000 "$WATCH_LOG" > "$WATCH_LOG.rot.$$" 2>/dev/null \
+      && cat "$WATCH_LOG.rot.$$" > "$WATCH_LOG" 2>/dev/null
+    rm -f "$WATCH_LOG.rot.$$" 2>/dev/null
+  fi
+fi
 
 # ── 监听目录（与白名单覆盖目录一致） ──
 PATHS=(

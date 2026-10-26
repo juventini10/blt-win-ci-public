@@ -5,7 +5,7 @@
 为什么要有本件：SKILL.md 把流程步骤本体下沉到 references/flow-*.md 后，"读到 flow 文件"
 从"整份正文已在上下文里"变成"多一次 Read 动作"——这一步失败就是新的漂移点（卡B 诚实代价条）。
  prose 熔断器（"读不到就中止"）跨端能力不一、靠 AI 自觉，故升级为脚本 exit code 物理拦截
-（依 铁律-021② 长流程终检须脚本拦截 + Skill架构规范 §1.1 防误>防错）。
+（依 铁律-021② 长流程终检须脚本拦截 + Skill架构规范 pages/01-poka-yoke.md §防误、防错、事后纠错）。
 
 用法：
   python3 flow_read_gate.py                 # 校验四条 flow 装载单齐在位且非空
@@ -149,6 +149,19 @@ def main():
         print("   → 回到 SKILL.md 步2 补齐该流程正文（本件只证「在且非空」，不证内容正确）")
         return 1
     print("✅ flow 装载单在位（%s·各 ≥%d 字节）— 熔断器放行" % ("/".join(flows), MIN_BYTES))
+    # B7-③ 轻回执：gate 通过当轮落 ts+双指纹（没跑 gate 就没账·审计/Stop 可查）
+    try:
+        import hashlib, json, datetime as _dt
+        skill_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "SKILL.md")
+        fp = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()[:12]
+        trail = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "logs", "flow_read_trail.jsonl")
+        with open(trail, "a", encoding="utf-8") as tf:
+            for f in flows:
+                fp_p = os.path.join(REF, "flow-%s.md" % f)
+                tf.write(json.dumps({"ts": _dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+                                     "flow": f, "skill_sha": fp(skill_p), "flow_sha": fp(fp_p)}) + "\n")
+    except Exception as _e:
+        print("  ⚠️ 回执写入失败（不影响判据）：%s" % _e)
     return 0
 
 

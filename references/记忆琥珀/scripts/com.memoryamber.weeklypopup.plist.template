@@ -21,6 +21,6 @@
 	<key>RunAtLoad</key>
 	<true/>
 	<key>StandardErrorPath</key>
-	<string>[记忆共享中心]/记忆琥珀/engine/logs/weekly-popup.err</string>
+	<string>[日志中心]/weekly-popup.err</string>
 </dict>
 </plist>

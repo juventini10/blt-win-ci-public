@@ -48,6 +48,10 @@ doenglingz_level_declare_guard.py —— Stop 钩子·童灵档位声明对账�
   读本回合最终回复文本（Stop stdin JSON）→ 若回复属「童灵在场」（含"童灵"字样）
   但**首段无档位声明**（`童灵·D1/D2/D3` 任一）→ 台账留痕 + alarm。
   声明义务真源：06 §1.6 + 08 §七（v1.3.2）。
+  v1.10（2026-10-24·贴错根治批·20:47 实案·皮叔令「按符合愿景的最优解修正」）：增「首段贴错对账」
+  ——dcl_src 原只审末段声明面，首段誊错档+末段正确档=判绿（锚定型贴错零审计）；现增读回合
+  **首条 assistant 正文**，首段存在档位标记且≠注入档 → tier_alarm（当轮 stdout + 次轮注入器
+  _declare_alarms 回灌双通道·复用既有 tier_alarm 键零新管道）。
 
 契约（守卫规范）：--check(JSON·含 alarm) / --report(明细) ；exit 0 恒定不阻断；失败放行。
 台账：~/.workbuddy/doenglingz_level_declare_state.json（append-only·单行 JSON）。
@@ -213,6 +217,30 @@ def _round_ts(obj):
     return ""
 
 
+def _round_first_text(obj):
+    """v1.10（2026-10-24·贴错根治批）：本回合**第一条** assistant 正文（对账对象=06 §1.6 首段义务）。
+
+    与 _round_text 同源同界（最后一条 user 行之后·⛔不取整份 transcript——上一回合的声明不顶账）；
+    不可得→空串＝不判（宁可不判不猜·保守不冤枉·同 v1.9 三条读面纪律）。
+    """
+    tp = obj.get("transcript_path") if isinstance(obj, dict) else None
+    tr = _load_tr()
+    if not tp or not os.path.isfile(tp) or not tr:
+        return ""
+    try:
+        msgs = tr.iter_messages(tp)
+    except Exception:
+        return ""
+    cut = 0
+    for i, (role, text) in enumerate(msgs):
+        if role == "user" and text.strip():
+            cut = i + 1
+    for role, text in msgs[cut:]:
+        if role == "assistant" and text.strip():
+            return text
+    return ""
+
+
 def _expected_tier(session_id, inject_path=None, as_of=""):
     """取本回合注入算出的档位。
 
@@ -337,6 +365,16 @@ def check():
             tier_alarm = "声明＝%s 与注入器档位＝%s 不符（档位定义权在脚本·真源=inject 台账 d_tier）" % (
                 got_tiers[0], exp_tier)
 
+    # v1.10 首段贴错对账（2026-10-24·贴错根治批）：病根（20:47 实案）＝dcl_src 只审末段声明面——
+    #   首段誊 D1·末段誊 D2 的"锚定型贴错"在末段判绿（台账 exp=D2·got=['D2'] 全绿·错段零审计）。
+    #   06 §1.6 义务本位=首段 → 增读回合首条 assistant 正文。判据保守：首段**存在**档位标记且
+    #   ≠注入档才报（首段无标记=既有规则管辖·⛔不新增假红面）；transcript 不可得→不判。
+    first_seg = _round_first_text(obj)
+    first_tiers = sorted({"D" + m for m in TIER_DECL.findall(first_seg[:HEAD])})
+    if exp_tier and first_tiers and first_tiers != [exp_tier] and not tier_alarm:
+        tier_alarm = ("首段贴错档位：首段=%s 注入档=%s（锚定旧回合仪式块·首段义务真源=06 §1.6）"
+                      % ("/".join(first_tiers), exp_tier))
+
     # ── TSL 档位对账（v1.2）：默认档位必须与 08 的 OUTPUT_LEVEL 一致 ──
     level = _output_level()
     fmt_tree = bool(TSL_TREE.search(txt))
@@ -392,6 +430,7 @@ def check():
              "tree_pos": tree_pos, "tree_pos_alarm": bool(tree_pos_alarm),
              "nond3_tree_alarm": bool(nond3_tree_alarm),
              "session_id": _sid, "declared_tiers": got_tiers, "expected_tier": exp_tier,
+             "first_seg_tiers": first_tiers,
              "tier_alarm": tier_alarm,
              "declared_layers": sorted(declared_l),
              "machine_layers": (sorted(machine) if machine is not None else None),
@@ -536,7 +575,7 @@ def _self_test():
         ("T16 D1回合宣告域 → 不参与错位判(仅D3)", "【童灵·D1 常驻模式（非全量，仅人格基底）】任务域判定：L3行为规则域。" + "正文" * 130, "S1", False),
     ]
     bad = 0
-    print("=== doenglingz_level_declare_guard v1.9 档位对账自测（含树位置+非D3越界+域错位判据）===")
+    print("=== doenglingz_level_declare_guard v1.10 档位对账自测（含树位置+非D3越界+域错位+首段贴错判据）===")
     for name, msg, sid, want in CASES:
         got = run(msg, sid)
         ok = (got == want)
@@ -603,7 +642,35 @@ def _self_test():
     mut3_ok = bool(m17)
     print("  %s MUT3:回退腿置哑 → T17 必红（实得 T17=%s）" % ("\u2705" if mut3_ok else "\u274c", m17))
     print("  %s MUT3:%s 回退腿置哑 → T17 转红（探针在岗且可证伪）" % ("MUT:OK" if mut3_ok else "MUT:FAIL", "OK" if mut3_ok else "FAIL"))
-    total = len(CASES) + len(EXTRA)
+    # ── v1.10 新用例（首段贴错·20:47 实案复刻）：payload 末段声明正确挡不住首段错档审计 ──
+    tp_paste = mk_transcript("tp_paste.jsonl", [
+        ("user", "生成任务卡"),
+        ("assistant", "【童灵·D1 常驻模式（非全量，仅人格基底）】\n我在。旧回合块被误誊。"),
+        ("assistant", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】\n正文收尾。"),
+    ])
+    tp_first_ok = mk_transcript("tp_first_ok.jsonl", [
+        ("user", "生成任务卡"),
+        ("assistant", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】\n正文。"),
+        ("assistant", "结论收尾。"),
+    ])
+    EXTRA2 = [
+        ("T22 首段D1·末段D2·台账D2 → 必报(20:47实案)", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】正文", "S2", tp_paste, True),
+        ("T23 首段D2·台账D2 → 不报(正例对照)", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】正文", "S2", tp_first_ok, False),
+    ]
+    for name, msg, sid, tp, want in EXTRA2:
+        got = run(msg, sid, tp=tp)
+        ok = (got == want)
+        bad += 0 if ok else 1
+        print("  %s %-46s 期望报警=%-5s 实得=%s" % ("\u2705" if ok else "\u274c", name, want, got))
+    # MUT4：置哑 _round_first_text → T22 必转绿（证明 T22 真吃首段源·非恒真探针）
+    orig_rft = _round_first_text
+    globals()["_round_first_text"] = lambda o: ""
+    m22 = run("【童灵·D2 切片模式（命中切片：L3 · 非上岗）】正文", "S2", tp=tp_paste)
+    globals()["_round_first_text"] = orig_rft
+    mut4_ok = not m22
+    print("  %s MUT4:首段源置哑 → T22 必转绿（实得 T22=%s）" % ("\u2705" if mut4_ok else "\u274c", m22))
+    print("  %s MUT4:%s 首段源置哑 → T22 转绿（探针在岗且可证伪）" % ("MUT:OK" if mut4_ok else "MUT:FAIL", "OK" if mut4_ok else "FAIL"))
+    total = len(CASES) + len(EXTRA) + len(EXTRA2)
     orig_ml = _machine_layers
     globals()["_machine_layers"] = lambda sid, ledger_path=None: None
     m13 = run("【童灵·D3 上岗模式】任务域判定：L3行为规则域。" + "正文" * 130
@@ -611,8 +678,9 @@ def _self_test():
     globals()["_machine_layers"] = orig_ml
     mut2_ok = not m13
     print("  %s MUT2:W3台账源置哑 → T13 必哑（实得 T13=%s）" % ("✅" if mut2_ok else "❌", m13))
-    print("合计 %d/%d 过（含 v1.9 新用例 %d 条·分母实算）" % (total - bad, total, len(EXTRA)))
-    return 0 if (bad == 0 and mut_ok and mut2_ok and mut3_ok) else 1
+    print("合计 %d/%d 过（含 v1.9 新用例 %d 条 + v1.10 新用例 %d 条·分母实算）" % (
+        total - bad, total, len(EXTRA), len(EXTRA2)))
+    return 0 if (bad == 0 and mut_ok and mut2_ok and mut3_ok and mut4_ok) else 1
 
 
 if __name__ == "__main__":

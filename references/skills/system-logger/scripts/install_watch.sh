@@ -5,7 +5,7 @@
 #   旧做法 = 仓库里存一份写死绝对路径的 plist → 发布物含个人态字面量
 #   （/Users/{用户名}/个人AI档案/…）→ desensitize 门禁 ❌ 发布阻断；
 #   且别人装完路径全指向我的家目录，看守器根本起不来（静默失效）。
-#   launchd 不展开 ProgramArguments 里的 $HOME，所以"把路径改成 $HOME/…"是假修
+#   launchd 不展开 ProgramArguments 里的 ${HOME}，所以"把路径改成 $HOME/…"是假修
 #   ——骗过扫描器却引入真故障。正确解 = 源头不产生个人态：运行时渲染。
 #
 # 用法：bash install_watch.sh [--self-test] [--uninstall]
@@ -54,9 +54,9 @@ render_plist() { # $1=输出路径 $2=被看守脚本路径（缺省=本脚本�
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>[记忆共享中心]/工作日志/系统日志/.watch.log</string>
+    <string>[日志中心]/.watch.log</string>
     <key>StandardErrorPath</key>
-    <string>[记忆共享中心]/工作日志/系统日志/.watch.err</string>
+    <string>[日志中心]/.watch.err</string>
 </dict>
 </plist>
 PLIST_EOF

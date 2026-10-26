@@ -44,7 +44,13 @@ import datetime
 import hashlib
 
 # 输出协议单一真源（2026-09-04 根治：本端裸文本被产品判"no parsed output"整轮丢弃）
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # 自推导：作者侧=开发工具/·装机态=hooks/（同目录件互见·两环境通用·2026-09-20 根治 devtools 手工同步）
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# 2026-10-23：补父目录（作者侧真源=脚本中心/·hook_protocol.py 在父目录）
+#   根因：分身/ 直跑时 hook_protocol 不在 sys.path → import 失败被 except 吞成 _hp=None
+#        → 走降级裸文本 → 协议留痕一行不写（成长箱 内部记录）→ L3 收讫判据恒缺
+#   ⚠️ 形态零变化：import 成功后走 hook_protocol.detect()，各端既有判定逐字不变
+#      （WB 指纹=text·Qoder CN argv 声明=json），stdout 与降级裸文本同形，只多回一行留痕
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 自推导：作者侧=开发工具/·装机态=hooks/（同目录件互见·两环境通用·2026-09-20 根治 devtools 手工同步）
 try:
     import hook_protocol as _hp
 except Exception:
@@ -54,7 +60,8 @@ _PAYLOAD = {}   # 本回合 stdin 载荷（供协议判定/留痕/端归属）
 _SRC_LABEL = ""  # --src argv 端标注（AutoClaw 等插件转发端·台账 src 字段用）
 # 版本机械载体：06 §1.6 与 CHANGELOG 长期以"v1.7"等手写号引用本件，但盘上无版本字段可对账
 # （=守卫编写规范 §3.5「版本悬空引用」同型）。自 v1.8 起版本以本常量为真源，文档引用须与之一致。
-__version__ = "v1.26"  # v1.26(2026-10-19·V2.2.4增量Loop对抗审查根治)：安静模式进入检测四修——①反向话术豁免(关闭/退出类不得翻转成开启·审查4.1)②疑问形态豁免(≤30字问句不当命令·审查4.2)③C类机器块过滤拉平(审查4.4)④全出现位判定(审查4.5)。新增安静用例组入w1_tier_regress。
+__version__ = "v1.29"  # v1.29(2026-10-26·D2收敛)：W3 切片命中由「整本切片正文灌入」收敛为「仅层标题声明」（与 D1 标签同构·声明→③→⑤）；v1.28(2026-10-26·待办B)：新增 _smoke_sticky_overwrite 回归冒烟——盯"同 session 事件腿 D3 被后续 mode=json 后写覆盖"形态（10-11 事故同型·dryrun 域外），四断言=同session仍D3/d3_sticky显式记录/标签随档/跨session+超窗负例。上版 v1.27： v1.27(2026-10-24·皮叔令「按符合愿景的最优解修正」贴错根治批)：启动确认块首因位修正——原落注入尾部（D2/D3 排在切片正文/契约长文后=注意力低谷），20:47 实案注入D2·AI首段誊成上回合D1旧块（锚定）；挪到注入最顶（Skill架构规范 v6.2 编排律L1·位置决定遵守率）。配套 declare_guard v1.10 首段贴错对账。
+# v1.26(2026-10-19·V2.2.4增量Loop对抗审查根治)：安静模式进入检测四修——①反向话术豁免(关闭/退出类不得翻转成开启·审查4.1)②疑问形态豁免(≤30字问句不当命令·审查4.2)③C类机器块过滤拉平(审查4.4)④全出现位判定(审查4.5)。新增安静用例组入w1_tier_regress。
 # v1.25(2026-10-19·安静模式实装·你定稿「D3只认启动童灵+事件腿不关」)：①新增quiet_mode.flag持久状态②w1_fired加安静模式门③_inject加进入检测。负例待跑：含安静模式消息不进D3/启动童灵穿透退出/成长箱事件腿不受影响。  # v1.23(2026-10-08·Hermes·皮叔质证「我没明确说启动童灵，你还是启动了」假触发根治轮)：四处判据精化——①W1_TRIGGERS 补「童灵上岗」(p7漏召实证) ②否定语境扩跨词(原只认紧贴trigger的否定⇒「不打算用童灵」漏网·加窗口内含否定字+句读隔断防跨句误豁免) ③宽松匹配⑤剔除单字动词「用/去」+只认「童灵」之后窗口(方向性：动词在前=童灵是宾语「帮我看下童灵的设计」) ④句尾直呼收紧(要求「童灵」前一字为句读/句首·宾语位「我想了解一下童灵」不再当呼唤)。预注册 6 新用例(n6-n10+p7)·回归器 11→16 全绿·原 dryrun 19/19 未破·扩展压测 38/38。
 # v1.18(2026-10-07·Qoder CN·你令按三明治推荐开工)：P4「全域」fallback 改名人话化=「未命中域（仅基底）」；P3①补载义务入契约①（宣告域≠词面域须真Read切片+显形「已补载：LN」·对账=level_declare_guard v1.8）
 #   v1.17（2026-10-06·你反馈「指令行太难看·没仪式感」）：确认块拆两层——AI 指令行（⛔不进回复）
@@ -97,8 +104,26 @@ def detect_end():
 TIER_ORDER = ("D3", "D2", "D1")
 
 # v1.13 多端配置根（2026-09-30 L3审计根治·B1旁路缝正式化）：
-# DOENGLINGZ_CONFIG_DIR（install_scripts --platform 写进钩子命令）> WORKBUDDY_CONFIG_DIR（向后兼容缝·lobsterai 已在用）> ~/.workbuddy（旧默认行为）
-_DLZ_CFG = os.environ.get("DOENGLINGZ_CONFIG_DIR") or os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy")
+# DOENGLINGZ_CONFIG_DIR（install_scripts --platform 写进钩子命令）> WORKBUDDY_CONFIG_DIR（向后兼容缝·lobsterai 已在用）
+# > --src 端根映射（2026-10-23 MiniMax Code 端接入·端隔离铁律：⛔不设 env 时旧默认 ~/.workbuddy 会把本端台账写进 WorkBuddy 目录=串端）
+# > ~/.workbuddy（旧默认行为·对既有端逐字零影响）
+_SRC_ROOTS = {"minimaxcode": os.path.expanduser("~/.minimax"), "qoderdesktop": os.path.expanduser("~/.qoder")}  # 2026-10-23 MiniMax Code；2026-10-24 Qoder Desktop
+
+
+def _dlz_cfg() -> str:
+    """端根推导：env 双键 > --src 端根映射 > 旧默认 ~/.workbuddy。
+    ⚠️ 既有端行为逐字不变（env 优先·映射表只含 minimaxcode）·新增端只改 _SRC_ROOTS 一行。"""
+    src = ""
+    _a = sys.argv[1:]
+    if "--src" in _a and _a.index("--src") + 1 < len(_a):
+        src = _a[_a.index("--src") + 1].strip().lower()
+    return (os.environ.get("DOENGLINGZ_CONFIG_DIR")
+            or os.environ.get("WORKBUDDY_CONFIG_DIR")
+            or _SRC_ROOTS.get(src)
+            or os.path.expanduser("~/.workbuddy"))
+
+
+_DLZ_CFG = _dlz_cfg()
 STATE_FILE = os.path.join(_DLZ_CFG, "doenglingz_inject_state.json")
 # ── 安静模式（2026-10-19 你定稿·D3 只认"启动童灵"）──────────────────────────
 QUIET_MODE_FILE = os.path.join(_DLZ_CFG, "quiet_mode.flag")
@@ -554,8 +579,7 @@ def _declare_alarms(session_id: str) -> str:
     v1.21：sid/_tskey 归一比对（FU-116 判假线·双重失配根治）。"""
     try:
         state = os.path.join(
-            os.environ.get("DOENGLINGZ_CONFIG_DIR")
-            or os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy"),
+            _dlz_cfg(),
             "doenglingz_level_declare_state.json")
         cur = (os.environ.get("ZCODE_DECLARE_CURSOR")
                or os.path.expanduser("~/.zcode/state/declare_alarm_cursor.json"))
@@ -770,7 +794,9 @@ def _inject(prompt: str) -> None:
         # 端名由 --src/载荷指纹机械推导，徽标映射=各端示例（守卫编写规范 §十 合法形态·非写死单端身份）。
         _END_EMBLEMS = {"workbuddy": ("WorkBuddy", "⚡"), "dsh": ("黑鲸", "⛰️"),
                         "traework": ("Trae Work", "🤖"), "traecode": ("Trae CN", "💡"),  # 2026-10-09 你令：合并单端更名 Trae CN（key 保留 traecode=台账兼容·图标待三选一）
-                        "qodercn": ("Qoder CN", "🔮")}  # 仅收录有署名实证的端·新端按其署名规范增补（Trae 系两行=2026-09-30·真源 IDENTITY.md 判定表；qodercn=2026-09-30·真源 core-identity.md 署名行+钩子路径指纹 /.qoder-cn/）
+                        "qodercn": ("Qoder CN", "🔮"),
+                        "qoderdesktop": ("Qoder Desktop", "🖥️"),
+                        "minimaxcode": ("MiniMax Code", "🐰")}  # 2026-10-23 MiniMax Code 端接入·徽标🐰与端署名规范一致
         _src_key = (_SRC_LABEL or _probe_host or "").strip().lower()
         if _src_key in _END_EMBLEMS:
             _dn, _em = _END_EMBLEMS[_src_key]
@@ -847,7 +873,9 @@ def _inject(prompt: str) -> None:
     #     「分析…本质…为什么」→ D1标签 + D1义务 + D2义务 + 裁决段 四段并存
     #     「启动童灵，分析…本质」→ D3段 + D2义务 并存（无裁决段管这一对）
     #   本件改为**先定档再贴标**：档位由脚本算出唯一值 _d_tier，标签随档位单选，
-    #   基座段按 §1.6「D2 = 基座 + 命中切片」保留（⛔别顺手把基座也 gate 掉＝D2 会变成裸切片）。
+    #   2026-10-26 收敛（皮叔令·去冗·全档位删人格基座④+切片正文·仅留命中声明）：D1/D2 均不再注入
+    #   HEXACO 基座段；D2 现定义为「命中切片声明（仅层标题·⛔灌正文）」，与 D1 声明风格同构；
+    #   守卫 d_tier_exclusivity_dryrun.py 第153/221行已同步改为 D2 仅需「切片命中声明」。
     _d3 = bool(_w1_word) or _sticky
     # 切片正文先读一遍（2026-09-26 三修）：D2 的定义是"基座 + **已注入的**命中切片"，
     # ⛔不是"词表命中"——命中却读不到正文（文件缺失/为空/编码异常）时若仍贴 D2，
@@ -896,15 +924,16 @@ def _inject(prompt: str) -> None:
         # W4 降级(p_txt 空=切片不可读)时不显示——此时分身真不在场，如实静默。
         # 互斥（D3⊃D2⊃D1）：D3 回合由 D3 段承担声明；D2 回合由 D2 报告行承担声明。
         if not _d2:
-            parts.append("【童灵·D1 常驻模式（非全量，仅人格基底）】")
             # D 轴对称补齐（2026-09-20·皮叔问「是不是每一层 D123 都没对齐」→ 实盘核查发现）：
             # D3 有执行侧义务⓪、D2 有显示义务段，**唯独 D1 的复述义务在注入层为空**——
             # 06 §1.6 要求「任一档位在场，回复首段 ✅DO 显式声明档位名」（D1 照抄注入标签），
             # 但注入侧只给标签、不给义务 → D1 回合必然漏声明（与 D3 曾漏声明同源·同病灶）。
             # v1.16 确认块化（2026-10-06·皮叔拍板「脚本拼装·AI 照抄」）：义务从「照抄标签」升级
             # 为「照抄两行确认块」（标签+人话在场行·措辞你定稿「要活人感·去文绉绉」）。
+            # 2026-10-26 收敛（皮叔令·去冗·与 Qoder CN 对齐）：删独立的①单行标签（与②块内标签
+            # 重复⇒触发档位不变量告警）；去掉「启动确认指令」AI 专用前缀（只喂 AI 照抄指令、用户
+            # 无需见）。块首仍以「【童灵·D1 常驻模式」开头⇒守卫第145行照常识别为 D1标签。
             parts.append(
-                "【启动确认指令·AI 专用·本行与括注⛔不进回复】首段原样照抄下方仪式块（零改写·漏贴=守卫留痕·真源=06 §1.6）——\n"
                 "【童灵·D1 常驻模式（非全量，仅人格基底）】\n"
                 "我在。日常的事直接说；要正式开工，说「启动童灵」。"
             )
@@ -919,13 +948,18 @@ def _inject(prompt: str) -> None:
         #   ⇒ 形态问题按形态解，⛔用新机制去追；且 守卫规范 §3.4·扩 呈现格式禁拦律 +
         #   reply_format_guard(08-13退役)/l3_conclusion_guard(09-05永久关闭) 两具前例封死「扫回复文本」路线。
         # 落点选 D1/D2 共用此处（单一来源）：⛔在两个分支各贴一份＝同句双本账，改一处必漏另一处。
+        # ── W3 域切片命中声明（2026-10-26 收敛·皮叔令·与 D1 声明风格统一·⛔不灌正文）──
+        # 原实现把整本切片手册（L2 38行/L3 147行…）原样灌入，与 D2「轻量命中提醒」定位矛盾
+        # 且多已在 SOUL/USER 常驻重复；改为仅声明命中层标题，真需细读按 SLICES_DIR 取真源。
+        # 顺序：声明(切片/D1标签)→③→⑤，D1/D2 同构（D2 切片声明置顶＝与 D1 标签同地位）。
+        for _ly, _c in _slice_bodies:
+            parts.append("【童灵域切片命中·%s】" % _ly)
         parts.append(
             "【童灵档位产物边界·强制】本档非 D3 ⇒ ⛔无 TSL 验证树：树的义务仅属 D3 上岗回合"
             "（真源=08 §七 触发条件＋06 §1.6 互斥律）。⛔不得自行运行 tsl_verify.py 产树、"
             "⛔不得在回复中输出或 relay 树——本档钩子不注入树＝本档无此义务，"
             "⛔以「附上更完整/更显尽责」为由跨档取产物。"
         )
-        parts.append("【童灵人格基座·%s】\n%s" % (p_tier, p_txt))
         # ── 立场卡检索·行为契约（2026-10-01·你裁决"把工作做好做完"·修"能搜不搜"行为留白）──
         # 背景：品格条目"先翻立场库"是概率层软约束（激活哲学§三最弱档），未绑工具=靠不住。
         # 本条款把工具绑定带进 D1/D2 常驻注入（D3 回合由 W1 契约⑧承担，互斥不重复）。
@@ -948,10 +982,6 @@ def _inject(prompt: str) -> None:
         except Exception:
             pass
 
-    # W3 域切片注入式路由
-    for _ly, _c in _slice_bodies:
-        parts.append("【童灵域切片·%s】\n%s" % (_ly, _c))
-
     # 命中而未注入＝必须显形（Fail-Loud·2026-09-26 三修）
     if _slice_fail and not _d3:
         parts.append(
@@ -961,21 +991,6 @@ def _inject(prompt: str) -> None:
             "（切片由 k2_slice_generator/生成器单向产出，⛔禁手抄）。"
             % ("、".join(_layer_label(l) for l in layers), "、".join(_slice_fail))
         )
-
-    # 显示义务（2026-09-03·治"注入了但你看不到"——你质证"很少看到你显示匹配层级"）：
-    # 切片标签只进 AI 上下文=对你静默，匹配层真实命中却不可观测（违可观测原则）。
-    # 执行侧义务：回复中显式报告命中层级，使按需加载对你可见。
-    if _injected:
-        labeled = "、".join(_layer_label(l) for l in _injected)
-        if not _d3:
-            # D3 回合不追加本段：D3 义务①已要求"本回合任务域判定一句话·复用 _match_layers 结果"，
-            # 再贴 D2 报告＝同回合两档（06 §1.6 互斥律·2026-09-26 根治·信息不丢只去重）。
-            parts.append(
-                "【启动确认指令·AI 专用·本行与括注⛔不进回复】首段原样照抄下方仪式块（零改写·漏贴=守卫留痕·⛔同回合不再另贴 D1 标签）——\n"
-                "【童灵·D2 切片模式（命中切片：%s · 非上岗）】\n"
-                "这单活正好踩中「%s」这个切片，我按这个切片的规矩来办。"
-                % (labeled, labeled)
-            )
 
     # D 轴互斥不变量（2026-09-26 根治·替旧"排序裁决段"）：旧裁决段（09-20 better-harness 复盘补）
     #   在 D1 与 D2 义务同现时输出"首段先照抄 D1、紧随其后报 D2"——那是把**叠加**写成制度，
@@ -989,6 +1004,15 @@ def _inject(prompt: str) -> None:
             "——这是本注入器的代码缺陷，非你措辞问题；按 _d_tier=%s 单档呈现，并请回报该缺陷。"
             % (len(_label_heads), _d_tier or "未知")
         )
+
+    # v1.27 首因位修正：启动确认块（AI 首段照抄义务的合同）挪到注入最顶——D2 原排在切片正文
+    #   之后、D3 原排在契约长文之后（物理位≈注入尾部=注意力低谷），20:47 实案即在此位被锚定
+    #   旧块盖过。统一律：确认块恒居 index 0（块内自含完整仪式块·自足）；D1 标签行退居其后
+    #   仍完整（dryrun 双名分类器两路识别不受影响）。
+    for _i, _p in enumerate(parts):
+        if _p.startswith("【启动确认指令") and _i > 0:
+            parts.insert(0, parts.pop(_i))
+            break
 
     if parts:
         mode, host, reason, conflict = _probe()
@@ -1109,6 +1133,88 @@ def _smoke_d3():
         "D3 冒烟：末条台账 d_tier=%r（期望 D3·说明段构造未走完或档位判定退化）" % (tiers[-1] if tiers else None)
 
 
+def _smoke_sticky_overwrite():
+    """同 session 后写覆盖回归冒烟（2026-10-26·接续卡待办B·10-11 事故同型回归）。
+
+    病形：2026-10-11 20:55 事件腿写 d_tier=D3，21:10 同 session 两条 mode=json 把档位
+    改写出 D1——"真源定了但末行可被后写覆盖"。当时治法是 _event_leg_d3_sticky（粘滞窗口
+    180min），但**无任何可执行判据盯住这个写序形态**（d_tier_exclusivity_dryrun 只测输出
+    文本互斥，不测台账序列）。本冒烟补该面：四断言缺一即红。
+    夹具同 _smoke_d3（临时台账/_emit 屏蔽），⛔不碰真台账。安静模式 flag 在场时粘滞
+    被压制属既定设计（2026-10-19 你定稿），此时本冒烟不适用——自检不处于安静模式。
+    """
+    global _PAYLOAD, _SRC_LABEL, STATE_FILE, W3_LEDGER, W4_SAMPLE_FILE, _emit
+    import io, json as _j, tempfile
+    tmp = tempfile.mkdtemp(prefix="doenglingz_sticky_smoke_")
+    sfile = os.path.join(tmp, "state.jsonl")
+    SID = "sticky_smoke"
+    keep = (_PAYLOAD, _SRC_LABEL, STATE_FILE, W3_LEDGER, W4_SAMPLE_FILE, _emit)
+    cap = []
+    try:
+        STATE_FILE = sfile
+        W3_LEDGER = os.path.join(tmp, "w3.jsonl")
+        W4_SAMPLE_FILE = os.path.join(tmp, "w4.jsonl")
+        _SRC_LABEL = "selfcheck_sticky"
+        _emit = lambda ctx: cap.append(ctx)
+
+        def _rows():
+            try:
+                with open(sfile, encoding="utf-8") as f:
+                    return [_j.loads(l) for l in f if l.strip()]
+            except Exception:
+                return []
+
+        def _seed_event_d3(sid, ts):
+            # 事件腿行格式与 doenglingz_skill_onduty_tier_promote._append_row 同构
+            with io.open(sfile, "a", encoding="utf-8") as f:
+                f.write(_j.dumps({"session_id": sid, "ts": ts, "d_tier": "D3",
+                                  "mode": "skill_event", "src": "selfcheck",
+                                  "w1": "skill_start:sticky_smoke", "inject_len": 0,
+                                  "inject_sha": "", "w3_layers": [],
+                                  "slices_injected": 0, "slices_failed": 0},
+                                 ensure_ascii=False) + chr(10))
+
+        import datetime as _dt
+        _now = _dt.datetime.now
+
+        # ①② 同 session 后写覆盖形态：事件腿 D3 → 词面不命中回合 → 末行仍 D3 且标签=D3
+        _seed_event_d3(SID, _now().isoformat(timespec="seconds"))
+        _PAYLOAD = {"prompt": "随便聊聊天气", "session_id": SID}
+        _inject("随便聊聊天气")
+        r = _rows()
+        assert r and r[-1].get("d_tier") == "D3", \
+            "sticky①：事件腿 D3 后同 session 末行=%r（期望 D3·后写覆盖路径复发）" % (r[-1].get("d_tier") if r else None)
+        assert r[-1].get("d3_sticky") is True, \
+            "sticky①b：末行 d3_sticky=%r（期望 True·须显式记录粘滞优先）" % r[-1].get("d3_sticky")
+        _out = "\n\n".join(cap)
+        # ⛔词面判别（dryrun 文件头同款坑·其 L14 明文）：D3 义务正文内嵌 D1 标签
+        #   行作对照说明，子串 grep 必假红——按空行分段、段首行定性。
+        _heads = [b.strip().splitlines()[0] for b in _out.split("\n\n") if b.strip()]
+        assert any(h.startswith("【童灵·D3") for h in _heads) and \
+            not any(h.startswith("【童灵·D1") for h in _heads), \
+            "sticky②：注入标签段未随 _d_tier=D3（档位与标签重新分家）"
+
+        # ③ 跨 session 负例：他会话的 D3 事件不顶本账（sid 不符→不粘滞）
+        cap[:] = []
+        _PAYLOAD = {"prompt": "随便聊聊天气", "session_id": "other_sid"}
+        _inject("随便聊聊天气")
+        r = _rows()
+        assert r[-1].get("d_tier") in ("D1", "D2"), \
+            "sticky③：跨会话串档（他 session 的 D3 顶了本账）=%r" % r[-1].get("d_tier")
+
+        # ④ 超窗负例：事件腿超 180min 应回落（防粘滞变永久 D3）
+        cap[:] = []
+        _old = (_now() - _dt.timedelta(minutes=181)).isoformat(timespec="seconds")
+        _seed_event_d3(SID + "_oldwin", _old)
+        _PAYLOAD = {"prompt": "随便聊聊天气", "session_id": SID + "_oldwin"}
+        _inject("随便聊聊天气")
+        r = _rows()
+        assert r[-1].get("d_tier") in ("D1", "D2"), \
+            "sticky④：超窗仍粘滞（D3 变永动机）=%r" % r[-1].get("d_tier")
+    finally:
+        (_PAYLOAD, _SRC_LABEL, STATE_FILE, W3_LEDGER, W4_SAMPLE_FILE, _emit) = keep
+
+
 def _selfcheck() -> None:
     _selfcheck_fail = False
     print("=== doenglingz_inject_prompt.py 挂载自检 ===（版本真源=本件 __version__=%s）" % __version__)
@@ -1184,6 +1290,15 @@ def _selfcheck() -> None:
         print("❌ %s: %s" % (type(_e).__name__, _e))
         print("           ⛔本件 D3 路径不可执行 ⇒ 每次「启动童灵」都会静默失效"
               "（2026-09-30 实证连续崩 7 次·AI 只能自造 D1 标签）")
+        _rc = 1
+    # ── 粘滞覆盖回归冒烟（2026-10-26·待办B·10-11 后写覆盖病形盯哨）──
+    print("  [sticky 冒烟] ", end="")
+    try:
+        _smoke_sticky_overwrite()
+        print("✅ 同 session 事件腿 D3 后写不覆盖 + 跨会话/超窗负例 通过")
+    except Exception as _e:
+        print("❌ %s: %s" % (type(_e).__name__, _e))
+        print("           ⛔粘滞优先规则失守 ⇒ 台账末行可被后写改写回 D1，PAT-069 分叉路径复活")
         _rc = 1
     print("=== 自检结束 ===")
     sys.exit(1 if _selfcheck_fail else _rc)

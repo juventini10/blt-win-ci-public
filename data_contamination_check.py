@@ -96,7 +96,7 @@ ACHIEVE_LEGACY_HASHES = frozenset({
 })
 # C31 声明：本路径＝作者侧旧包标记（生产机有该目录才命中）；端用户机器恒不存在属预期，
 #   已登记 personal-path-whitelist.json（唯一登记处）——门禁长期共账，⛔ 另开豁免口。
-_ACH_LEAK_MARKER_DIR = os.path.expanduser("~/个人AI档案/发布库/布洛陀-安装包-备份版")
+_ACH_LEAK_MARKER_DIR = os.path.expanduser("[记忆共享中心]/发布库/布洛陀-安装包-备份版")
 
 def _ach_h(t):
     return hashlib.sha256(chr(10).join(ln.rstrip() for ln in t.splitlines() if ln.strip()).encode(chr(117)+chr(116)+chr(102)+chr(45)+chr(56))).hexdigest()

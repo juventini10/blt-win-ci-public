@@ -19,6 +19,7 @@
 try:
     import sys as _v9sys; _v9sys.stdout.reconfigure(encoding="utf-8"); _v9sys.stderr.reconfigure(encoding="utf-8"); _v9sys.stdin.reconfigure(encoding="utf-8")
 except Exception: pass
+import argparse
 import datetime
 import os
 import subprocess
@@ -46,14 +47,19 @@ def _run(script, args=()):
 
 
 class Patrol:
-    def __init__(self):
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
+    def __init__(self, dry=False):
+        self.dry = dry
+        if not dry:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
         # 一轮一个时间戳（与 .sh 的 NOW 语义一致：四段留痕同轮同刻·dashboard 按日期窗口聚合）
         self.stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.alerts = []      # 触达层告警原文（不含 DUE| 技术前缀）
         self.snap_state = "skip"
 
     def log(self, text):
+        if self.dry:
+            print(f"{self.stamp} {text}")
+            return
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"{self.stamp} {text}\n")
 
@@ -66,7 +72,8 @@ class Patrol:
             self.alerts.append("【快照缺口】update_snapshot_from_diary.py 缺失")
             return
         try:
-            r = _run("update_snapshot_from_diary.py")
+            snap_args = ("--dry-run",) if self.dry else ()
+            r = _run("update_snapshot_from_diary.py", snap_args)
         except OSError as exc:
             self.snap_state = "fail"
             self.log(f"[快照] 更新失败（无法启动: {exc}）→ 数据可能滞后")
@@ -128,7 +135,7 @@ class Patrol:
         无告警轮直接 return ⇒ 一次失败留下的告警永久存在，下次「小美」仍按旧告警
         报假红，端用户无法判断是历史还是当前。成功轮归档 + 归档名带时间戳=新鲜度可判。
         """
-        if not PENDING_FILE.exists():
+        if self.dry or not PENDING_FILE.exists():
             return
         try:
             arc_dir = LOG_DIR / "archive"
@@ -140,6 +147,10 @@ class Patrol:
             self.log("[触达] 旧告警归档失败: %s" % exc)
 
     def touch(self):
+        if self.dry:
+            joined = "、".join(self.alerts) if self.alerts else "无告警"
+            print(f"[dry-run] 触达层跳过（不弹窗/不写 pending）：{joined}")
+            return
         if not self.alerts:
             self.log("[触达] 无事不打扰（静默）")
             self._retire_pending()
@@ -181,8 +192,16 @@ class Patrol:
         self.log(f"[完成] 巡检结束（快照={self.snap_state}）")
 
 
-def main():
-    p = Patrol()
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        prog="awaken_patrol.py",
+        description="记忆健康自动巡检执行体（规格真源 references/patrol.md §3）",
+    )
+    ap.add_argument("--dry-run", action="store_true",
+                    help="只检查不落盘：快照走 --dry-run、不写巡检日志、不弹窗、不动 pending")
+    ap.add_argument("--version", action="version", version="awaken_patrol 1.1.0")
+    args = ap.parse_args(argv)
+    p = Patrol(dry=args.dry_run)
     p.check_snapshot()
     p.check_distill()
     p.touch()

@@ -57,7 +57,9 @@ if [ -f "$CHLOG" ]; then
     [[ "$CURRENT" =~ 删除.*$TOKEN_ESC|废弃.*$TOKEN_ESC|移除.*$TOKEN_ESC ]] && continue
     # 2026-09-20：裸文件名 token 允许命中包内任意子目录（references/scripts/ 等落位）——
     #   原只查包根=CHANGELOG 写裸名即误报"声称但不存在"（v1.6 铁律硬墙五件实锤）
-    if [ ! -f "$PKG/$token" ] && ! find "$PKG" -name "$token" ! -path "*/.git/*" -print -quit 2>/dev/null | grep -q .; then
+    # 2026-10-24：令牌可为泛名后缀（如 `install-task.ps1` 实为 *-install-task.ps1）——精确未中再按后缀兜一次
+    if [ ! -f "$PKG/$token" ] && ! find "$PKG" -name "$token" ! -path "*/.git/*" -print -quit 2>/dev/null | grep -q . \
+       && ! find "$PKG" -name "*$token" ! -path "*/.git/*" -print -quit 2>/dev/null | grep -q .; then
       ISSUES="$ISSUES\n  声称但不存在: $token"
     fi
   done < <(echo "$CURRENT" | grep -o '`[^`]*`')
@@ -163,6 +165,8 @@ while IFS= read -r file; do
   while IFS= read -r line; do
     lno=$(echo "$line" | cut -d: -f1)
     content=$(echo "$line" | cut -d: -f2-)
+    # 2026-10-24：同行多个占位符=两处独立字符串，sed 全行替换会造伪双路径（如 deident_paths 双 expanduser）——跳过
+    [ "$(printf '%s' "$content" | grep -o '\[记忆共享中心\]' | wc -l | tr -d ' ')" -gt 1 ] && continue
     # 模拟: [记忆共享中心] → Mac 家目录形态（值见 SIM_ROOT_MAC·动态拼接）
     mac_sim=$(echo "$content" | sed "s|\[记忆共享中心\]|${SIM_ROOT_MAC}|g")
     # 检测双重盘符: /C:/ 或 C:/C:/

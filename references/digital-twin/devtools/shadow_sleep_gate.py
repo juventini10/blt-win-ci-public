@@ -37,6 +37,10 @@ import sys
 from datetime import date, datetime, timedelta
 
 SSOT = os.path.expanduser("[记忆共享中心]/潜意识层/SHADOW.md")
+# 2026-10-23 P6a 修断链：原为未替换的发布占位符 "~/[日记仓库]/1-每日计划/01-日记"
+# → 自 2026-10-05 起每日 launchd 巡检均报"未读到任何 sleep_duration 数据"，机械睡眠闸完全空转
+# （实证：shadow_gate_cron.log 连续 12 次该告警；10/06 睡眠触底 3.47h 未生成任何 SHADOW 条目）。
+# 真源 = Obsidian vault 的日记目录（与 daily-buddy dbenv.DIARY_DIR 同口径）。
 DIARY_DIR = os.path.expanduser("~/[日记仓库]/1-每日计划/01-日记")
 
 GATE_THRESHOLD = 5   # shadow-protocol v3.7：连续≥5晚<6h 自动写入

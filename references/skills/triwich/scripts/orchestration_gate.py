@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""orchestration_gate.py — 编排结构闸（F10·v1.0·2026-10-22）
+r"""orchestration_gate.py — 编排结构闸（F10·v1.2·2026-10-24）
+
+v1.1（2026-10-24·母本 v1.2 反向对账批）：行号锚判据 \d{2,}→\d{1,}——单位数 L 锚入拦（growth-box P3 实证缝·三副本同批）。
 
 TRUTH_OF: 编排四律与四区骨架唯一真源 = 方案 v1.1（自定义层/待完成工作/2026-10-22-三明治编排革命重构-方案v1.1.md）
 判据（三条，全绿才 exit 0）：
@@ -25,7 +27,10 @@ TEMPLATE_HEADING_KEY = "结论块模板"
 SIGNPOST_KEY = "指路牌"
 TEMPLATE_TAIL_RATIO = 0.70
 
-RE_LINENO = re.compile(r"\bL\d{2,}\b")
+RE_LINENO = re.compile(r"\bL\d{2,}\b")  # 行号锚（两位以上·L451 形态）
+RE_LINENO_SHORT = re.compile(r"(?:见|详见|参见|位于|区间|行号?|@|±)\s*L\d{1,2}\b")  # 引导词+短行号锚（「见 L7」缝修补·形态级精细化——纯 \d{1,} 一刀切误伤 triwich L1/L2/L3 层级术语·2026-10-24 实证回撤）
+RE_BODY_FILE_L = re.compile(r"(?:\.md|\.py|\.sh|\.js|\.ts)`?\s*`?L\d{2,}\b")  # v1.4 对账批：正文行号锚·文件指针形态
+RE_BODY_SPEC_L = re.compile(r"(?:规范|手册|协议|白皮书|指南)\s*`?L\d{2,}\b")  # v1.4 对账批：正文行号锚·规范词形态
 ZONE_WORDS = ("首因区", "终位合同区", "硬约束区", "参考区", "指针区", "终位指针", "终位合同")  # v1.1：分区词只住维护层
 RE_SIGN_NAME = re.compile(r"`##\s+([^`]+)`")
 
@@ -90,6 +95,15 @@ def main():
         errs.append("节名含分区词（正文须消费语义）：" + "；".join(bad_zone))
 
     # ① 行数
+    # ⑤ v1.4 对账批（母本 v1.4·2026-10-24）：正文节头唯一——set 语义漏重复节头（system-logger v3.19.5 实证）
+    _seen, _dups = set(), []
+    for _n in names:
+        if _n in _seen and _n not in _dups:
+            _dups.append(_n)
+        _seen.add(_n)
+    if _dups:
+        errs.append("正文节头重复 %d 个（节集合必须唯一）：%s" % (len(_dups), "；".join(_dups[:3])))
+
     if total > a.max_lines:
         errs.append("行数 %d > 上限 %d" % (total, a.max_lines))
 
@@ -138,12 +152,35 @@ def main():
         if ghost:
             errs.append("指路牌列出不存在的 %d 节：%s" % (len(ghost), "；".join(ghost)))
         for ln in body:
-            m = RE_LINENO.search(ln)
+            m = RE_LINENO.search(ln) or RE_LINENO_SHORT.search(ln)
             if m:
                 errs.append("指路牌含行号锚「%s」（⛔行号必漂，改节名锚）" % m.group(0))
                 break
         if len(listed) != len(set(listed)):
             errs.append("指路牌有重复节名行")
+
+    # ⑥ v1.4 对账批（母本 v1.4·2026-10-24 迁理之外测试批 N5b 实证根治）：正文行号锚三形态
+    # （引导词/文件指针/规范词+L·全域扫·围栏内与指路牌段除外——指路牌段由③从严负责防双报；
+    #   枚举边界=裸「（L63）」形态不拦，详见母本头注。对齐硬约束4「锚点用节名」）
+    _sp_end = total + 1
+    if sp:
+        _sp_line = sp[0][0]
+        _sp_end = min([_i for _i, _ in heads if _i > _sp_line] or [total + 1])
+    _fence = False
+    _body_hits = []
+    for _i, _ln in enumerate(lines, 1):
+        if _ln.lstrip().startswith("```"):
+            _fence = not _fence
+            continue
+        if _fence or (sp and _sp_line <= _i < _sp_end):
+            continue
+        for _pat, _tag in ((RE_LINENO_SHORT, "引导词"), (RE_BODY_FILE_L, "文件指针"), (RE_BODY_SPEC_L, "规范词")):
+            _m = _pat.search(_ln)
+            if _m:
+                _body_hits.append("第 %d 行 %s行号锚「%s」" % (_i, _tag, _m.group(0)))
+                break
+    if _body_hits:
+        errs.append("正文含行号锚 %d 处（硬约束4：锚点用节名；围栏内豁免）：%s" % (len(_body_hits), "；".join(_body_hits[:3])))
 
     if errs:
         print("ORCH:FAIL 编排结构闸 %d 项：" % len(errs), file=sys.stderr)

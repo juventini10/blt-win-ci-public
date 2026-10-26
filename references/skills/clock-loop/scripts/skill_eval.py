@@ -177,6 +177,7 @@ except Exception:
 import os
 import re
 import sys
+import io
 import json
 import glob
 import subprocess
@@ -264,14 +265,22 @@ def pts(key, ratio):
 MACRO_DIMENSIONS = {
     # 宏观维度名: (声明权重%, [下属微观维度key列表])
     # v2.8.8: 声明权重=下属微观维度WEIGHTS之和/100，由verify_dimension_consistency()自检
+    # v4.20.6·F8 彻底修：三个名不副实的宏维度已按内容更名（旧名→新名映射见下），
+    #   历史材料可用旧名检索，新报告一律用新名。
+    #   ‣ 开发规范  = YAML元数据 + 描述 + 版本单一源 + 文件卫生
+    #   ‣ 指令准确性  = 触发条件 + 安全硬编码 + 评估集闸
+    #   ‣ 防误与一致性 = 因果链 + Poka-Yoke防误层 + 跨文件一致 + 单一数字源（防误占大头·原「逻辑一致性」v4.20.6 更名）
+    #   ‣ 表述与产出  = 五级标注 + 无二元标注 + 产出物定义（原「文档完整性」v4.20.6 更名）
+    #   ‣ 熔断与触发覆盖 = 熔断器 + 触发覆盖（原「测试覆盖」v4.20.6 更名）
+    #   ‣ 哲学评估    = Alternatives + 位置风险
     '开发规范':     (19, ['yaml_frontmatter', 'yaml_required_fields', 'description_not_for',
                             'sec_1_2_version_single_source', 'file_clutter']),
     '指令准确性':   (21, ['trigger_conditions', 'security_hardcode', 'eval_set_gate']),
-    '逻辑一致性':   (29, ['causal_chain', 'poka_yoke_layer', 'cross_file_consistency',
+    '防误与一致性': (29, ['causal_chain', 'poka_yoke_layer', 'cross_file_consistency',
                             'single_number_source']),
-    '文档完整性':   (14, ['five_level_annotations', 'no_binary_annotations',
+    '表述与产出':   (14, ['five_level_annotations', 'no_binary_annotations',
                             'deliverable_definition']),
-    '测试覆盖':     (7, ['fuse_mechanism', 'trigger_coverage']),
+    '熔断与触发覆盖': (7, ['fuse_mechanism', 'trigger_coverage']),
     '哲学评估':     (10, ['alternatives_considered', 'position_risk']),
 }
 
@@ -281,9 +290,9 @@ MACRO_DIMENSIONS = {
 YAML_WEIGHT_MAP = {
     'skill_development':    '开发规范',
     'instruction_accuracy': '指令准确性',
-    'code_logic':           '逻辑一致性',
-    'documentation':        '文档完整性',
-    'test_coverage':        '测试覆盖',
+    'code_logic':           '防误与一致性',
+    'documentation':        '表述与产出',
+    'test_coverage':        '熔断与触发覆盖',
     'philosophical':        '哲学评估',
 }
 
@@ -469,12 +478,31 @@ def eval_sec_1_2_version_single_source(content):
     return max(ratio, 0.0), violations
 
 def eval_five_level_annotations(content):
-    """指令§1.1 五级标注覆盖"""
-    annotations = ['✅DO', '☑SHOULD', '✔MAY', '⚠SHOULD NOT', '⛔DO NOT']
-    total = sum(len(re.findall(re.escape(a), content)) for a in annotations)
+    """指令§1.1 五级标注密度判据（⛔非覆盖判据·v4.20.5 语义归正）。
+
+    判据=五级标记总出现次数/5 的密度，不是「五级是否全部在场」。规范允许按需择级
+    （压缩式 Skill 常只用 ✅DO + ⛔DO NOT），要求五级全在场=把写作风格当合规。
+    失真边界（v4.20.5 独立审查 P1 承认）：5 个 ⛔DO NOT 即可拿满分，与「标注体系在用」
+    无关。故配套 five_level_coverage() 输出分级计数与缺失级，经 advisory 显形
+    （可观测/可抽检），⛔不静默判 clean。
+    """
+    total = sum(len(re.findall(re.escape(a), content)) for a in _FIVE_LEVELS)
     if total < 5:
         return 0.0
     return min(total / 5, 1.0)
+
+
+_FIVE_LEVELS = ['✅DO', '☑SHOULD', '✔MAY', '⚠SHOULD NOT', '⛔DO NOT']
+
+
+def five_level_coverage(content):
+    """五级标注分级计数 + 缺失级（v4.20.5·堵「密度满分静默假绿」）。
+
+    Returns: (counts: dict, missing: list) —— 只描述事实，不扣分。
+    """
+    counts = {a: len(re.findall(re.escape(a), content)) for a in _FIVE_LEVELS}
+    missing = [a for a, n in counts.items() if n == 0]
+    return counts, missing
 
 def eval_no_binary_annotations(content):
     """指令§1.1 无旧版 MUST/NEVER 残留"""
@@ -1039,6 +1067,22 @@ def _check_eval_set_count(main_content, refs_dir):
     actual_rows = 0
     mismatch = None
     compared = False
+    # v4.21.7（GB42根治轮·皮叔批准通道=用户裁决2026-10-25）：单一来源指针形态消费
+    # 病根：v4.15.1型治理（C-085双本账防治）把用例数复制从SKILL.md清除后，旧判据只认
+    # "SKILL写数字才比对"→恒na不increment=惩罚正确演进（检测侧判据未随对象演化·LRN-017家族在评估器自身现案）。
+    # 新判据：SKILL无数字声明但有指针措辞（唯一真源/动态对账/声明≡实测 邻接 eval-set）→
+    # 改比对 eval-set.md 头部声明 vs 实盘双口径自洽（指针形态的诚信锚=内部自洽，不自洽照样红·有牙）。
+    _pointer_decl = bool(re.search(r'(eval-set|用例总?数?)[^。\n]{0,40}(唯一真源|单一来源|动态对账|不复制数字)', main_content, re.I)) or bool(re.search(r'(唯一真源|单一来源|动态对账)[^。\n]{0,40}(eval|用例)', main_content, re.I))
+    if not declared_counts and _pointer_decl and os.path.isfile(eval_set_path):
+        with open(eval_set_path, 'r', encoding='utf-8') as f:
+            _ec = f.read()
+        _hd = re.search(r'用例(?:总数|计数).*?[:：]\s*(\d+)\s*条', _ec)
+        _rows = _evalset_rows(_ec)
+        _cnt = _count_evalset(_ec)
+        if _hd and int(_hd.group(1)) not in {_rows, _cnt}:
+            mismatch = f'eval-set头部声明{_hd.group(1)}条与实盘口径{{{_rows},{_cnt}}}不自洽（指针形态内部失配）'
+        else:
+            compared = True
     if os.path.isfile(eval_set_path) and declared_counts:
         with open(eval_set_path, 'r', encoding='utf-8') as f:
             eval_content = f.read()
@@ -1536,7 +1580,7 @@ def eval_single_number_source(content):
     ratio = checks_passed / checks_total if checks_total > 0 else 1.0
     return ratio, detail
 
-def eval_fuse_mechanism(content):
+def eval_fuse_mechanism(content, skill_dir=None):
     """标准§4.3 熔断器格式合规（约束式模板确定性检测 · v2.8.2新增）。
 
     每个 🔌 熔断器 块必须遵循 §4.3 模板：
@@ -1554,7 +1598,48 @@ def eval_fuse_mechanism(content):
     # 不含字段行的🔌提及（如"扫描每个🔌熔断器块"）不计入熔断器。
     lines_all = content.splitlines()
     anchor_lines = [idx for idx, ln in enumerate(lines_all)
-                    if re.search(r'🔌\s*熔断器', ln)]
+                    if re.search(r'🔌\s*\*{0,2}熔断器', ln)]
+    sunk_files = []
+    if not anchor_lines and skill_dir:
+        # C2a(2026-10-25 评估轮反哺·用户授权；v4.21.2 双盲第19次 N-01~04 精化)：
+        #   病灶=本体下沉件住熔断器而主文仅指针时，merged 白名单的 normative_vocab
+        #   排除把步骤本体当规范文档误伤→fuse 0/5 假红。修法=主文无锚点时定向回退
+        #   扫 references/ 递归 .md，排除口径与 merged 域互认：
+        #   ①历史/台账文件名(changelog 不分大小写/沿革/台账)；②normative_vocab+source
+        #   系字段双全的规范固化文档(流程本体件只有 vocab 无 source 不受此排)；③FU卡≥3运行台账。
+        #   sunk_files 只列进取种面且含🔌锚的件（提及≠实住·N-02）；回退仍可能吃
+        #   「示例性字段块」(N-01残余)——属 Known Limitation，由 test C2a 负例组钉口径。
+        refs = os.path.join(skill_dir, 'references')
+        if os.path.isdir(refs):
+            blob = []
+            cand = []
+            for _root, _dirs, _files in os.walk(refs):
+                for fn in sorted(_files):
+                    if not fn.endswith('.md'):
+                        continue
+                    if ('changelog' in fn.lower()) or ('沿革' in fn) or ('台账' in fn):
+                        continue
+                    cand.append(os.path.join(_root, fn))
+            for fp in cand:
+                try:
+                    with open(fp, encoding='utf-8') as _sh:
+                        _rc = _sh.read()
+                except Exception:
+                    continue
+                _head = _rc[:600]
+                if (re.search(r'^normative_vocab\s*:', _head, re.M)
+                        and re.search(r'^(source|source_path|source_skill|source_version)\s*:', _head, re.M)):
+                    continue  # 规范固化文档（有源署名）不进取种面
+                if len(re.findall(r'^## FU-\d+', _rc, re.M)) >= 3:
+                    continue  # 运行台账排除（与 merged C3 同判据）
+                if re.search(r'🔌\s*\*{0,2}熔断器', _rc):
+                    blob.append(_rc)
+                    sunk_files.append(os.path.relpath(fp, refs))
+            if blob:
+                content = '\n\n'.join(blob)
+                lines_all = content.splitlines()
+                anchor_lines = [idx for idx, ln in enumerate(lines_all)
+                                if re.search(r'🔌\s*\*{0,2}熔断器', ln)]
     if not anchor_lines:
         return 0.0, {'fuse_count': 0,
                      'note': '未发现任何🔌熔断器（§4.3要求外部调用步骤必须设熔断器）'}
@@ -1667,6 +1752,8 @@ def eval_fuse_mechanism(content):
         'external_count': sum(1 for f in per_fuse if f['is_external']),
         'per_fuse': per_fuse,
     }
+    if sunk_files:
+        detail['sunk_files'] = sunk_files  # C2a如实外露：熔断器实住外置件（评估口径不变）
     return overall, detail
 
 def eval_deliverable_definition(content):
@@ -1697,10 +1784,16 @@ def eval_file_clutter(skill_path):
                if not os.path.isdir(os.path.join(skill_dir, c))}
     ratio = 1.0
     detail = list(clutter)
+    env_advisories = []  # v4.21.7 GB42根治轮：外部解释器pyc显形不扣分（局部变量·⛔跨调用累积）
     if has_readme:
         ratio -= 0.5  # 标准§2 ⛔DO NOT 放 README.md
         detail.append('README.md（规范§2 禁止）')
-    if clutter - {c for c in clutter if c.lower() == 'readme.md'}:
+    _top_clutter = clutter - {c for c in clutter if c.lower() == 'readme.md'}
+    if '.DS_Store' in _top_clutter:
+        # v4.21.11：顶层 .DS_Store 与全树walk段同口径——Finder宿主再生件显形不扣分（advisory）
+        _top_clutter = _top_clutter - {'.DS_Store'}
+        detail.append('.DS_Store（Finder宿主再生件·ℹ️advisory不扣分·v4.21.11·发布面由裁剪闸另管）')
+    if _top_clutter:
         ratio -= 0.3
     # ── v3.47.0 A17: 递归 references/ ──
     refs_dir = os.path.join(skill_dir, 'references')
@@ -1742,14 +1835,33 @@ def eval_file_clutter(skill_path):
         dirs4[:] = [x for x in dirs4 if x != '.git']
         rel4 = os.path.relpath(root4, skill_dir)
         if '__pycache__' in dirs4:
-            rec_issues.append(f'{os.path.normpath(os.path.join(rel4, "__pycache__"))}（编译缓存·全树）')
+            # v4.21.7（GB42根治轮）：pyc 版本戳分家——与本评估链同版本(major.minor)=对象自身
+            # 运行生成，PYTHONDONTWRITEBYTECODE 可根治而未根治=对象责任照扣；
+            # 全为异版本(如宿主 hermes gateway python3.14 -I 巡查import·env免疫)=环境责任→advisory 显形不扣分。
+            # ⛔混版本仍扣（任一自家版本pyc在场=对象没止血成立）·⛔空目录按自家扣（无从归责从严）
+            _pc_dir = os.path.join(root4, '__pycache__')
+            _here = '%d%d' % sys.version_info[:2]
+            _stamps = {m.group(1) for f in os.listdir(_pc_dir)
+                       if (m := re.search(r'cpython-(\d+)\.pyc$', f))}
+            _own = any(st == _here for st in _stamps) or not _stamps
+            if _own:
+                rec_issues.append(f'{os.path.normpath(os.path.join(rel4, "__pycache__"))}（编译缓存·全树）')
+            else:
+                env_advisories.append(f'{os.path.normpath(os.path.join(rel4, "__pycache__"))}（外部解释器残留·戳{sorted(_stamps)}≠本链{_here}·ℹ️advisory不扣分·归责=宿主巡查进程）')
         for fn4 in sorted(files4):
             low4 = fn4.lower()
-            if '.bak' in low4 or low4.startswith('~$') or fn4 == '.DS_Store':
-                rec_issues.append(f'{os.path.normpath(os.path.join(rel4, fn4))}（备份残留/系统垃圾·v4.12.3全树扫描）')
+            if '.bak' in low4 or low4.startswith('~$'):
+                rec_issues.append(f'{os.path.normpath(os.path.join(rel4, fn4))}（备份残留·v4.12.3全树扫描）')
+            elif fn4 == '.DS_Store':
+                # v4.21.11（SWT修复批轮）：.DS_Store=Finder宿主秒级再生件（实测清0后数秒即回·工程不可根治）
+                if rel4 == '.':
+                    continue  # v4.21.11b·复核C5：根级已由顶层差集段显形——此处跳过防三重显形
+                # →显形不扣分（同 v4.21.7 pyc 外部归责先例·advisory不扣分）；发布面质量由裁剪链/杂物闸独立把守不受影响
+                env_advisories.append(f'{os.path.normpath(os.path.join(rel4, fn4))}（Finder宿主再生件·ℹ️advisory不扣分·v4.21.11·发布面由裁剪闸另管）')
     if rec_issues:
         ratio -= 0.3
         detail.extend(rec_issues)
+    detail.extend(env_advisories)
     return max(ratio, 0.0), detail
 
 def eval_eval_set_gate(skill_path):
@@ -1878,10 +1990,19 @@ def eval_declared_existence(skill_path, content):
     paths.update(re.findall(r'(~/[^\s`"\'（()）【】]+)', content))
     # ③ 过滤模板占位符路径（含 { } 的路径是模板非真实路径，如 {文件名}_{YYMMDD_HHMM}.bak——报告标准:示例/占位降 warning 不报 P0）
     paths = {p for p in paths if '{' not in p and '}' not in p}
+    # ③b C1(2026-10-25 评估轮反哺·用户授权)：大写时间戳模板路径（YYYY-MM/_YYYY-MM-DD/HH:MM 类）
+    #   本身不落盘——降目录级核验：父目录存在=声明成立；父目录缺失才记 missing（携原模板路径可追）
+    TPL_TIME = re.compile(r'Y{2,4}[-_]?M{1,2}([-_]?D{1,2})?|H{1,2}[:：]H{1,2}')
     for p in sorted(paths):
         checked += 1
+        ep = os.path.expanduser(p)
+        if TPL_TIME.search(os.path.basename(ep)):
+            parent = os.path.dirname(ep)
+            if not os.path.isdir(parent):
+                missing.append(p + '(模板父目录缺失)')
+            continue
         try:
-            if not os.path.exists(os.path.expanduser(p)):
+            if not os.path.exists(ep):
                 missing.append(p)
         except Exception:
             continue
@@ -3743,7 +3864,7 @@ def evaluate_skill(skill_path):
     # 从poka_yoke_layer的15分中分出5分给深度验证：10分原有三法 + 5分深度验证
     r_poka_depth, poka_depth_detail = eval_poka_yoke_depth(merged_content, skill_path)  # v4.12.2·R2-N-04：E-1域补全
     r_poka_combined = r_poka * (10.0/15.0) + r_poka_depth * (5.0/15.0)
-    r_fuse, fuse_detail    = eval_fuse_mechanism(merged_content)  # v4.12.1·E-1根治：细则外置者熔断器在模块文件，主文-only产生0/5假阳性（awaken Loop双审查磁盘实证）
+    r_fuse, fuse_detail    = eval_fuse_mechanism(merged_content, skill_dir=os.path.dirname(os.path.abspath(skill_path)))  # v4.12.1·E-1根治：细则外置者熔断器在模块文件，主文-only产生0/5假阳性（awaken Loop双审查磁盘实证）
     r_deliver              = eval_deliverable_definition(merged_content)  # v4.12.1·E-1根治：📦密度同域扩展（合并域含被指针引用的执行模块）
     r_trigger              = eval_trigger_conditions(content)
     layer, layer_detail    = eval_layering(frontmatter, content, skill_path)
@@ -3762,12 +3883,21 @@ def evaluate_skill(skill_path):
             f"行数与质量无因果（第一性原理）·仅供参考。若上下文压力导致运行时退化·建议拆分reference文件。"
             f"⛔ 勿为压行数删有价值内容（梅多斯杠杆点·防御性萎缩=实质退化）"
         )
+    # v4.20.5: 五级标注覆盖显形（advisory·不扣分）——密度满分≠五级全在用
+    _annot_counts, _annot_missing = five_level_coverage(merged_content)
+    five_level_coverage_advisory = None
+    if _annot_missing:
+        five_level_coverage_advisory = (
+            f"⚠️ 五级标注覆盖（advisory·不扣分）：分级计数={_annot_counts}；缺失级={_annot_missing}。"
+            f"密度判据已满分≠五级全在用；缺级是否合规按规范§1.1 由评定者判（压缩式 Skill 常仅用两级）"
+        )
     attack, attack_level, required_t5 = eval_attack_surface(content, skill_path, layer)
     mech_sel = eval_mechanism_selection(merged_content, skill_path)  # v4.12.2·R2-N-04：修'fuse满分+MUST缺熔断器'同轮矛盾
     r_pos                  = eval_position_risk(content)
     r_cross, ref_cnt       = eval_cross_file_consistency(skill_path)
     r_single, single_detail = eval_single_number_source(merged_content)
     r_clutter, clutter_detail = eval_file_clutter(skill_path)
+    file_clutter_advisory = ('；'.join(clutter_detail) if clutter_detail else None)  # v4.21.11b·复核C4：显形进输出面
     r_evalset, evalset_detail = eval_eval_set_gate(skill_path)
     r_trigger_cov, trigger_cov_detail = eval_trigger_coverage(skill_path)  # v3.30.0互审整改P2-2
     r_security, security_detail = eval_security_hardcode(content)
@@ -3868,6 +3998,9 @@ def evaluate_skill(skill_path):
         'vx_selfhash': vx_selfhash,  # v3.27.0问4物理钩
         'vx_selfhash_detail': selfhash_detail,
         'token_budget_advisory': token_budget_advisory,  # v5.16.0: 行数纯提醒·不参与评分
+        'five_level_coverage_advisory': five_level_coverage_advisory,  # v4.20.5: 五级分级计数+缺失级显形·不参与评分
+        'file_clutter_advisory': file_clutter_advisory,  # v4.21.11b·复核C4：clutter检出显形（含advisory行）·不扣分但可见
+        'five_level_counts': _annot_counts,  # v4.20.5: 分级计数永久可见（可抽检·堵密度满分静默假绿）
         'poka_depth': r_poka_depth,  # v3.40.0: 防误层深度验证达成率（5项P0检查）
         'poka_depth_detail': poka_depth_detail,  # v3.40.0: 防误层深度验证详情（每项通过状态+证据）
         'poka_base': r_poka,  # v3.40.0: 原有三法检查达成率（供报告展示拆分）
@@ -4550,9 +4683,198 @@ def eval_direction_gate_advisory(skill_path):
     return None
 
 
+# ── v4.20.0（2026-10-24·T2-B 尺子同步）：编排律结构 advisory ──────────────
+# 判据形态消费自 Skill架构规范 pages/09-orchestration.md（四律/指路牌三纪律/机检律），
+# ⛔不 import 守卫脚本（被评件可在任意树·脚本中心未必在场）——只做形态级最小复刻。
+ORCH_ZONE_WORDS = ("首因区", "终位合同区", "硬约束区", "参考区", "指针区", "终位指针", "终位合同")
+ORCH_RE_SIGN_NAME = re.compile(r"`##\s+([^`]+)`")
+ORCH_RE_LINENO_SHORT = re.compile(r"(?:见|详见|参见|位于|区间|行号?|@|±)\s*L\d{1,2}\b")
+ORCH_RE_BODY_FILE_L = re.compile(r"(?:\.md|\.py|\.sh|\.js|\.ts)`?\s*`?L\d{2,}\b")
+ORCH_RE_BODY_SPEC_L = re.compile(r"(?:规范|手册|协议|白皮书|指南)\s*`?L\d{2,}\b")
+ORCH_RE_ANCHOR = re.compile(r"((?:references|pages)/[A-Za-z0-9_\u4e00-\u9fa5·\-]+\.md)#§([^\s`）)，,。;；+]+)")
+
+
+def _orch_headings(lines):
+    out, fence = [], False
+    for i, ln in enumerate(lines, 1):
+        if ln.lstrip().startswith("```"):
+            fence = not fence
+            continue
+        if not fence and ln.startswith("## "):
+            out.append((i, ln[3:].strip()))
+    return out
+
+
+def eval_orchestration_advisory(skill_path):
+    """编排律结构 advisory（v4.20.0·不计分·None=无异常）。
+
+    五项形态判据（全部机械可判·⛔不判语义）：
+      ① 指路牌≡节集合：含「指路牌」的 `## ` 节列出的节名集合 ≡ 实际 `## ` 节集合（排除自身）；
+         小件（<8 个 `## ` 节）无指路牌不报警——防全库小 Skill 噪声（狼来了族）。
+      ② 分区词禁入节名（首因区/终位合同区/…）。
+      ③ 正文行号锚三形态（引导词+L／文件指针+L／规范词+L·围栏内与指路牌段除外）。
+      ④ 多路径启动声明：存在 `### X路径` 节时，正文须有 `X …路径已启动` 声明（硬约束1）。
+      ⑤ `path#§节名` 引用可达：目标文件存在且标题含该节名（路径可达≠锚点可达）。
+    """
+    try:
+        sk = os.path.join(skill_path, 'SKILL.md') if os.path.isdir(skill_path) else skill_path
+        if not os.path.isfile(sk):
+            return None
+        content = io.open(sk, encoding="utf-8").read()
+    except Exception:
+        return None
+    lines = content.splitlines()
+    heads = _orch_headings(lines)
+    names = [n for _, n in heads]
+    findings = []
+    # ② 分区词
+    bad_zone = [n for n in names if any(z in n for z in ORCH_ZONE_WORDS)]
+    if bad_zone:
+        findings.append("节名含分区词:%s" % "、".join(bad_zone[:3]))
+    # ① 指路牌
+    sp = [(i, n) for i, n in heads if "指路牌" in n]
+    end = len(lines) + 1
+    if len(names) >= 8 and not sp:
+        findings.append("大件(%d节)缺指路牌" % len(names))
+    elif sp:
+        sp_line, sp_name = sp[0]
+        nxt = [i for i, _ in heads if i > sp_line]
+        end = nxt[0] if nxt else len(lines) + 1
+        listed, bad_rows = [], []
+        for ln in lines[sp_line:end - 1]:
+            s = ln.strip()
+            if not s.startswith("|") or re.match(r"^\|[\s:|-]+\|$", s) or "你要干什么" in s or "看哪节" in s:
+                continue
+            m = ORCH_RE_SIGN_NAME.search(s)
+            if m:
+                listed.append(m.group(1).strip())
+            else:
+                bad_rows.append(s)
+        if bad_rows:
+            findings.append("指路牌有%d行未按`## 节名`指路" % len(bad_rows))
+        aset = set(names) - {sp_name}
+        lset = set(listed)
+        if aset - lset:
+            findings.append("指路牌漏列:%s" % "、".join(sorted(aset - lset)[:3]))
+        if lset - aset:
+            findings.append("指路牌列出不存在节:%s" % "、".join(sorted(lset - aset)[:3]))
+    # ③ 行号锚（全局·小件无指路牌也照检；指路牌段由其形态判据负责·此处跳过防双报）
+    sp_line, sp_end = (sp[0][0], end) if sp else (0, 0)
+    fence, hits = False, []
+    for i, ln in enumerate(lines, 1):
+        if ln.lstrip().startswith("```"):
+            fence = not fence
+            continue
+        if fence or (sp_line <= i < sp_end):
+            continue
+        for pat in (ORCH_RE_LINENO_SHORT, ORCH_RE_BODY_FILE_L, ORCH_RE_BODY_SPEC_L):
+            m = pat.search(ln)
+            if m:
+                hits.append("第%d行「%s」" % (i, m.group(0)))
+                break
+    if hits:
+        findings.append("正文行号锚%d处(%s)" % (len(hits), hits[0]))
+    # ④ 多路径启动声明
+    path_letters = []
+    for n in names:
+        m = re.match(r"([EGH])路径", n)
+        if m:
+            path_letters.append(m.group(1))
+    for ln in lines:
+        m = re.match(r"^###\s*([EGH])路径", ln)
+        if m:
+            path_letters.append(m.group(1))
+    for letter in sorted(set(path_letters)):
+        if not re.search(letter + r"[^\n]{0,12}路径已启动", content):
+            findings.append("%s路径缺「已启动」声明" % letter)
+    # ⑤ 引用可达
+    base = os.path.dirname(os.path.abspath(sk))
+    for rel, sec in sorted(set(ORCH_RE_ANCHOR.findall(content))):
+        target = os.path.join(base, rel)
+        if not os.path.isfile(target):
+            findings.append("锚点目标缺失:%s#§%s" % (rel, sec))
+            continue
+        try:
+            th = [l.strip().lstrip("#").strip() for l in io.open(target, encoding="utf-8")
+                  if l.strip().startswith("#")]
+        except Exception:
+            findings.append("锚点目标不可读:%s" % rel)
+            continue
+        if not any(sec in h for h in th):
+            findings.append("节名不存在:%s#§%s" % (rel, sec))
+    if not findings:
+        return None
+    return ("🔺编排律: " + "；".join(findings[:5])
+            + "（advisory级不计分·判据形态=Skill架构规范 pages/09）")
+
+
 # ── L3反哺T1（2026-10-03 皮叔令「做完这个我们再继续LOOP」）：派生态陈旧 advisory ──
 DERIVED_STALENESS_NAME_RE = ('snapshot', 'last_run', '_cache', '.cache')  # 派生态载体文件名形态
 DERIVED_ANCHOR_RE = re.compile(r'timestamp|collected_at|recomputed|derived_from|generated_at|生成时间|采集时间|重算|20\d{2}-\d{2}-\d{2}', re.I)  # ISO日期键/值同为时间锚（N3复核：daily_quotes_cache 日期键形态 2026-10-03 实测假阳性收编）
+
+
+def eval_ownership_ambiguity_advisory(skill_path):
+    """归属/分发声明指代消歧 advisory（v4.21.11 L3反哺派生1·2026-10-27 SWT评估台账#3·不计分·None=静默）。
+    判据：SKILL.md 归属/分发声明行同时含（上述|该等|以上）与（分发|剔除|随包|归属），
+    且该行无「仅/只」限定词、无具名文件枚举（*.sh/*.py/文件名）→ ⚠️提示指代歧义。
+    实证病灶：SWT L382「上述机检件属作者侧QA·未随本安装包分发」一句使两名物理隔离审查者+lead
+    产生同一「端侧死锁」误读（实盘包内 scripts 五件齐在·真口径=仅2件不分发）。
+    ⛔ 粗筛+人终判（同 eval_selfdesc_advisory 族·守卫规范 L706：语义归 AI+你终审）。"""
+    if not os.path.isfile(skill_path):
+        return None
+    hits = []
+    try:
+        for i, line in enumerate(io.open(skill_path, encoding='utf-8', errors='ignore'), 1):
+            if not (re.search(r'(上述|该等|以上)', line) and re.search(r'(分发|剔除|随包|归属)', line)):
+                continue
+            if not re.search(r'(安装包|发布包|包面|本包)', line):
+                continue
+            if re.search(r'仅|只', line):
+                continue  # 「仅」限定=已消歧
+            if len(re.findall(r'[\w.\-]+\.(?:py|sh|md|json)\b', line)) >= 2:
+                continue  # 具名文件枚举≥2=已消歧
+            hits.append('L%d %s' % (i, line.strip()[:80]))
+    except Exception:
+        return None
+    if not hits:
+        return None
+    return ('⚠️ 归属/分发声明含「上述/该等」跨实体指代且无「仅」限定或具名枚举——指代歧义高发位'
+            '（SWT L382实证：两名独立审查者+lead被同一句歧义引导出同一误读）：' + '；'.join(hits[:3])
+            + '（人终判·如指代范围确已由邻行枚举消解→忽略）')
+
+
+def eval_test_surface_watermark(skill_path):
+    """测试面水位三元对账 advisory（v4.21.11 L3反哺派生2·2026-10-27 SWT评估台账#2·不计分·None=静默）。
+    判据：tests/trigger-positive.md·trigger-negative.md 标题版本 vs SKILL.md fm version——
+    任一 major.minor 落后本体 → ⚠️提示（分发测试件须随本体升版）。
+    实证病灶：SWT 本体 v1.7.8 而 trigger 双件停 v1.6.2（8版未跟·新机制零用例）。"""
+    if not os.path.isfile(skill_path):
+        return None
+    m = re.search(r'^version:\s*["\']?([0-9]+)\.([0-9]+)', io.open(skill_path, encoding='utf-8', errors='ignore').read(), re.M)
+    if not m:
+        return None
+    base = (int(m.group(1)), int(m.group(2)))
+    lag = []
+    skill_dir = os.path.dirname(skill_path)
+    for name in ('trigger-positive.md', 'trigger-negative.md'):
+        p = os.path.join(skill_dir, 'tests', name)
+        if not os.path.isfile(p):
+            lag.append('tests/%s 缺失' % name)
+            continue
+        head = io.open(p, encoding='utf-8', errors='ignore').read(2000)
+        tm = None
+        for hl in head.splitlines():
+            if hl.startswith('#'):
+                tm = re.search(r'v([0-9]+)\.([0-9]+)', hl)
+                break
+        if not tm:
+            continue  # 标题无版本水印=该测试件不承诺随本体对齐（防正文杂token误报·clock-loop实证v1.1狼来了）
+        ver = (int(tm.group(1)), int(tm.group(2)))
+        if ver < base:
+            lag.append('tests/%s v%d.%d < 本体 v%d.%d' % (name, ver[0], ver[1], base[0], base[1]))
+    if not lag:
+        return None
+    return '⚠️ 测试面水位滞后（分发测试件须随本体升版·SWT实证trigger停v1.6.2跨8版）：' + '；'.join(lag)
 
 
 def eval_derived_staleness_advisory(skill_path):
@@ -4677,9 +4999,12 @@ def _run_check_only():
     output_format_physical_advisory = eval_output_format_physical_advisory(skill_path)
     unwired_interface_advisory = eval_unwired_interface_advisory(skill_path)
     direction_gate_advisory = eval_direction_gate_advisory(skill_path)  # 2026-10-02 你拍板·direction_gate 机检化
+    orchestration_advisory = eval_orchestration_advisory(skill_path)  # v4.20.0·编排律结构（不计分·None=无异常）
     derived_staleness_advisory = eval_derived_staleness_advisory(skill_path)  # v4.15.0 L3反哺T1·派生态无锚裸奔（不计分·None=静默）
     # v4.6.x 批A残留: P1 evidence_tier_verification——复用C01 extractor 复核被评侧高档声称 vs 实算档位
     evidence_tier_verification_advisory = eval_evidence_tier_verification_advisory(skill_path)
+    ownership_ambiguity_advisory = eval_ownership_ambiguity_advisory(skill_path)  # v4.21.11 L3反哺派生1
+    test_surface_watermark_advisory = eval_test_surface_watermark(skill_path)  # v4.21.11 L3反哺派生2
 
     # ── v4.6.0 评估器自我观察（B1/B2/B3/A1·四机制接线）──
     _adv_map = {
@@ -4700,8 +5025,11 @@ def _run_check_only():
         'output_format_physical_advisory': output_format_physical_advisory is not None,
         'unwired_interface_advisory': unwired_interface_advisory is not None,
         'direction_gate_advisory': direction_gate_advisory is not None,
+        'orchestration_advisory': orchestration_advisory is not None,
         'derived_staleness_advisory': derived_staleness_advisory is not None,
         'evidence_tier_verification_advisory': evidence_tier_verification_advisory is not None,
+        'ownership_ambiguity_advisory': ownership_ambiguity_advisory is not None,
+        'test_surface_watermark_advisory': test_surface_watermark_advisory is not None,
     }
     _record_advisory_history(target, _adv_map)  # B1: 追加触发快照（与 .phaseX_last_run.json 同族写文件）
     advisory_frequency = eval_advisory_frequency()  # B1: 触发率统计（狼来了治理）
@@ -4733,6 +5061,9 @@ def _run_check_only():
         'layer': result.get('layer'),
         'd5_band': result.get('d5_band'),
         'token_budget_advisory': result.get('token_budget_advisory'),  # v5.16.0: 行数纯提醒·不扣分
+        'five_level_counts': result.get('five_level_counts'),  # v4.20.5: 五级分级计数（可抽检）
+        'five_level_coverage_advisory': result.get('five_level_coverage_advisory'),  # v4.20.5: 缺失级显形·不扣分
+        'file_clutter_advisory': result.get('file_clutter_advisory'),  # v4.21.11b·复核C4：显形进--check-only输出面
         'attack_level': result.get('attack_level'),
         'required_t5': result.get('required_t5'),
         'mech_type': result.get('mech_sel', {}).get('type'),
@@ -4753,8 +5084,11 @@ def _run_check_only():
         'output_format_physical_advisory': output_format_physical_advisory,  # v4.8.0 #50·不计分·None=无异常（2026-09-09补接线·F1）
         'unwired_interface_advisory': unwired_interface_advisory,  # v4.8.0 #50·不计分·None=无异常（2026-09-09补接线·F1）
         'direction_gate_advisory': direction_gate_advisory,  # 2026-10-02 你拍板·方向闸声明-执行一致性（不计分·None=一致）
+        'orchestration_advisory': orchestration_advisory,  # v4.20.0·编排律结构（不计分·None=无异常）
         'derived_staleness_advisory': derived_staleness_advisory,  # v4.15.0 L3反哺T1·派生态无锚裸奔（不计分·None=静默）
         'evidence_tier_verification_advisory': evidence_tier_verification_advisory,  # v4.6.x 批A·不计分·None=无异常（2026-09-09补接线·F1）
+        'ownership_ambiguity_advisory': ownership_ambiguity_advisory,  # v4.21.11 L3反哺派生1·归属声明指代消歧·不计分·None=静默
+        'test_surface_watermark_advisory': test_surface_watermark_advisory,  # v4.21.11 L3反哺派生2·测试面水位三元对账·不计分·None=静默
         'ceiling_advisory': ceiling_advisory,  # v4.3.0 C12 #198触顶链条·不计分·None=未触顶
         'completeness_advisory': completeness_advisory,  # v4.5.0 C14 #178完整性兜底核对机械化·不计分·None=无异常
         'advisory_frequency': advisory_frequency,  # v4.6.0 B1: advisory触发率统计（狼来了治理·样本不足None）
@@ -4867,6 +5201,11 @@ def _run_batch_report():
         print(f"- **行数**: {r['lines']}行（D5分级：{r.get('d5_band','?')}）")
         if r.get('token_budget_advisory'):
             print(f"- **行数提醒（v5.16.0·不扣分）**: {r['token_budget_advisory']}")
+        # v4.20.5·N5：五级分级计数与缺失级显形进 Markdown（旧版只进 JSON=advisory 无消费方）
+        if r.get('five_level_counts'):
+            print(f"- **五级标注分级计数（v4.20.5·不扣分）**: {r['five_level_counts']}")
+        if r.get('five_level_coverage_advisory'):
+            print(f"- {r['five_level_coverage_advisory']}")
         print(f"- **得分**: {r['total']}/{TOTAL_MAX}\n")
 
         print("#### 🧬 分层与攻击面（v2.9.0 自动检测）\n")
@@ -5073,8 +5412,18 @@ def main():
         if not target or not os.path.exists(target):
             print(json.dumps({'error': f'报告文件未找到: {target}', 'passed': False}))
             sys.exit(0)
-        ev = eval_report_evidence(target)
+        # v4.20.4：--source 显式绑定取证源（独立审查 N1：不传源时回落 .phaseX_last_run.json 单一
+        #   target，批量封口时除一份外全部假红 / 同文时假绿）
+        _src = None
+        if '--source' in sys.argv:
+            _si = sys.argv.index('--source')
+            _src = sys.argv[_si + 1] if _si + 1 < len(sys.argv) else None
+            if _src and not os.path.exists(_src):
+                print(json.dumps({'error': f'取证源不存在: {_src}', 'passed': False}))
+                sys.exit(0)
+        ev = eval_report_evidence(target, source_path=_src)
         ev['report'] = target
+        ev['source'] = _src
         ev['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M')
         print(json.dumps(ev, ensure_ascii=False, indent=2))
         sys.exit(0)

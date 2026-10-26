@@ -30,7 +30,15 @@ HOME = os.path.expanduser("~")
 # ——Win 装机态 _fill 会把反斜杠路径填进 .py 源码字符串，\a/\b 等被 Python 转义语义吃掉
 #（真机实证 2026-10-11：OSError WinError 123 'D:\x07'·任务卡 Win对等 T19 逮出）
 _MC = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir))
-SYSLOG_DIR = os.path.join(_MC, "工作日志", "系统日志")
+
+def _resolve_syslog_dir():
+    # v3.19.6：默认目录候选序——作者侧真源目录存在则优先，_MC 向上推导作装机回退。
+    # 旧实现只推 _MC：ZCode 端布局（~/.zcode/skills/system-logger）推到 ~/.zcode/工作日志/
+    # （不存在）→ 无参模式必报"文件不存在"（沙箱 T13d 实锤·显式传路径不受影响）。
+    cand = os.path.join(os.path.expanduser("[记忆共享中心]"), "工作日志", "系统日志")
+    return cand if os.path.isdir(cand) else os.path.join(_MC, "工作日志", "系统日志")
+
+SYSLOG_DIR = _resolve_syslog_dir()
 SIZE_LIMIT = 800 * 1024  # 800KB
 # 第五查阈值取"最低合法正文量"而非当前值——瘦身是常态，绑当前值=每次瘦身都要改数字
 SKILL_MIN_LINES = 200

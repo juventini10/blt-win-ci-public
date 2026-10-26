@@ -95,6 +95,7 @@ def file_hash(path: str) -> str:
 
 _END_ID_FRAGS = (  # 装机态端 id 派生（与 06/state_bus 既有端 id 对齐·特异性高的在前）
     (".qoder-cn", "qodercn"),
+    (".qoder", "qoderdesktop"),  # 2026-10-24 Qoder Desktop
     (".trae-cn/user_rules", "traework"),
     (".trae-cn", "traecode"),
     (".workbuddy-ai", "workbuddyai"),

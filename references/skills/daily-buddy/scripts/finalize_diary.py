@@ -18,8 +18,8 @@ finalize_diary.py — 日记封口脚本（物理约束·模型无关）
   3 = 概念进料门禁阻断（当日无 ingest 条目且未显式 --skip-ingest·v3.20.1）
   4 = 评级门禁阻断（rating 为待评定/非法值 或 rating_reason 为空·v3.22.0 无跳过选项）
   5 = 参数错误（argparse 缺参/未知参数；日期格式非法归 exit 1·2026-09-01 实测复核）
-  6 = 格式门禁阻断（v4.1.0 全模块格式校验不过：速读层/含金量/睡眠紧凑/心情/伙伴建议/来源/有才显示/结尾/年度进度条·皮叔 2026-08-07 认可"格式合规从AI自律下沉为物理校验"）
-  7 = 环境自检失败（沙箱假python·审查P2-2：原误用2与骨架失败双义，2026-09-03拆分）
+  6 = 格式门禁阻断（v4.1.0 全模块格式校验不过：速读层/含金量/睡眠紧凑/心情/伙伴建议/来源/有才显示/结尾/年度进度条·2026-08-07 认可"格式合规从AI自律下沉为物理校验"）
+  9 = 环境自检失败（沙箱假python/假HOME·2026-09-03 从 exit 2 拆出后曾记 7，2026-10-23 与实现统一为 9；7 不再使用）
 
   ⚠️ 版本命名空间注：上方 v4.1.0 = finalize_diary 内置格式校验模块自身的版本号，
   与 Skill 主版本（SKILL.md frontmatter version，如 3.44.x）独立演进，勿混淆。
@@ -60,7 +60,8 @@ from create_skeleton import (
 )
 
 # 概念进料 log 路径改用 dbenv 解析（破除沙箱 HOME 污染）
-FED_LOG = dbenv.HOME / "[记忆共享中心]" / "知识联邦引擎" / "log.md"  # 2026-10-10 真源指针修复：进料门禁改读写方实落的引擎侧(10-07换真源纪律延伸·10-09 write_history登记欠账)
+FED_LOG = dbenv.HOME / "[记忆共享中心]" / "脚本中心" / "知识联邦引擎" / "log.md"  # v3.52.7 路径修复：原缺"脚本中心"导致 FED_LOG 恒不存在→封口恒报"引擎不可用"
+FED_LOG_LEGACY = dbenv.HOME / "[记忆共享中心]" / "知识联邦引擎" / "log.md"  # 旧位置回退（迁移前）
 
 # === 常量 ===
 REQUIRED_SECTIONS = [
@@ -78,21 +79,27 @@ EMPTY_MARKERS = [
 ]
 
 
-def read_concept_ingest(date: datetime.date):
-    """读知识联邦 log.md 当日 ingest 条目。
+def read_concept_ingest(date: datetime.date, ingest_date: datetime.date = None):
+    """读知识联邦 log.md 的 ingest 条目。
+    date=日记日期；ingest_date=实际抽取日（补录场景，默认同 date）。
     返回: (status, text)
-      status: "ok"=有条目(含合法跳过) / "missing"=引擎在但当日无条目 / "no-engine"=引擎不可用
+      status: "ok"=有条目(含合法跳过) / "missing"=引擎在但查询日无条目 / "no-engine"=引擎不可用
     """
-    if not FED_LOG.exists():
+    fed_log = FED_LOG if FED_LOG.exists() else FED_LOG_LEGACY
+    if not fed_log.exists():
         return ("no-engine", "⚠️ 知识联邦引擎不可用（分享版无引擎属正常）")
+    lookup = ingest_date or date
     try:
-        lines = FED_LOG.read_text(encoding="utf-8").splitlines()
+        lines = fed_log.read_text(encoding="utf-8").splitlines()
     except Exception as e:
         return ("no-engine", f"⚠️ log.md 读取失败: {e}")
-    prefix = f"## [{date}] ingest"
+    prefix = f"## [{lookup}] ingest"
     hits = [ln.strip() for ln in lines if ln.strip().startswith(prefix)]
     if hits:
-        return ("ok", hits[-1].lstrip("# ").strip())
+        text = hits[-1].lstrip("# ").strip()
+        if lookup != date:
+            text += f"（补录·ingest 记于 {lookup}）"
+        return ("ok", text)
     return ("missing", "⚠️ 概念抽取未跑")
 
 
@@ -153,13 +160,23 @@ def extract_tomorrow_goals(content: str) -> str:
         # 去掉 > 引用标记和"待晚间复盘"占位符
         if "待晚间复盘" in text or not text:
             return ""
-        # 提取要点，合并为一行
+        # 提取要点，合并为一行（v3.52.10 去噪：⛔表头/分隔线/小标题/规则注不进锚点）
         items = []
         for line in text.split('\n'):
-            line = line.strip().lstrip('->•● ')
-            if line and "待" not in line:
-                items.append(line)
-        return " / ".join(items) if items else ""
+            raw = line.strip()
+            if not raw or raw.startswith('#') or raw.startswith('📌'):
+                continue
+            if raw.startswith('|'):
+                cells = [c.strip() for c in raw.strip('|').split('|')]
+                if len(cells) >= 2 and cells[0].isdigit():
+                    task = cells[1]
+                    if task and "待" not in task:
+                        items.append(task)
+                continue
+            body = raw.lstrip('->•● ')
+            if body and "待" not in body:
+                items.append(body)
+        return " / ".join(items[:3]) if items else ""
     return ""
 
 
@@ -208,7 +225,7 @@ def fill_rating_callout(content: str, rating: str, reason: str) -> str:
 
 
 def check_speedread(content: str) -> list:
-    """速读层格式校验（v3.33.0 + v4.0.0·皮叔 2026-08-07 诊断：8/2、8/3 速读层空白/格式漂移）。
+    """速读层格式校验（v3.33.0 + v4.0.0·2026-08-07 诊断：8/2、8/3 速读层空白/格式漂移）。
     返回违规列表；空列表=通过。
     校验项：
       1. 速读层标题存在（模板一致性）
@@ -232,8 +249,25 @@ def check_speedread(content: str) -> list:
     return violations
 
 
+def check_advice_section(content: str, require_present: bool = False) -> list:
+    """伙伴建议三段式+署名校验（v3.52.7 抽出·--check-advice 严格模式复用）"""
+    v = []
+    m = re.search(r'<!-- SECTION: BUDDY_ADVICE -->\n(.*?)(?=\n---\s*\n?$)', content, re.DOTALL)
+    adv = m.group(1) if m else ''
+    if not adv or "待晚间复盘" in adv:
+        if require_present:
+            v.append("伙伴建议未写（封口后必须补写并跑 --check-advice）")
+        return v
+    for k in ["我看见的", "我想问的", "需关注"]:
+        if k not in adv:
+            v.append(f"伙伴建议缺「{k}」（仅👁️/❓/📌三段式）")
+    if not re.search(r'^—— .*[\U0001F000-\U0001FAFF]', adv, re.M):
+        v.append("伙伴建议缺署名（—— 你的 {动态前缀} {工具名} {emoji}）")
+    return v
+
+
 def check_diary_format(content: str) -> list:
-    """全模块格式门禁（v4.1.0·皮叔 2026-08-07 认可：格式合规从 AI 自律下沉为物理校验）。
+    """全模块格式门禁（v4.1.0·2026-08-07 认可：格式合规从 AI 自律下沉为物理校验）。
     返回违规列表；空列表=通过。逐模块对照 diary-template.md v4 标准。"""
     v = check_speedread(content)  # 速读层：标题/占位符/信号表/sparkline/进度条
     # 含金量行：callout 分色 + 评级 + 括号理由（评级必须为合法等级字母，杜绝「待评定」占位漏网）
@@ -265,15 +299,8 @@ def check_diary_format(content: str) -> list:
         for k in ["**⚡ 精力**：预测", "**🧘 平静**：预测", "**😌 满意**：实测", "生理状态分", "联动分析"]:
             if k not in mood:
                 v.append(f"心情模块缺「{k}」（模板：三分维度三行+生理状态分+联动分析）")
-    # 伙伴建议：三段式 + 署名
-    m = re.search(r'<!-- SECTION: BUDDY_ADVICE -->\n(.*?)(?=\n---\s*\n?$)', content, re.DOTALL)
-    adv = m.group(1) if m else ''
-    if adv:
-        for k in ["我看见的", "我想问的", "需关注"]:
-            if k not in adv:
-                v.append(f"伙伴建议缺「{k}」（仅👁️/❓/📌三段式）")
-        if not re.search(r'^—— .*[\U0001F000-\U0001FAFF]', adv, re.M):
-            v.append("伙伴建议缺署名（—— 你的 {动态前缀} {工具名} {emoji}）")
+    # 伙伴建议：三段式 + 署名（v3.52.7 抽为独立函数·供 --check-advice 复用）
+    v.extend(check_advice_section(content, require_present=False))
     # 灵感来源限字
     for line in content.split("\n"):
         if line.strip().startswith("> 来源：") and len(line.strip()) > 30:
@@ -305,15 +332,14 @@ def extract_inspiration_from_file(path: Path) -> str:
 
 
 def write_anchor_to_skeleton(skeleton_path: Path, anchor_text: str):
-    """将续接锚点写入次日骨架"""
+    """将续接锚点写入次日骨架（v3.52.9：正则整行覆盖，不限于空占位符）"""
     if not skeleton_path.exists() or not anchor_text:
         return
     content = skeleton_path.read_text(encoding="utf-8")
-    old = '> 📌 昨天说今天要做：（待填写）'
-    new = f'> 📌 昨天说今天要做：{anchor_text}'
-    if old in content:
-        content = content.replace(old, new)
-        skeleton_path.write_text(content, encoding="utf-8")
+    new_line = f'> 📌 昨天说今天要做：{anchor_text}'
+    content2, n = re.subn(r'^> 📌 昨天说今天要做：.*$', new_line, content, count=1, flags=re.M)
+    if n:
+        skeleton_path.write_text(content2, encoding="utf-8")
 
 
 def main():
@@ -324,11 +350,18 @@ def main():
     parser.add_argument('--date', required=True, help='当天日期，格式 YYYY-MM-DD')
     parser.add_argument('--skip-ingest', action='store_true',
                         help='显式跳过概念进料门禁（有痕跳过·封口块将如实标注未跑）')
+    parser.add_argument('--ingest-date', default=None,
+                        help='概念进料查询日期（补录场景：ingest 记在实际抽取日，默认=--date）')
+    parser.add_argument('--check-advice', action='store_true',
+                        help='仅校验伙伴建议三段式+署名（封口后写建议时单独跑·未写即红）')
     try:
         args = parser.parse_args()
     except SystemExit as e:
         # argparse 参数错误默认 exit 2——与语义 exit 2（次日骨架生成失败）冲突
         # 重映射为专用 exit 5（参数错误·2026-08-10 第一性原理根治：exit 数字语义唯一）
+        # --help 的 SystemExit(0) 必须原样放行（v3.52.6·否则 help 被误报为参数错误）
+        if e.code == 0:
+            raise
         raise SystemExit(5)
 
     try:
@@ -339,6 +372,17 @@ def main():
 
     # === Step 1: 读取并校验今日日记 ===
     diary_content = read_diary(today)
+
+    if args.check_advice:
+        v = check_advice_section(diary_content, require_present=True)
+        if v:
+            print("❌ 伙伴建议校验失败：", file=sys.stderr)
+            for x in v:
+                print("   - %s" % x, file=sys.stderr)
+            sys.exit(6)
+        print("ADVICE:OK 伙伴建议三段式+署名通过")
+        sys.exit(0)
+
     missing = validate_diary(diary_content)
 
     if missing:
@@ -349,7 +393,14 @@ def main():
         sys.exit(1)
 
     # === Step 1.5: 概念进料门禁（D-F9 · v3.20.1 物理阻断） ===
-    ingest_status, ingest_text = read_concept_ingest(today)
+    ingest_lookup = today
+    if args.ingest_date:
+        try:
+            ingest_lookup = datetime.date.fromisoformat(args.ingest_date)
+        except ValueError:
+            print(f"❌ --ingest-date 格式错误: {args.ingest_date}", file=sys.stderr)
+            sys.exit(1)
+    ingest_status, ingest_text = read_concept_ingest(today, ingest_lookup)
     if ingest_status == "missing" and not args.skip_ingest:
         print("❌ 概念进料门禁：知识联邦 log.md 无当日 ingest 条目。", file=sys.stderr)
         print("   先执行工作流C步骤5.5：extract_concepts.py prepare → AI抽概念 → commit", file=sys.stderr)
@@ -381,7 +432,7 @@ def main():
     print(f"✅ 正文含金量 callout 已回填为「{diary_rating}」（{rating_callout_type(diary_rating)}）", file=sys.stderr)
 
     # === Step 1.7: 全模块格式门禁（v4.1.0 物理阻断·无跳过选项） ===
-    # 背景：2026-08-07 你诊断"格式合规无物理约束、靠AI自律不可靠"——8/2/3 速读层空白、
+    # 背景：2026-08-07 诊断"格式合规无物理约束、靠AI自律不可靠"——8/2/3 速读层空白、
     # 8/5/6 格式漂移、8/1 睡眠文字墙、伙伴建议4种格式并存、W31 错误信息抄4天。
     # 修法：把"模板格式"从文本层指导下沉为脚本层物理校验，与评级门禁(exit 4)同级。
     format_violations = check_diary_format(diary_content)

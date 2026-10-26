@@ -387,7 +387,10 @@ def compute_evolution_events():
 
         blocks = re.split(r"\n(?=### 反哺：)", src)
         total = 0        # 本季度提案数
-        adopted = 0      # 本季度新增被采纳（带🛡复发检测条件=内化成免疫规则=真被采纳）
+        adopted = 0      # 采纳：🛡 行内有可执行检测条件
+        waived = 0       # 豁免：🛡 行明确 N/A / 留空并给理由（合法不建抗体·排除分母）
+        pending = 0      # 未决：无 🛡 行 或 有行无内容（还没走完采纳流程）
+        detail = []
         for b in blocks:
             if not b.lstrip().startswith("### 反哺："):
                 continue
@@ -398,15 +401,52 @@ def compute_evolution_events():
             if not (q_start <= dt < q_end):
                 continue
             total += 1
-            if "🛡 **复发检测条件**" in b:
+            # 2026-10-23 口径根治（你令·影子重算实证）：旧判据="🛡 **复发检测条件**" 精确串（带粗体）
+            # → Q4 五条提案 5/5 写的是不带粗体的「🛡 复发检测条件：」，全被判未采纳 ⇒ 0% 是格式假零。
+            # 改为三态判定：采纳（行内有可执行检测条件）/ 豁免（N/A·留空并给理由·排除分母）/
+            # 未决（无该行或有行无内容·计入分母）。分母=采纳+未决，对齐 SSOT「N/A 排除分母」规则。
+            m = re.search(r"^-\s*🛡\s*复发检测条件\s*[:：](.*)$", b, re.M)
+            val = (m.group(1).strip().strip("*").strip() if m else "")
+            if not m:
+                state = "未决"
+            elif re.search(r"N/A|留空|可机械检测\s*=\s*否|🔍\s*=\s*否", val):
+                state = "豁免"
+            elif re.search(r"grep|python|test|assert|`|\bfind\b", val):
+                state = "采纳"
+            else:
+                state = "未决"
+            if state == "采纳":
                 adopted += 1
+            elif state == "豁免":
+                waived += 1
+            else:
+                pending += 1
+            detail.append({"date": d.group(1), "state": state, "cond": val[:100]})
     except Exception:
         return None
+
+    # 采纳率分母=采纳+未决（豁免排除）；样本小必须带区间，⛔不报裸百分比
+    n = adopted + pending
+    rate = (adopted / n) if n else None
+    # Wilson 95% 区间（小样本比率的诚实表达）
+    ci = None
+    if n:
+        _z = 1.96
+        _p = rate
+        _d = 1 + _z * _z / n
+        _c = (_p + _z * _z / (2 * n)) / _d
+        _h = _z * ((_p * (1 - _p) / n + _z * _z / (4 * n * n)) ** 0.5) / _d
+        ci = [round(max(0.0, _c - _h), 3), round(min(1.0, _c + _h), 3)]
 
     return {
         "total_events": total,
         "adopted": adopted,
-        "adoption_rate": round(adopted / total, 3) if total else None,
+        "waived": waived,
+        "pending": pending,
+        "adoption_rate": (round(rate, 3) if rate is not None else None),
+        "adoption_rate_n": n,
+        "adoption_rate_ci": ci,
+        "detail": detail,   # 三态台账（随每日 json 落盘=天然 append-only 日账）
         "quarter": f"{now.year}-Q{(now.month - 1) // 3 + 1}",
     }
 
@@ -777,7 +817,12 @@ def main():
         "deviation": (ev - TARGET["evolution_events"] if ev is not None else None),
         "evidence": ev_ev,
         "adopted": (ev_info.get("adopted") if isinstance(ev_info, dict) else None),
+        "waived": (ev_info.get("waived") if isinstance(ev_info, dict) else None),
+        "pending": (ev_info.get("pending") if isinstance(ev_info, dict) else None),
         "adoption_rate": (ev_info.get("adoption_rate") if isinstance(ev_info, dict) else None),
+        "adoption_rate_n": (ev_info.get("adoption_rate_n") if isinstance(ev_info, dict) else None),
+        "adoption_rate_ci": (ev_info.get("adoption_rate_ci") if isinstance(ev_info, dict) else None),
+        "detail": (ev_info.get("detail") if isinstance(ev_info, dict) else None),
         "quarter": (ev_info.get("quarter") if isinstance(ev_info, dict) else None),
         # 挑战线定案（2026-08-22·你愿景裁定·改本季度新增）：净采纳率≥60%——愿景③真义=机制被采纳进系统，
         # 是"质量"不是"数量"。v0.5 改"本季度新增被采纳/本季度总提案"：累计存量(全部抗体14)永远达标无牵引，
@@ -786,9 +831,11 @@ def main():
         "challenge_target": 0.60,
         "challenge_unit": "rate",
         "state": "定案",  # 定案口径=本季度新增净采纳率
-        "note": "季度={quarter}·本季提案数={total}·本季新增被采纳={adopted}(有效抗体内化=真进化)·净采纳率={rate} · 挑战线=净采纳率≥60%(本季度新增口径·防累计存量无牵引·测'这季度真内化几个新机制'·愿景③) ".format(
+        "note": "季度={quarter}·提案={total}·采纳={adopted}·豁免={waived}·未决={pending}·净采纳率={rate}(n={n}·95%CI={ci}) · 分母=采纳+未决(豁免排除·对齐SSOT N/A规则) · 挑战线=净采纳率≥60% · 2026-10-23 口径根治：旧判据靠带粗体的精确串→Q4 五条全被判未采纳=格式假零 ".format(
             quarter=ev_info.get("quarter"), total=ev_info.get("total_events"),
-            adopted=ev_info.get("adopted"), rate=ev_info.get("adoption_rate")) if isinstance(ev_info, dict) else "",
+            adopted=ev_info.get("adopted"), waived=ev_info.get("waived"),
+            pending=ev_info.get("pending"), rate=ev_info.get("adoption_rate"),
+            n=ev_info.get("adoption_rate_n"), ci=ev_info.get("adoption_rate_ci")) if isinstance(ev_info, dict) else "",
     }
 
     # ④ 越用越懂使用者（过渡口径：认知发现数·按自然月）

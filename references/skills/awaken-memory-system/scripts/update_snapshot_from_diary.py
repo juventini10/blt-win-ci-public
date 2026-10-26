@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update_snapshot_from_diary.py — 懒加载模式快照实时更新脚本（自宣版本=宿主 Skill 版本·v8.3.1）
+update_snapshot_from_diary.py — 懒加载模式快照实时更新脚本（自宣版本动态取自宿主 SKILL.md 的 version 字段）
 
 归属：awaken-memory-system自有脚本（不依赖daily-buddy）
 功能：读取日记YAML frontmatter，在动态状态快照.md的「最近变更摘要」表格中新增/更新行
@@ -63,9 +63,23 @@ def parse_args():
     parser.add_argument("--no-backfill", action="store_true", help="关闭历史缺失日回填，只处理当日行（v7.34行为）")
     parser.add_argument("--archive-window", type=int, default=DEFAULT_WINDOW, help=f"「最近变更摘要」保留窗口（天·默认{DEFAULT_WINDOW}）→ 超窗行迁入历史存档（v7.36）")
     parser.add_argument("--no-archive", action="store_true", help="关闭滚动归档，保留表格全部行（v7.35行为）")
+    parser.add_argument("--no-normalize", action="store_true",
+                        help="关闭表序自愈（v8.5.2）：把非降序表交给归档守卫判红，用于回归 eval-set#39 守卫路径")
     parser.add_argument("--today", default=None, help="调试/回归用：冻结\"今日\"（YYYY-MM-DD）——eval-set#33 跨年哨兵黑盒复现入口（v8.1.3·审查A8）")
     return parser.parse_args()
 
+
+
+def skill_version():
+    """自宣版本动态取自宿主 SKILL.md 的 version 字段（单一真源·防脚本硬编码漂移）。"""
+    skill = Path(__file__).resolve().parent.parent / "SKILL.md"
+    try:
+        for line in skill.read_text(encoding="utf-8").splitlines():
+            if line.startswith("version:"):
+                return line.split(":", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return "unknown"
 
 def get_default_paths(today=None):
     """推导默认路径（v8.1.4·审查F-6：today 可注入——--today 必须同时冻结日记路径，否则黑盒复现入口会把真实今日数据写进冻结日）"""
@@ -271,6 +285,70 @@ def get_existing_dates(snapshot_content, today=None):
     return dates, n_invalid, n_detached
 
 
+AWAKEN_ROW_MARKERS = ("awaken脚本", "日记同步")
+
+
+def normalize_table_order(lines, first_data_idx, today):
+    """整表按日期降序重排（同日保持原相对序·stable sort）。返回 (lines, changed)。
+
+    v8.4.1 根治（2026-10-23 实证）：历史日回填按「一律插到表首」落行，旧日期插到新行上方
+    → 表序破坏 → archive_old_rows 降序守卫返回告警 → 主流程 exit 1 → 巡检/仪表盘记「更新失败」，
+    而 stdout 同时说「无需更新」=语义自相矛盾。自愈优于人工：每次写后归一表序，守卫保留为兜底。
+    含非法日期行时跳过归一（不挪动不可解析行，留给守卫显形）。
+    """
+    rows = []
+    i = first_data_idx
+    while i < len(lines):
+        s = lines[i].strip()
+        if not s.startswith("|"):
+            break
+        m = re.match(DATE_ROW_PATTERN, s)
+        if not m:
+            break
+        try:
+            d = resolve_row_date(m.group(2), m.group(1), today)
+        except ValueError:
+            return lines, False
+        rows.append((i, d))
+        i += 1
+    if len(rows) < 2:
+        return lines, False
+    ordered = sorted(rows, key=lambda x: x[1], reverse=True)  # stable：同日保持原序
+    if [r[0] for r in ordered] == [r[0] for r in rows]:
+        return lines, False
+    out = list(lines)
+    for pos, (orig, _) in zip(range(first_data_idx, first_data_idx + len(rows)), ordered):
+        out[pos] = lines[orig]
+    return out, True
+
+
+def find_today_diary_row(lines, first_data_idx, dates, today):
+    """返回「当日日记同步行」的行号；多端同日共存时只命中 awaken 行（v8.4.1）。
+
+    原实现按日期取首行 → 他端先写的同日行会被整行顶替（2026-10-23 实证：全量唤醒行被
+    日记行覆盖并留下重复行）。判据加工具+文件名双标记；命中不到＝视作不存在→新增一行。
+    """
+    idx = dates.get(today.date())
+    if idx is None:
+        return None
+    i = idx
+    while i < len(lines):
+        s = lines[i].strip()
+        m = re.match(DATE_ROW_PATTERN, s)
+        if not m:
+            break
+        try:
+            d = resolve_row_date(m.group(2), m.group(1), today)
+        except ValueError:
+            break
+        if d != today.date():
+            break
+        if all(tag in s for tag in AWAKEN_ROW_MARKERS):
+            return i
+        i += 1
+    return None
+
+
 def check_today_row_exists(snapshot_content, today):
     """检查「最近变更摘要」表格中是否已有当日行（v8.1.4随键带年升级）"""
     dates, _, _ = get_existing_dates(snapshot_content, today)
@@ -329,6 +407,8 @@ def update_snapshot(snapshot_path, new_rows, today, today_row_idx=None, dry_run=
     # 按日期升序插入到表格顶部 → 表内呈现为降序（新→旧），与既有表格同构
     for day, row in sorted(insert_rows, key=lambda x: x[0]):
         lines.insert(separator_idx + 1, row)
+    # v8.4.1：写前整表归一表序——回填旧日插顶会破坏降序，写后归一防守卫假红
+    lines, _ = normalize_table_order(lines, first_data_idx, today)
 
     snapshot_path.write_text("\n".join(lines), encoding="utf-8")
     return True, f"已替换{1 if replace_row is not None else 0}行 + 新增{len(insert_rows)}行"
@@ -486,7 +566,7 @@ def main():
     snapshot_path = Path(args.snapshot) if args.snapshot else default_snapshot
     today_diary_path = Path(args.diary) if args.diary else default_diary
 
-    print(f"📔 懒加载快照实时更新（awaken-memory-system v8.3.1）")
+    print(f"📔 懒加载快照实时更新（awaken-memory-system v{skill_version()}）")
     print(f"   快照: {snapshot_path}")
     print(f"   今日日记: {today_diary_path}")
     print(f"   日期: {today.strftime('%Y-%m-%d')} | 回填窗口: {args.backfill_window}天 | 回填: {'关闭' if args.no_backfill else '开启'}")
@@ -504,6 +584,24 @@ def main():
         print(f"❌ 快照中未找到「最近变更摘要」表格")
         print(f"   降级：跳过快照更新，轻量模式将输出快照旧数据+标注滞后")
         sys.exit(1)
+
+    # v8.4.1 表序自愈：非降序=归档守卫 exit 1 的唯一已知来源，写入前先归一
+    _lines = snapshot_content.split("\n")
+    _lines, _normalized = normalize_table_order(_lines, first_data_idx, today)
+    if _normalized:
+        # v8.5.2 根治（P1-3）：原实现此处无条件写盘 —— --dry-run 也会改文件，
+        # 且随后仍打印「(dry-run模式，未实际写入)」= 自我背书式假绿。
+        if args.no_normalize:
+            print("🧭 表序自愈：已禁用（--no-normalize），交由归档守卫判定")
+            _lines = snapshot_content.split("\n")
+            _normalized = False
+        elif args.dry_run:
+            print("🧭 表序自愈：非降序，dry-run **未写盘**（实跑将重排 新→旧）")
+            snapshot_content = "\n".join(_lines)   # 仅内存内生效，供后续预览
+        else:
+            snapshot_path.write_text("\n".join(_lines), encoding="utf-8")
+            snapshot_content = "\n".join(_lines)
+            print("🧭 表序自愈：最近变更摘要非降序已自动重排（新→旧）")
 
     existing_dates, n_invalid, n_detached = get_existing_dates(snapshot_content, today)
     # v8.1.4·审查F-7：最新日期改"表首行"口径（与仪表盘 snapshot_status 同源——表序约定=新在上；max()系第三口径已废）
@@ -540,8 +638,9 @@ def main():
                   f"能量: {today_diary_data.get('energy_actual', 'N/A')} | "
                   f"封口: {'✓已封口' if today_diary_data.get('sealed') else '⏳未封口'}")
 
-    today_exists = today.date() in existing_dates  # v8.1.4·审查F-10：当日行定位用完整日期，混合年表不再命中去年行
-    today_row_idx = existing_dates.get(today.date())
+    # v8.4.1：当日行只认 awaken 日记行——同日多端共存时不覆盖他端行、不制造重复行
+    today_row_idx = find_today_diary_row(snapshot_content.split("\n"), first_data_idx, existing_dates, today)
+    today_exists = today_row_idx is not None
     if today_diary_data is not None:
         if today_exists:
             old_row = snapshot_content.split("\n")[today_row_idx]
@@ -618,7 +717,11 @@ def main():
     # 仪表盘 snap_gap 不计数，"请人工处理"被双层静默吞掉=假绿灯（A1症状经守卫路径复活）
     if arch_guard and not args.dry_run:
         sys.exit(1)
-    sys.exit(0 if (new_rows or n_arch > 0) else 2)
+    # v8.4.1：表序归一属真实写盘，计入「已更新」——避免「写了文件却 exit 2 无需更新」的语义矛盾
+    # v8.5.2：dry-run 下没有真实写盘，归一变盘不得计入「已更新」（原实现会让 patrol
+    # 记 snap_state=updated，而文件其实没动）
+    _normalized_effective = _normalized and not args.dry_run
+    sys.exit(0 if (new_rows or n_arch > 0 or _normalized_effective) else 2)
 
 
 if __name__ == "__main__":

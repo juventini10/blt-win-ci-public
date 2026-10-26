@@ -91,6 +91,7 @@ JSON_HOSTS_BY_PATH = {
 # 故此表是**载荷自证**，不依赖 env（env 在 WB 端与ZCode 端高度重叠·不可作判据）。
 TEXT_HOSTS_BY_PATH = {
     "/.workbuddy/": "workbuddy",
+    "/.minimax/": "minimaxcode",  # 2026-10-23 MiniMax Code 端·载荷 transcript_path 含端根（text 形态·与 WB 同口径）
 }
 
 LEDGER = os.path.expanduser("[记忆共享中心]/脚本中心/logs/runtime/hook_protocol_ledger.jsonl")

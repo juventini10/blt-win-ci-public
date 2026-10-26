@@ -12,12 +12,43 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
 
 # PYTHON 启动前用 env -u 清污染（Trae Work shell 注入 PYTHONHOME/PYTHONPATH，直接调会报 encodings 缺失）
 run_py() { env -u PYTHONHOME -u PYTHONPATH python3 "$@"; }
-PANEL_PY="[记忆共享中心]/脚本中心/panel_snapshot.py"
-EVO_PY="[记忆共享中心]/脚本中心/evolution_deviation.py"
+# 2026-10-26 可达性对齐（端用户全功能可用为判据）：
+#   病根＝本件把「记忆中心名 + 子目录层级」两件事写死（家目录下的记忆中心字面目录、脚本中心子目录层级…），
+#   而安装器 ①生成脚本中心 是**平铺**复制到 <MC>/脚本中心/ 根（子目录层级不交付），
+#   端用户机上这些路径必 FileNotFoundError；作者机上又确实存在子目录布局——单边写死两边必坏一边。
+#   修法＝先解析 MC 根（env 优先），再按「子目录 → 平铺」双候选回落，两边同时成立；⛔不猜、找不到就显形。
+_self_mc() {  # 自定位：本件位于 <MC>/脚本中心/[子目录]/ ⇒ 上溯 1~2 级即 MC（⛔不写死记忆中心名·两端同构）
+  local d="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)" a b
+  for a in "$d/../.." "$d/.."; do
+    b="$(cd "$a" 2>/dev/null && pwd)" || continue
+    [ -d "$b/脚本中心" ] && { printf '%s\n' "$b"; return 0; }
+  done
+  return 1
+}
+MC_ROOT="${MEMORY_CENTER:-${BULUOTUO_MC:-$(_self_mc || true)}}"
+if [ -z "$MC_ROOT" ]; then
+  echo "[panel_live_watch][FATAL] 未定位记忆共享中心根（env MEMORY_CENTER/BULUOTUO_MC 未设且自定位失败）⇒ 退出，⛔不猜路径" >&2
+  exit 3
+fi
+resolve_py() {  # $1=子目录相对路径（作者机布局） $2=文件名（端用户机平铺布局）
+  local sub="$1" base="$2" cand
+  for cand in "$MC_ROOT/脚本中心/$sub/$base" "$MC_ROOT/脚本中心/$base"; do
+    [ -f "$cand" ] && { printf '%s\n' "$cand"; return 0; }
+  done
+  cand=$(find "$MC_ROOT/脚本中心" -maxdepth 3 -name "$base" -type f 2>/dev/null | head -1)
+  [ -n "$cand" ] && { printf '%s\n' "$cand"; return 0; }
+  echo "[panel_live_watch][WARN] 未定位 ${base}（脚本中心下三档候选均缺）⇒ 该环节跳过并显形" >&2
+  return 1
+}
+PANEL_PY=$(resolve_py "内容创作" "panel_snapshot.py" || true)
+EVO_PY=$(resolve_py "记忆蒸馏" "evolution_deviation.py" || true)
 # 2026-09-27 童灵根治：渲染后必须补碰撞合并——panel_snapshot 重渲染会整体覆盖 HTML，
 # 冲掉 07:30 链 merge_collision_viz.py 合并的碰撞仪表盘（幂等，重复跑安全）
-MERGE_PY="[记忆共享中心]/可视化呈现/scripts/merge_collision_viz.py"
-LOG="[记忆共享中心]/脚本中心/logs/panel_live_watch.log"
+MERGE_PY="$MC_ROOT/可视化呈现/scripts/merge_collision_viz.py"
+# 2026-10-26 五环节环P3：认知盲区轴模块同病同治——重渲染覆盖HTML，注入器必须同链补跑（幂等·重复安全）
+MERGE2_PY="$MC_ROOT/可视化呈现/scripts/merge_suspend_axis.py"
+MERGE3_PY="$MC_ROOT/可视化呈现/scripts/merge_twin_axis.py"
+LOG="$MC_ROOT/脚本中心/logs/panel_live_watch.log"
 
 mkdir -p "$(dirname "$LOG")"
 
@@ -25,11 +56,14 @@ mkdir -p "$(dirname "$LOG")"
 # 覆盖全链路：原始日志变化 → refresh evolution json → 重渲染面板（真·全自动·愿景①）
 WATCH=(
   "$HOME/.workbuddy/settings.json"
+  "$HOME/.workbuddy-ai/settings.json"
   "$HOME/.qoder-cn/settings.json"
   "$HOME/.qoder/settings.json"
   "[记忆共享中心]/脚本中心/布洛陀脚本架构设计哲学/01-脚本架构设计通用规范.md"
   "[记忆共享中心]/脚本中心/布洛陀脚本架构设计哲学/04-跨端接入指南.md"
   "[记忆共享中心]/自定义层/待完成工作/okr_quarter.json"
+  # 2026-10-23 根治：面板实读 SYSLOG=开发工具/logs/runtime（panel_snapshot.py:112），
+  # 原监听 脚本中心/logs/runtime 是告警/控制日志目录（12件 vs 133件）→ 指标变了从不触发
   "[记忆共享中心]/脚本中心/logs/runtime/"
   "[记忆共享中心]/成长箱/免疫复发记录.md"
   "[记忆共享中心]/成长箱/experience/规范反哺日志.md"
@@ -41,7 +75,7 @@ echo "[panel_live_watch] 启动 $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"
 
 # 演化数据刷新：总是幂等重算当日 json（原始日志变化→重算→渲染·真全自动，非"缺失才补"）
 refresh_evolution_data() {
-  run_py "$EVO_PY" >> "$LOG" 2>&1
+  [ -n "$EVO_PY" ] && run_py "$EVO_PY" >> "$LOG" 2>&1
 }
 
 # 变更事件 → 防抖 5s → 先重算当日指标再重渲染（防编辑中途多次触发）
@@ -50,16 +84,20 @@ on_change() {
   refresh_evolution_data
   run_py "$PANEL_PY" >> "$LOG" 2>&1 && \
     run_py "$MERGE_PY" >> "$LOG" 2>&1 && \
+    run_py "$MERGE2_PY" >> "$LOG" 2>&1 && \
+    run_py "$MERGE3_PY" >> "$LOG" 2>&1 && \
     echo "[panel_live_watch] 重渲染 $(date '+%H:%M:%S') 数据源变更自动刷新" >> "$LOG" || \
     echo "[panel_live_watch] 重渲染失败 $(date '+%H:%M:%S')" >> "$LOG"
     # v0.3（2026-10-07 野根根治轮·QoderCN）：失败必须显形——原只记日志=静默崩 4 小时无人喊
-    python3 -c 'import sys; sys.path.insert(0, "[记忆共享中心]/脚本中心"); import hook_protocol; hook_protocol.alert("刷新守护", "panel_live_watch 重渲染失败·活面板停摆（详见 脚本中心/logs/panel_live_watch.log 末行）")' >> "$LOG" 2>&1 || true
+    python3 -c 'import sys, os; sys.path.insert(0, os.path.expanduser(os.environ.get("MC_ROOT" ,"$MC_ROOT"))); import hook_protocol; hook_protocol.alert("刷新守护", "panel_live_watch 重渲染失败·活面板停摆（详见 脚本中心/logs/panel_live_watch.log 末行）")' >> "$LOG" 2>&1 || true
 }
 
 # 冷启动自愈：守护拉起即重算当日指标并初始渲染，保证"打开网页即最新"
 refresh_evolution_data
 run_py "$PANEL_PY" >> "$LOG" 2>&1 && \
   run_py "$MERGE_PY" >> "$LOG" 2>&1 && \
+  run_py "$MERGE2_PY" >> "$LOG" 2>&1 && \
+  run_py "$MERGE3_PY" >> "$LOG" 2>&1 && \
   echo "[panel_live_watch] 初始渲染 $(date '+%H:%M:%S')" >> "$LOG"
 
 # 只响应真正的指标数据源更新：指标 json / okr / settings / SSOT + 原始数据源
@@ -73,7 +111,7 @@ FIND_REGEX='(evolution_deviation_.*\.json$|okr_quarter\.json$|settings\.json$|01
 should_render() {
   local changed="$1"
   case "$changed" in
-    *"okr_quarter.json"|*"evolution_deviation_"*.json|*.workbuddy/settings.json|*.qoder-cn/settings.json|*.qoder/settings.json|*"01-脚本架构设计通用规范.md"|*"04-跨端接入指南.md"|*"免疫复发记录.md"|*"规范反哺日志.md"|*"变更日志.md"|*"platform_adaptation_check.log")
+    *"okr_quarter.json"|*"evolution_deviation_"*.json|*.workbuddy/settings.json|*.workbuddy-ai/settings.json|*.qoder-cn/settings.json|*.qoder/settings.json|*"01-脚本架构设计通用规范.md"|*"04-跨端接入指南.md"|*"免疫复发记录.md"|*"规范反哺日志.md"|*"变更日志.md"|*"platform_adaptation_check.log")
       return 0 ;;
     *)
       return 1 ;;

@@ -1,4 +1,4 @@
-# Zwork 能力矩阵（v0.1·install_scripts.py --platform zwork 读取）
+# Zwork 能力矩阵（v0.2·2026-10-26·setup.sh v0.2 装载三步：桥/技能根/审批）
 # 平台底座：AutoClaw 新客户端（系统名 AutoClaw·运行时 zwork）·平台托管型软约束端（06-跨端适配规范第四型）
 # ⛔ 端分立铁律（作者 2026-09-24 声明）：本端 ≠ adapters/autoclaw/（旧客户端 ~/.openclaw-autoclaw·OpenClaw gateway）
 #    两端相互独立——本目录专属 Zwork；探测双命中（~/.openclaw-autoclaw 亦存在）须 fail-loud 问询
@@ -8,10 +8,10 @@ display_name: "Zwork（AutoClaw 新客户端）"
 emoji: "🧠"
 capabilities:
   rules_inject: false         # 无 rules/ 目录·无 alwaysApply 机制（平台托管·档案层实体+自觉加载替代）
-  agents_full_inject: false   # 工作区 AGENTS.md 平台不自动装配（09-24+10-01 两轮 M1 定性·⛔按 WB 口径假绿）
+  agents_full_inject: false   # 声明保持 false（收据语义不变）——⚠️10-26 dist 订正：平台每 Run 自动装配 ~/.pi/agent/AGENTS.md（pi-user·priority1）+工作区链；M1「不自动装配」归因订正=真源不在扫描面（适配失败）；桥=~/.pi/agent/AGENTS.md 软链→端真源（零副本）
   hooks_event: false          # 无 hook 注册面（平台边界·无用户可挂回调位）
   hook_stdout_inject: false   # 无逐轮 prompt 事件
-  settings_json: false        # 无 settings.json 面
+  settings_json: false        # hooks 配置面仍无；~/.pi/agent/settings.json 仅技能根声明（10-26 v0.2 setup.sh 幂等维护）
   awareness: true             # 平台 Memory=机制级跨会话记忆（Run 级 zwork_memory 注入·mode=all 枚举召回）
   skill_symlink: false        # 技能面板=平台托管分发·非文件系统软链通道
   hooks_alternative: false    # 无插件/无 cron 本端专属面（crontab 路由家族=跨端公共资产·不占）
@@ -24,6 +24,7 @@ capabilities:
   # 🔴 端专属 Skill（2026-10-08 D3 验收轮补·条文32 第5条「无hook端须端专属Skill承载」同判）：
   # 豆包/Trae Work 先例——无钩子端用 Skill 承载 W1/W3/守护。⛔ 不链本端以外任何端。
   skills: "doenglingz-slice-nav-zwork, doenglingz-guard-zwork"
+  # 🔴 装载通道（2026-10-26 收口·锁协议排队项补插）：技能=外部根真源直读（~/.pi/agent/settings.json skills=[个人AI档案/技能配置, 本包 adapters/zwork/skills]·pi-user priority1 压商店冻结副本·审批=declarative_resource_root_approvals）；档案 AGENTS.md=软链 ~/.pi/agent/AGENTS.md→端真源——技能目录软链被平台三级封死·文件级 readFileSync 认链（不同门·勿混）
   twin_surface: "active"      # 数字分身=已点火态（童灵第 19 端·K2 终态）——M7 对账⛔重复造芯
 post_install_message: |
   ═══════════════════════════════════════════════════════════════

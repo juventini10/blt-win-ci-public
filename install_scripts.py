@@ -49,6 +49,16 @@ except Exception:
 
 PKG = os.path.dirname(os.path.abspath(__file__))
 PLACEHOLDER = "[记忆共享中心]"
+# 2026-10-26（zhangyan#2 根治）：守护日志中心占位符 → 用户机绝对路径。
+# launchd 不展开 ~，渲染必须是绝对路径；目录由 write_user_versions 创建（施工项 F）。
+LOG_CENTER_PLACEHOLDER = "[日志中心]"
+# 2026-10-27（G路径体检 C7-2）：日志中心按平台派生——原无条件写 macOS 形态，
+#   Windows 端会建出 C:\\Users\\<user>\\Library\\Logs\\buluotuo（mac 目录族误落·单平台假设）。
+if os.name == "nt":
+    LOG_CENTER_PATH = os.path.join(
+        os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "buluotuo", "Logs")
+else:
+    LOG_CENTER_PATH = os.path.expanduser("~/Library/Logs/buluotuo")
 # 2026-10-10 十一轮：畸形前缀归一化（双拼病防御）——旧模板/已发布包可能残留
 # 波浪号斜杠紧贴占位符的形态（deident tilde 化 + relocate 裸形态规则残留前缀），
 # 纯 replace 后变 `~//Users/...`（Mac）/ `~/C:/Users/...`（Win）⇒ expanduser 静默失效。
@@ -428,7 +438,7 @@ def bootstrap_runtime_state(mc, dry=False):
             report.append("pending 数字分身/state_bus.json（dry-run 或脚本缺失）")
         else:
             import subprocess as _sp
-            # ⚠️ 账本落点由 DIGITALTWIN_HOME 决定（state_bus_sync 默认 ~/个人AI档案/数字分身）；
+            # ⚠️ 账本落点由 DIGITALTWIN_HOME 决定（state_bus_sync 默认 [记忆共享中心]/数字分身）；
             # 端用户记忆中心可能在 D:\SLcenter ⇒ 必须显式传入，否则种到作者路径=端上仍然没有账本。
             _env = dict(os.environ)
             _env["DIGITALTWIN_HOME"] = dt_root
@@ -677,6 +687,10 @@ def _fill_text(txt, mc, ext=None, paths=None):
     t = (txt or "").replace(TILDE_PREFIXED, PLACEHOLDER)
     t = t.replace(PLACEHOLDER, _mc_for(ext or "", mc))
     t = t.replace("{" + PLACEHOLDER[1:-1] + "}", _mc_for(ext or "", mc))
+    # 2026-10-26（zhangyan#2）：[日志中心] → ~/Library/Logs/buluotuo 绝对路径
+    # （路径无反斜杠，无转义面问题；花括号形态同 F4 双形态惯例一并登记）
+    t = t.replace(LOG_CENTER_PLACEHOLDER, LOG_CENTER_PATH)
+    t = t.replace("{" + LOG_CENTER_PLACEHOLDER[1:-1] + "}", LOG_CENTER_PATH)
     if paths:
         for _key, _ph in (("DIARY_REPO", "日记仓库"), ("KNOWLEDGE_BASE", "知识库"),
                           ("DIARY_SUBDIR", "日记子目录")):
@@ -743,14 +757,16 @@ def _fill(path, mc, dry=False):
             txt = f.read()
     except (OSError, UnicodeDecodeError):
         return 0
-    if PLACEHOLDER not in txt:
+    if PLACEHOLDER not in txt and LOG_CENTER_PLACEHOLDER not in txt:
         return 0
     txt = txt.replace(TILDE_PREFIXED, PLACEHOLDER)  # 十一轮：畸形前缀归一化
-    n = txt.count(PLACEHOLDER)
+    n = txt.count(PLACEHOLDER) + txt.count(LOG_CENTER_PLACEHOLDER)
     if not dry:
         ext = os.path.splitext(path)[1]
+        txt = txt.replace(PLACEHOLDER, _mc_for(ext, mc))
+        txt = txt.replace(LOG_CENTER_PLACEHOLDER, LOG_CENTER_PATH)
         with open(path, "w", encoding="utf-8") as f:
-            f.write(txt.replace(PLACEHOLDER, _mc_for(ext, mc)))
+            f.write(txt)
         if ext in (".py", ".json"):
             _FILL_REPORT.append(path)  # R2 门禁原料（仅语法可判面登记）
     return n
@@ -954,6 +970,9 @@ def deploy_skills(mc, dry=False, only=None):
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_root = os.path.join(mc, "记忆琥珀", "升级前备份_" + ts)
     losses, n_deploy, n_skip = [], 0, 0
+    # afeng#2（2026-10-26）：升级覆盖保护名单（skill 内相对路径）。
+    # triwich decision-room.md = 概念碰撞运行台账，用户数据，升级覆盖=数据灭失。
+    LEDGER_PROTECT = ("triwich/references/decision-room.md",)
     _PATHS_CACHE = _read_install_paths(mc)  # F4：一次读取·全程复用
     names = sorted(os.listdir(src_root))
     if only:
@@ -976,6 +995,12 @@ def deploy_skills(mc, dry=False, only=None):
                 except (UnicodeDecodeError, OSError):
                     body = None                      # 二进制件：原样复制
                 if os.path.isfile(dp):
+                    # afeng#2（2026-10-26）：运行台账保护名单——接收端已积累的运行台账
+                    # ⛔升级永不覆盖（包内保持初态模板供首装，仅保护用户机已写数据）。
+                    if rp in LEDGER_PROTECT:
+                        n_skip += 1
+                        print("  🔒 台账保护（不覆盖）: %s" % rp)
+                        continue
                     same = False
                     if body is not None:
                         try:
@@ -1686,6 +1711,15 @@ def _landing_bases(mc_):
     （5c/8 公共部署→脚本中心 + 各端 setup 指向真源）。文件必须真实存在于任一位——判据变宽不变松。"""
     return [HOOKS_ROOT,
             os.path.join(mc_ or "", "脚本中心"),
+            # 2026-10-25 Trae CN 入包：脚本面归拢子目录后，端交付件按职能分居
+            # 路由/守卫/分身/内容创作——不列＝真件在盘却判"未落盘"假红。
+            os.path.join(mc_ or "", "脚本中心", "路由"),
+            os.path.join(mc_ or "", "脚本中心", "守卫"),
+            os.path.join(mc_ or "", "脚本中心", "分身"),
+            os.path.join(mc_ or "", "脚本中心", "内容创作"),
+            # 2026-10-25：Trae CN delivered 实核新增两处（feedback_detect/route_inject_prompt 真身所在）
+            os.path.join(mc_ or "", "脚本中心", "记忆蒸馏"),
+            os.path.join(mc_ or "", "脚本中心", "Skill路由引擎", "scripts"),
             os.path.join(mc_ or "", "开发工具"),
             os.path.join(mc_ or "", "开发工具", "知识联邦引擎", "scripts"),
             os.path.join(mc_ or "", "开发工具", "changelog-guard"),
@@ -1703,12 +1737,17 @@ def verify_deployed(mc=None, hooks_root=None, settings_path=None):
     若给了记忆中心路径，再核 ③规则层运行时数据（铁律硬墙的数据源）是否就位。
 
     🔴 2026-10-09 作用域根治（闸6 第一遍 rc=1 的跨端真因）：
-       原签名只收 `mc`，钩子落点读**全局** `HOOKS_ROOT`（L49 写死 `~/.workbuddy/hooks`）。
-       `main()` 在 L1928 对 `HOOKS_ROOT` 的重新赋值是**函数局部变量**（Python 无 global 声明）
+       原签名只收 `mc`，钩子落点读**全局** `HOOKS_ROOT`（L58 写死 `~/.workbuddy/hooks`）。
+       `main()` 对 `HOOKS_ROOT` 的重新赋值**当时是函数局部变量**（Python 无 global 声明）
        ⇒ 非 WB 端（Hermes/Qoder CN/ZCode…）传 `--cfg-root` 时，本函数仍去查 **WB 的 hooks 目录**
        ⇒ 钩子明明装到了端自己的配置根，却报「未落盘/未注册」⇒ 假红 ⇒ 闸6 判「第一遍 rc=1」。
        修法＝把端实际的 hooks_root / settings_path **显式传参**（⛔不靠全局·作用域不跨函数传递）。
        调用方不传时回落全局（WB 旧行为不变·向后兼容）。
+       ⚠️ 2026-10-25 订正（**本段「当时」二字不可删·那是历史读数**）：`main()` 现已在
+       **L3084 声明 `global HOOKS_ROOT, SETTINGS, _PLATFORM_ID, _CFG_ROOT_ABS`**
+       ⇒ 该重新赋值**已是模块级生效**（实测：minimaxcode 沙箱 dry-run「② 钩子部署 56 件 →
+       `<cfg>/hooks/`」·⛔不是 `~/.workbuddy/hooks`）⇒ 「函数局部」现状已不成立，
+       但**显式传参那条修法仍保留**（双保险·本函数不依赖全局）。
     """
 
     # ── B-min·包版本驱动 diff 自查（v3·2026-10-13·import版·提示层⛔不阻断）──
@@ -1835,57 +1874,106 @@ def verify_deployed(mc=None, hooks_root=None, settings_path=None):
         print("✅ 本端交付面 %d/%d 脚本已落盘 + %d 个插件已注册（宿主 openclaw.json 插件表）%s"
               % (n_files, n_files, len(plugin_ids), " · 规则层就位" if mc else ""))
         return 0
+    # ── MiniMax Code 形态（2026-10-25 入包·第 6 种注册面）─────────────────────────
+    #   Plugin Hook 端——注册面 = <配置根>/plugins/bulutuo-guards/hooks/hooks.json
+    #   （由插件 manifest .minimax-plugin/plugin.json 的 "hooks" 数组声明装载）。
+    #   ⚠️ 为何独立分支：①zcode_form 判 settings_json=false + hooks_alternative=true ⇒ 本端不匹配
+    #     （本端 hooks_alternative 未声明）；②plugin_form 判 openclaw_plugins ⇒ 本端不匹配；
+    #     ③标准分支按 SETTINGS 读 settings.json ⇒ 本端恒读空 ⇒ 交付面全件假红。
+    #   ⛔ 核验清单 = capability hooks_surface.delivered（端交付面 SSOT·条文33）——
+    #     不用 len(ROSTER) 全集（会把「WB 域件」误判为本端欠账·与 zcode 同族教训）。
+    minimaxcode_form = (_PLATFORM_ID == "minimaxcode")
+    if minimaxcode_form:
+        _cfg_root = _CFG_ROOT_ABS or os.path.expanduser(cap.get("config_root", "~/.minimax"))
+        _mj_hooks = os.path.join(_cfg_root, "plugins", "bulutuo-guards", "hooks", "hooks.json")
+        _mj_plugin_manifest = os.path.join(_cfg_root, "plugins", "bulutuo-guards",
+                                           ".minimax-plugin", "plugin.json")
+        reg_text = ""
+        if os.path.isfile(_mj_hooks):
+            try:
+                reg_text = open(_mj_hooks, encoding="utf-8", errors="ignore").read()
+            except Exception:
+                reg_text = ""
+        cap_text = open(os.path.join(PKG, "adapters", _PLATFORM_ID, "capability.yaml"),
+                        encoding="utf-8").read()
+        # ① 插件 manifest 注册核（宿主按 "hooks" 数组装载挂点·缺声明＝装了不派发）
+        if not os.path.isfile(_mj_plugin_manifest):
+            miss_reg.append("plugin-manifest:.minimax-plugin/plugin.json")
+        else:
+            try:
+                _mj_man = json.load(open(_mj_plugin_manifest, encoding="utf-8"))
+                _mj_hookarr = _mj_man.get("hooks") or []
+                if "hooks/hooks.json" not in _mj_hookarr:
+                    miss_reg.append("plugin-manifest:hooks[]未声明hooks/hooks.json")
+            except Exception:
+                miss_reg.append("plugin-manifest:不可解析")
+        # ② 交付脚本落盘核 + 注册核（src 分派·与 zcode 同构）
+        entries = re.findall(
+            r"script:\s*([A-Za-z0-9_.\-]+\.py)[^\n]*?src:\s*([A-Za-z0-9_/\-.]+)", cap_text) if cap_text else []
+        if not entries:
+            entries = [(main_f, "references/scripts") for _ev, _loc, _sd, main_f, _deps in ROSTER]
+        sc = os.path.join(mc, "脚本中心") if mc else None
+        n_files = 0
+
+        def _delivered_ok_mc(_mc, _base, _fname):
+            """落盘核（⛔ 只回答「这端有没有这件」，不回答「该不该在某个目录」）。"""
+            if _base and os.path.isfile(os.path.join(_base, _fname)):
+                return True
+            if _base and os.path.isdir(_base):
+                for _dp, _dn, _fs in os.walk(_base):
+                    if _fname in _fs:
+                        return True
+            if _mc:
+                for _rel in (("自定义层", "待完成工作", "路由家族", "scripts"), ("脚本中心",)):
+                    if os.path.isfile(os.path.join(_mc, *_rel, _fname)):
+                        return True
+            return False
+
+        for fname, src_rel in entries:
+            n_files += 1
+            if "digital-twin" in src_rel:
+                base = os.path.join(mc, "数字分身", "devtools") if mc else None
+            elif src_rel.startswith("adapters/"):
+                base = os.path.join(_CFG_ROOT_ABS or "", "hooks") if _CFG_ROOT_ABS else None
+            else:
+                base = sc
+            if mc is not None and not _delivered_ok_mc(mc, base, fname):
+                miss_file.append("%s (%s)" % (fname, src_rel))
+            # 注册核：⛔ 按【被包脚本名】判（Stop 命令里有两个脚本——适配器 + 被包件）
+            if fname not in reg_text:
+                miss_reg.append(fname)
+        if mc:
+            for name in RULE_DATA + RULE_FILES:
+                if not os.path.isfile(os.path.join(mc, "记忆规则", name)):
+                    miss_rd.append("记忆规则/%s" % name)
+        print("钩子总表核查（%s 形态：注册面=%s（插件 hooks.json）· 落盘按 src 分派 · 核验清单=capability hooks_surface %d 件）"
+              % (_PLATFORM_ID, _mj_hooks, n_files))
+        if mc is None:
+            print("ℹ️ 未提供记忆共享中心路径且默认 ~/个人AI档案 不存在——仅核注册面，跳过落盘/规则核验（用法：--verify <MC>）")
+        if miss_reg:
+            print("!! 端注册面（插件 hooks.json）缺 %d 项：%s" % (len(miss_reg), ", ".join(miss_reg)))
+        if miss_file:
+            print("!! 脚本中心未落盘 %d 件：%s" % (len(miss_file), ", ".join(sorted(set(miss_file)))))
+        if miss_rd:
+            print("!! 规则数据缺失 %d 件（铁律硬墙会静默零注入）：%s" % (len(miss_rd), ", ".join(miss_rd)))
+        if miss_reg or miss_file or miss_rd:
+            return 1
+        print("✅ 本端交付面 %d/%d 钩子已落盘并注册（Plugin Hook 注册面）%s"
+              % (n_files, n_files, " · 规则层就位" if mc else ""))
+        return 0
     zcode_form = (_PLATFORM_ID not in (None, "", "workbuddy")
                   and _caps.get("settings_json") is False
                   and _caps.get("hooks_alternative") is True)
     if zcode_form:
         reg_text = ""
-        # ── 注册面按端分派（2026-10-03 补 Trae Work 第三形态）──────────────────
-        #   Trae Work 无 config.json 注册面：注册面 = launchd plist + patrol 脚本 ROSTER 行。
-        #   ⛔ 按 zcode 读 ~/.trae-cn/cli/config.json ⇒ 恒空 ⇒ 名册 7 件全判「未注册」＝假红
-        #      （本端既非 settings.json 端、也非 zcode config.json 端·是 launchd 拉模式）。
-        if _PLATFORM_ID == "traework":
-            cfg_json = os.path.expanduser("~/Library/LaunchAgents/com.buluotuo.traework.patrol.plist")
-            _parts = []
-            if os.path.isfile(cfg_json):
-                try:
-                    _parts.append(open(cfg_json, encoding="utf-8", errors="ignore").read())
-                except Exception:
-                    pass
-            if mc:
-                # 🔴 2026-10-21 补：脚本面归拢后 patrol 实体在 `脚本中心/Skill路由引擎/scripts/`；
-                #    旧两条路径（开发工具/… 、脚本中心/平铺）均已不存在 ⇒ reg_text 只剩 plist
-                #    （plist 只写主脚本名，不含名册件）⇒ 7 件全判「未注册」＝假红。
-                for _rel in (os.path.join("脚本中心", "Skill路由引擎", "scripts", "route_traework_patrol.sh"),
-                             os.path.join("开发工具", "Skill路由引擎", "scripts", "route_traework_patrol.sh"),
-                             os.path.join("脚本中心", "route_traework_patrol.sh")):
-                    _p = os.path.join(mc, _rel)
-                    if os.path.isfile(_p):
-                        try:
-                            _parts.append(open(_p, encoding="utf-8", errors="ignore").read())
-                        except Exception:
-                            pass
-                        break
-            # 🔴 2026-10-21 补：Trae CN（2026-10-09 并入单端）的真实注册面是
-            #    `<配置根>/hooks.json`（PreToolUse/Stop 等事件直挂）。traework 适配器
-            #    声明的是「安装包交付面」（hooks_event=false 指无 settings.json 注册），
-            #    与端侧自建 hooks.json 不矛盾——核注册时必须两读，否则实挂判未挂。
-            _cn_cfg = _CFG_ROOT_ABS or os.path.expanduser(cap.get("config_root", "~/.trae-cn"))
-            _cn_hooks = os.path.join(_cn_cfg, "hooks.json")
-            if os.path.isfile(_cn_hooks):
-                try:
-                    _parts.append(open(_cn_hooks, encoding="utf-8", errors="ignore").read())
-                except Exception:
-                    pass
-            reg_text = "\n".join(_parts)
-        else:
-            cfg_root = _CFG_ROOT_ABS or os.path.expanduser(cap.get("config_root", "~/.zcode"))
-            cfg_json = os.path.join(cfg_root, "cli", "config.json")
-            if os.path.isfile(cfg_json):
-                try:
-                    reg_text = json.dumps(json.load(open(cfg_json, encoding="utf-8")), ensure_ascii=False)
-                except Exception:
-                    reg_text = ""
+        # 2026-10-25 Trae Work 端退役：注册面走标准 <配置根>/cli/config.json（原 traework launchd/patrol 分支随之移除）
+        cfg_root = _CFG_ROOT_ABS or os.path.expanduser(cap.get("config_root", "~/.zcode"))
+        cfg_json = os.path.join(cfg_root, "cli", "config.json")
+        if os.path.isfile(cfg_json):
+            try:
+                reg_text = json.dumps(json.load(open(cfg_json, encoding="utf-8")), ensure_ascii=False)
+            except Exception:
+                reg_text = ""
         cap_text = open(os.path.join(PKG, "adapters", _PLATFORM_ID, "capability.yaml"), encoding="utf-8").read() if _PLATFORM_ID else ""
         sc = os.path.join(mc, "脚本中心") if mc else None
         # 核验清单=capability hooks_surface.delivered（端交付面 SSOT·条文33）——
@@ -2073,8 +2161,8 @@ def verify_deployed(mc=None, hooks_root=None, settings_path=None):
             for _name in RULE_DATA + RULE_FILES:
                 if not os.path.isfile(os.path.join(mc, "记忆规则", _name)):
                     miss_rd.append("记忆规则/%s" % _name)
-        print("钩子总表核查（%s 形态：注册面=settings.json · 核验清单=capability hooks_surface %d 件·端SSOT口径）"
-              % (_PLATFORM_ID, len(_deliv)))
+        print("钩子总表核查（%s 形态：注册面=%s · 核验清单=capability hooks_surface %d 件·端SSOT口径）"
+              % (_PLATFORM_ID, os.path.basename(_st), len(_deliv)))
         if miss_file:
             print("!! 未落盘 %d 件：%s" % (len(miss_file), ", ".join(sorted(set(miss_file)))))
         if miss_reg:
@@ -2137,9 +2225,30 @@ def gate_check(platform_id):
     import subprocess
     _pkg_dir = os.path.dirname(os.path.abspath(__file__))
     verify = os.path.join(_pkg_dir, "verify.sh")
+    verify_ps1 = os.path.join(_pkg_dir, "verify.ps1")
     if not os.path.isfile(verify):
         print("❌ 发版门禁脚本缺失: %s（三面判据真源·打包前须随包分发）" % verify)
         return 2
+
+    # 2026-10-27（G路径体检 C7-6）：发版门禁补 ps1 腿——原只委派 verify.sh，
+    #   Windows 端发版从不跑 verify.ps1 ⇒ ps1 侧判据缺陷永远到不了发版流程。
+    if os.name == "nt" and os.path.isfile(verify_ps1):
+        _pwsh = shutil.which("pwsh") or shutil.which("powershell")
+        if not _pwsh:
+            print("⚠️ 发版门禁：Windows 端未找到 pwsh/powershell，verify.ps1 腿跳过（显形·静默不许）")
+        else:
+            print("─" * 60)
+            print("🔒 发版前置门禁（Win 行为层）：verify.ps1")
+            _r1 = subprocess.run(
+                [_pwsh, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", verify_ps1,
+                 "-Platform", platform_id],
+                capture_output=True, text=True, errors="replace")
+            sys.stdout.write(_r1.stdout)
+            sys.stderr.write(_r1.stderr)
+            if _r1.returncode != 0:
+                print("❌ 发版门禁未过：verify.ps1 有 FAIL ⇒ 拒绝打包/发版该端")
+                return _r1.returncode
+            print("✅ verify.ps1 腿通过（rc=0）")
 
     print("─" * 60)
     print("🔒 发版前置门禁：端适配三面判据（verify.sh §1.5 系统文件 / §1.6 钩子面 / twin_surface）")
@@ -2190,6 +2299,21 @@ def write_user_versions(mc, dry=False):
         return True
     os.makedirs(dst_dir, exist_ok=True)
     shutil.copy2(src, os.path.join(dst_dir, "versions.json"))
+    # zhangyan#6（2026-10-26）：`.install/version` 单文件版本锚——用户/守卫一眼读版本，
+    # 不必解析 versions.json；幂等覆盖（包版本始终是最新口径）。
+    try:
+        _vm = os.path.join(PKG, "version.md")
+        _m = re.match(r'^version:\s*["\']?([^"\'\s#]+)', open(_vm, encoding="utf-8").read())
+        if _m:
+            with open(os.path.join(dst_dir, "version"), "w", encoding="utf-8") as _vf:
+                _vf.write(_m.group(1) + "\n")
+    except Exception as _e:
+        print("!! .install/version 写入失败（不阻塞·versions.json 仍在）：%s" % _e)
+    # zhangyan#2（2026-10-26）：守护日志目录预创建（[日志中心] 渲染目标·launchd 首写前在位）
+    try:
+        os.makedirs(LOG_CENTER_PATH, exist_ok=True)
+    except OSError as _e:
+        print("!! 守护日志目录创建失败（不阻塞·守护首跑自建）：%s" % _e)
     # G2-2·装机归属登记：把本次判定端与 config_root 记入快照（verify/升级对账用·判定证据链回写）
     try:
         _vp = os.path.join(dst_dir, "versions.json")
@@ -2617,7 +2741,6 @@ PATH_OVERRIDE_TARGETS = {
     # ── platform_adaptation_check.py（全部是**作者侧脚本/文档** ⇒ 恒哨兵）──
     "AUTOCLAW_PATROL":      ("sentinel",),
     "LOBSTERAI_PATROL":     ("sentinel",),
-    "TRAEWORK_PATROL":      ("sentinel",),
     "DOUBAOWORK_PATROL":    ("sentinel",),
     "DOUBAOWORK_HEARTBEAT": ("sentinel",),
     "DSH_PLUGIN":           ("sentinel",),
@@ -2634,7 +2757,7 @@ def write_path_override(cfg_root=None, dry=False):
     """生成 `path_override.py`（作者态常量 → 本机实况）。
 
     **为什么要这张表**：`platform_adaptation_check.py` 等把作者态落点写成
-    模块级常量（`AUTOCLAW_PATROL = expanduser("~/个人AI档案/…")`）。
+    模块级常量（`AUTOCLAW_PATROL = expanduser("[记忆共享中心]/…")`）。
     拷进包后，它们在**任何用户机器上都是错的**，而且因为长得像正常绝对路径，
     **不报错、只是永远指向不存在的地方**——比抛异常更难查。
 
@@ -2952,7 +3075,51 @@ def _mc_write_probe(mc):
     return 0
 
 
+def _surface_gate_preflight():
+    """发布面内容级门禁预检（2026-10-23 v2.2.10 Win 阻断根治·安装即自检）。
+
+    病根两连（均真机实证）：
+      ① zip 内 distill-scheduler-install-task.ps1 被打成 3 字节纯 BOM——件在、
+         guardians.json 声明它、INSTALL.md 引导注册，五腿判据全绿；而空 ps1 被 PS
+         当合法脚本执行、退出码 0 ⇒ 蒸馏调度守护静默不跑（件数守恒≠内容守恒）。
+      ② search_kb.py 顶层 import fcntl，Windows import 即崩；旧判据的「全文出现
+         sys.platform 即豁免」被 100KB 脚本一票打穿（判据缺陷≠包缺陷）。
+    根治=安装前先过 platform_compat 内容级判据（检查⑭空/近空件 + P1导入守卫
+    收窄为祖先链判定），RED 即拒装——⛔不把坏包装上用户机（愿景①：机制自动
+    运转，不依赖发布者记得跑门禁）。
+    逃生阀（须显式+理由自留痕）：BLT_SKIP_SURFACE_GATE=1（隔离装/夹具场景）。
+    """
+    if os.environ.get("BLT_SKIP_SURFACE_GATE") == "1":
+        print("⚠️ 发布面内容级门禁已显式跳过（BLT_SKIP_SURFACE_GATE=1·理由自留痕）")
+        return 0
+    import subprocess as _sp
+    _pkg_root = os.path.dirname(os.path.abspath(__file__))
+    _gate = os.path.join(_pkg_root, "references", "scripts", "platform_compat.py")
+    if not os.path.isfile(_gate):
+        print("⚠️ 门禁件缺失（references/scripts/platform_compat.py）——按缺失处置，拒绝静默安装：")
+        print("   包内容不完整（连门禁自己都没打进来）·请重新获取发布包")
+        return 2
+    try:
+        _r = _sp.run([sys.executable, _gate, _pkg_root],
+                     capture_output=True, text=True, timeout=900)
+    except Exception as _e:
+        print("❌ 门禁执行自身故障（大声报·不静默放过）: %r" % (_e,))
+        return 2
+    _tail = (_r.stdout or "")[-1500:]
+    if _r.returncode != 0:
+        print("❌ 发布面内容级门禁未通过——拒绝安装（包内容有缺陷·判据见上）：")
+        print(_tail)
+        print("   若为隔离装/夹具且确认可跳过：BLT_SKIP_SURFACE_GATE=1（逃生阀·理由自留痕）")
+        return 2
+    print("✅ 发布面内容级门禁通过（空/近空件 + Unix-only导入守卫 + 编码/配对等 %d 项）" % 18)
+    return 0
+
+
 def main():
+    # ─── 发布面内容级门禁预检（2026-10-23 v2.2.10 Win 阻断根治）───
+    _gate_rc = _surface_gate_preflight()
+    if _gate_rc != 0:
+        sys.exit(_gate_rc)
     # ─── v2.0 多平台分发：--platform 参数 ───
     _plat_ap = argparse.ArgumentParser(add_help=False)
     _plat_ap.add_argument("--platform", default="workbuddy", help="目标平台(默认workbuddy=向后兼容)")
@@ -3010,6 +3177,9 @@ def main():
     # 照常部署（2026-09-30 根治：此前委派后 sys.exit(0) 把公共资产一并吞掉——
     # 矩阵标 ✅完整、INSTALL.md 承诺「脚本体系一次装齐」，实装却零脚本零分身＝假绿）
     _skip_hooks = False
+    # 注册执行方（2026-10-25 Trae CN 入包）：capability.hooks_registration=="setup" 时
+    #   安装器只做 ② 部署、③ 注册由端 setup.sh 单点写入（防双写/两本账）。
+    _hook_reg_mode = ""
     # 端 setup 退出码约定：0=全成功；3=文件已全量落盘·仅「待手动收尾项」（如受限的 launchd 注册）
     #   未完成——降级不阻塞（条文16），安装器继续装公共资产；其余非零=真失败（中止）
     _pending_manual = []
@@ -3026,7 +3196,31 @@ def main():
             cfg_root = os.path.abspath(os.path.expanduser(_plat_args.cfg_root))
             print("[cfg-root] 覆盖为 %s（隔离装·不碰真机声明）" % cfg_root)
         HOOKS_ROOT = os.path.join(cfg_root, "hooks")
-        SETTINGS = os.path.join(cfg_root, "settings.json")
+        # 注册面分派（2026-10-25 Trae CN 入包·条文33）：hooks_registration_face 显式声明
+        #   本端注册文件形态。hooks_json 端（Trae CN）= <配置根>/hooks.json，
+        #   ⛔ 不是 settings.json —— 按 settings.json 读＝注册面恒空 ⇒ 交付面全件假红
+        #   （与 2026-10-03 plugin 端 39 件假红同族：判据面与落点面不相交）。
+        # 2026-10-25 MiniMax Code 入包：新增第 6 种注册面形态 **minimax_plugin_hooks**
+        #   = <配置根>/plugins/<插件名>/hooks/hooks.json（由插件 manifest 的 "hooks" 数组声明装载）。
+        #   ⚠️ 病根：原写法是**二值**（"hooks_json" if ... else "settings.json"）⇒ 任何新形态
+        #   都会静默落到 settings.json 面 ⇒ 又一次"判据面≠落点面"假红。
+        #   修法：**分派表穷举 + 未知形态 fail-loud**（⛔ 不再静默兜底到 settings.json）。
+        _reg_face = cap.get("hooks_registration_face") or ""
+        _REG_FACE_MAP = {
+            "hooks_json": os.path.join(cfg_root, "hooks.json"),
+            "minimax_plugin_hooks": os.path.join(
+                cfg_root, "plugins", "bulutuo-guards", "hooks", "hooks.json"),
+        }
+        if _reg_face in _REG_FACE_MAP:
+            SETTINGS = _REG_FACE_MAP[_reg_face]
+        elif _reg_face:
+            # 未知注册面形态 ⇒ 显式失败（⛔ 不得静默落到 settings.json·那是假红的制造机）
+            print("❌ [注册面分派] 未知 hooks_registration_face=%r（本端 capability 声明）——"
+                  "已知形态: %s。⛔ 不静默回退 settings.json（回退＝判据面≠落点面＝假红）。"
+                  % (_reg_face, ", ".join(sorted(_REG_FACE_MAP))))
+            return 1
+        else:
+            SETTINGS = os.path.join(cfg_root, "settings.json")
         _PLATFORM_ID = _plat_args.platform
         _CFG_ROOT_ABS = cfg_root
         # v2.0.1 端专属钩子（数据化·capability.extra_hooks·ROSTER 唯一数据源不变·
@@ -3037,6 +3231,7 @@ def main():
         #    走委派会把端 setup 真跑一遍（本端实测 --verify 触发了完整安装流程输出）。
         _install_mode = not any(a in sys.argv for a in ("--verify", "--list", "-h", "--help", "--gate", "--sweep-ghost"))
         # 钩子形态分派：hooks_event=false → 跳过标准钩子注册（端钩子由端 setup 自管·条文8）
+        _hook_reg_mode = cap.get("hooks_registration") or ""
         if not cap.get("capabilities", {}).get("hooks_event", False):
             _skip_hooks = True
             if cap.get("capabilities", {}).get("hooks_alternative", False):
@@ -3326,6 +3521,19 @@ def main():
 
     if _skip_hooks:
         print("%s②③ 钩子部署/注册：跳过（本端无 hook 事件·端适配承载非标准机制·公共资产已装）" % tag)
+    elif _hook_reg_mode == "setup":
+        # ③ 由端 setup 单点写入（hooks_registration: setup）——防双写/两本账。
+        # ② 仍由安装器部署副本（ROSTER + extra_hooks），端 setup 只负责注册文件。
+        deployed, missing = deploy_hooks(a.dry_run)
+        print("%s② 钩子部署：%d 件 → %s/" % (tag, len(deployed), HOOKS_ROOT))
+        if missing:
+            print("   !! 包内缺失（应报缺陷）：%s" % ", ".join(missing))
+        print("%s③ 钩子注册：由端 setup 单点写入（hooks_registration=setup·安装器跳过）→ %s" % (tag, SETTINGS))
+        if not missing:
+            write_guard_baseline(deployed, a.dry_run)
+            write_hook_fingerprints(deployed, a.dry_run)
+        else:
+            print("!! 包内缺失在列 → 跳过基线写入（装机器缺陷不算到用户头上·C4-D GIGO闸）")
     else:
         deployed, missing = deploy_hooks(a.dry_run)
         print("%s② 钩子部署：%d 件 → %s/" % (tag, len(deployed), HOOKS_ROOT))
@@ -3355,11 +3563,24 @@ def main():
     # （非 hook 端本就未部署钩子 → 跳过本腿，⛔不把"设计不装"报成缺陷）
     bad = []
     if not _skip_hooks:
-        for ev, loc, sd, main, deps in ROSTER:
-            dst_dir = HOOKS_ROOT if loc == "." else os.path.join(HOOKS_ROOT, loc)
-            for fname in [main] + list(deps):
-                if not os.path.isfile(os.path.join(dst_dir, fname)):
-                    bad.append("%s/%s" % (loc, fname) if loc != "." else fname)
+        # 2026-10-25 Trae CN 入包：部署后自检口径须与 --verify 一致（条文19 判据与变换一致）——
+        #   声明了 hooks_surface.delivered 的端按端交付面核（⛔ 用 ROSTER 全集核＝把 WB 域件
+        #   判成本端欠账 ⇒ 装完即假红）。
+        _deliv_chk = ((_cap_for_msg or {}).get("hooks_surface") or {}).get("delivered") or []
+        if _plat_args.platform not in (None, "", "workbuddy") and _deliv_chk:
+            _bases_chk = _landing_bases(MC_PATH)
+            for _e in _deliv_chk:
+                _fn = _e.get("script", "") if isinstance(_e, dict) else str(_e).strip()
+                if not _fn:
+                    continue
+                if not any(b and os.path.isfile(os.path.join(b, _fn)) for b in _bases_chk):
+                    bad.append(_fn)
+        else:
+            for ev, loc, sd, main, deps in ROSTER:
+                dst_dir = HOOKS_ROOT if loc == "." else os.path.join(HOOKS_ROOT, loc)
+                for fname in [main] + list(deps):
+                    if not os.path.isfile(os.path.join(dst_dir, fname)):
+                        bad.append("%s/%s" % (loc, fname) if loc != "." else fname)
     # 自检：数字分身套件是否落盘（Skill 正文引用它们·缺＝端用户跑 Skill 即断）
     for sub, files in DT_SUITE.items():
         sdir = os.path.join(MC_PATH, "数字分身", sub)

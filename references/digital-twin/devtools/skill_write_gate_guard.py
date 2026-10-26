@@ -18,7 +18,8 @@ except Exception: pass
 #     -> block exit 2 (physical), ok exit 0
 # Scope: 成长箱/ 技能配置/ 数字分身/ 发布库/ ~/.workbuddy/ （个人AI档案下前四者）
 # Exempt: guard自身 / append_log_entry.py / growth-box scripts/（Skill自有引擎）
-# version: v0.10（2026-10-17 Qoder CN端·包面写门禁：写 布洛陀-全平台安装包/ 需锁周期认领·FREE硬拦引导acquire·release目睹清账·--claim-package-lock·负例夹具8/8·LRN-20261017-01机制化）
+# version: v0.11（2026-10-23 Qoder Desktop端·§3.4 扩H 语境律落地：安装类命令 -i 按命令名语境剥离后再判写动作·pip -i 放行/sed -i 仍拦·夹具8/8·R-20261020-06 收口）
+#   原 v0.10（2026-10-17 Qoder CN端·包面写门禁：写 布洛陀-全平台安装包/ 需锁周期认领·FREE硬拦引导acquire·release目睹清账·--claim-package-lock·负例夹具8/8·LRN-20261017-01机制化）
 #   原 v0.9.1（2026-10-10 Qoder CN端·heredoc 假红根治：WRITE_FEATURES 剔 `<<`——
 #   `<<` 喂 stdin 不落盘，误列硬拦形⇒只读分析被 exit2；间接写归 unknown 只提示（v0.4 分级同界·不扩大）。
 #   原 v0.9（2026-10-05 Qoder CN端·软链根治+hint花括号修+v0.8回归合并收口；v0.2判据绝对前缀/v0.3畸形放行/v0.4动作分级/v0.4.1剔无害重定向/v0.5剥双引号/v0.6评估通道，沿革见下）：
@@ -115,6 +116,36 @@ READ_CMDS = {"ls", "find", "grep", "rg", "cat", "head", "tail", "wc", "stat", "f
 # 纯只读 `python3 - <<EOF` 分析被 exit2 硬拦（假红·当日实证2次）；间接写面归 unknown 只提示。
 WRITE_FEATURES = re.compile(r">>?|-delete\b|-exec\b|\s-i\b|--in-place\b|\|\s*tee\b|truncate")
 
+# v0.11（2026-10-23 Qoder Desktop·§3.4 扩H 语境律落地）：
+# 同形异义 `-i` 须按命令名语境排除——`pip install -i <镜像源>` 是指定索引（只读参数），
+# `sed -i` 才是就地写。词面判据看不见「这个 -i 是谁的参数」⇒ 先按段剥安装类命令的 -i，
+# 再做词面匹配。⛔不剥 sed/awk/perl 等非安装类命令。
+INSTALL_CMDS_INDEX_FLAG = {"pip", "pip3", "pipx", "uv", "npm", "brew", "yum", "apt",
+                           "apt-get", "dnf", "conda", "poetry"}
+
+
+def _strip_install_index_flags(cmd):
+    """剥离安装/下载类命令段里的 `-i <值>` / `-i=<值>`（§3.4 扩H 语境律）。"""
+    parts = re.split(r"([;&|]{1,2})", cmd)
+    out = []
+    for seg in parts:
+        toks = seg.strip().split()
+        if toks and toks[0] in INSTALL_CMDS_INDEX_FLAG:
+            kept, skip = [], False
+            for tok in toks:
+                if skip:
+                    skip = False
+                    continue
+                if tok == "-i":
+                    skip = True
+                    continue
+                if tok.startswith("-i="):
+                    continue
+                kept.append(tok)
+            seg = " " + " ".join(kept) + " "
+        out.append(seg)
+    return "".join(out)
+
 
 def _strip_double_quoted(cmd):
     """剥离**双引号内**的字面量（v0.5·2026-09-23 童灵根治假阳性）。
@@ -149,7 +180,8 @@ def _bash_action(cmd):
     v0.4.1 修：先剔无害重定向（`2>/dev/null`/`>/dev/null`/`2>&1`）再判——原版把 `>` 一网打尽，
     致 `ls ... 2>/dev/null` 这类只读命令被误判为"写"（WB 端实测被自锁）。"""
     cmd = re.sub(r"[0-9]?>&[0-9]|[0-9]?>\s*/dev/null", "", cmd)
-    if WRITE_FEATURES.search(_strip_double_quoted(cmd)):
+    cmd = _strip_install_index_flags(_strip_double_quoted(cmd))
+    if WRITE_FEATURES.search(cmd):
         return "write"
     segs = [s.strip() for s in re.split(r"[;&|]{1,2}", cmd) if s.strip()]
     if not segs:

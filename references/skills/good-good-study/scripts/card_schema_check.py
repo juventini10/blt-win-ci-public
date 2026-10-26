@@ -60,7 +60,9 @@ EVIDENCE_TOKENS = ("权威", "推理", "推测", "反例", "实践")
 COMPLEX_DOMAINS = ("复杂域", "混沌域")
 ID_RE = re.compile(r"^(立场卡#S\d+|技能卡#K\d+|示例卡#X\d+)$")
 REL_TYPES = ("主题相似", "结论一致", "依据链重叠", "视角互补", "认知工具维度一致")  # card-schema §一五枚举·v1.1.2闸验锚
-REL_REQUIRED_FROM = "2026-10-12"   # v1.1.11：本日起的新卡必填 `相关卡`（对齐 card-schema §一 v1.2.0 起强制条·闸此前未实现=双松反向变体）
+REL_REQUIRED_FROM = "2026-10-12"
+RETRO_EXTRA_PREFIX = "【新增维度】"   # retro 下单列不计入头部账的项目前缀（防新考题污染既有趋势读数）
+LOC_HARD_FROM = "2026-11-01"   # §8.1「一句话定位」硬判生效日（缓冲期先例同 REL；此前存量走 --retro 报数）   # v1.1.11：本日起的新卡必填 `相关卡`（对齐 card-schema §一 v1.2.0 起强制条·闸此前未实现=双松反向变体）
 REL_EMPTY_OK = ("无直接关联",)            # §七：无关联须显式写该值——空着不算交代，写了才是交代
 
 
@@ -197,6 +199,26 @@ def check_card(path, retro=False):
     # 7) 示例件护栏：example:true 却占真实取号域 → 会污染用户卡库的取号/查重
     if is_example and (cid.startswith("立场卡#S") or cid.startswith("技能卡#K")):
         errs.append(("示例件占用了真实取号域", "example:true 的卡 card_id 须用 示例卡#XNNN"))
+
+    # 8) card-schema §八 接闸（2026-10-26 根治批·此前 §八 三条 ⛔ 零机械执行位=纸面规则）
+    #    强度匹配三档（DESIGN-PHILOSOPHY §二焊闸＋§三强度∝代价）：可机械判且代价高→进 exit 面；
+    #    可机械判但会伤存量→缓冲日期；语义不可机械判→只 --retro 报数（⛔不为凑闸造假判据）
+    if not is_example:
+        # 8.3 禁用面：技能卡带 tags 键违反 §8.3 明文（实测存量仅 1 件，立即硬判不破面）
+        if is_skill and str(fm.get("tags", "")).strip():
+            errs.append(("技能卡带 tags 键", "card-schema §8.3：技能卡⛔tags——召回不读该字段，写了＝自欺式完备"))
+        # 8.1 首屏预算制：「一句话定位」须在正文前 300 字内
+        head300 = text.split("---", 2)[-1].lstrip()[:300]
+        if "一句话定位" not in head300:
+            dt = str(fm.get("date") or fm.get("created") or "")
+            if retro:
+                errs.append((RETRO_EXTRA_PREFIX + "首屏缺「一句话定位」（§8.1 存量·只显形不判红）",
+                             "card-schema §8.1 预算制（实测 1 件遵守/1094 件缺——遵守率≈0.09%·登记为独立清偿线，⛔不并入 X1-X6 头部账）"))
+            elif dt and dt >= LOC_HARD_FROM:
+                errs.append(("首屏缺「一句话定位」", "card-schema §8.1：%s 起新卡硬判；存量走 --retro 报数（追溯判红=假红海啸）" % LOC_HARD_FROM))
+        # 8.2 mechanism_anchors：先要语义判「卡内是否声明纪律」→机械不可判，本批不硬装
+        #     （铁律-002 v8.37 代理信号不占判据位；接线位留给 card_mechanism_anchor_audit.py 消费端）
+
     return errs
 
 
@@ -206,19 +228,25 @@ def run(paths, retro=False):
     不把历史漂移算成本端违规（约 40% 老卡领域分诊用自由文本，追溯判红＝假红海啸）。
     """
     bad, tot = 0, len(paths)
+    extra = {}   # 2026-10-26 新增维度单列计数（⛔并入头部数会把"本轮新增考题"读成"存量暴涨"——点亮旧文字同族病）
     for p in paths:
         errs = check_card(p, retro=retro)
         name = os.path.basename(p)
-        if errs:
+        head_errs = [e for e in errs if not e[0].startswith(RETRO_EXTRA_PREFIX)]
+        for e in errs[len(head_errs):]:
+            extra[e[0]] = extra.get(e[0], 0) + 1
+        if head_errs:
             bad += 1
             mark = "🟡" if retro else "❌"
-            print("%s %s — 缺项 %d：" % (mark, name, len(errs)))
-            for k, howto in errs:
+            print("%s %s — 缺项 %d：" % (mark, name, len(head_errs)))
+            for k, howto in head_errs:
                 print("   · %s → %s" % (k, howto))
         else:
             print("✅ %s — 结构与必填字段齐全" % name)
     if retro:
         print("\n📊 存量体检：%d/%d 有结构缺项（只报数不阻断·补账按需逐件处置）" % (bad, tot))
+        for k, n in sorted(extra.items(), key=lambda x: -x[1]):
+            print("🧾 新增维度单列（不计入上行头部数）：%s → %d 件" % (k, n))
         return 0
     if bad:
         print("\n⛔ %d 张卡未过闸（缺必填=阻断·card-schema.md §一）。补全后重跑。" % bad)
@@ -317,6 +345,59 @@ def self_test(mutant=False):
         _c = _f.read(); _f.seek(0); _f.write(_c.replace("---\n", '---\n相关卡: "无直接关联"\n', 1)); _f.truncate()
     ck.append(("T9d 显式写「无直接关联」为合法值（不误报·也⛔留空）",
                not any("相关卡" in k for k, _ in check_card(_np, retro=False))))
+    # T10-T12（2026-10-26 §八 接闸批·每例都做正反双对照）
+    _sk = os.path.join(os.path.dirname(_np), "技能卡#K902-探针tags.md")
+    open(_sk, "w", encoding="utf-8").write(
+        open(_np, encoding="utf-8").read().replace("reading_status: L1", 'reading_status: L1\ntags: [探针, 自欺]', 1))
+    ck.append(("T10a 技能卡带 tags 键被硬判抓住（§8.3）",
+               any("tags" in k for k, _ in check_card(_sk, retro=False))))
+    ck.append(("T10b 同件不带 tags 不误报（正向对照）",
+               not any("tags" in k for k, _ in check_card(_np, retro=False))))
+    _fut = os.path.join(os.path.dirname(_np), "技能卡#K903-探针未来日期.md")
+    open(_fut, "w", encoding="utf-8").write(
+        open(_np, encoding="utf-8").read().replace("date: 2099-01-01", "date: 2099-01-01", 1))
+    ck.append(("T11a 生效日之后缺「一句话定位」硬判红（§8.1）",
+               any("一句话定位" in k for k, _ in check_card(_fut, retro=False))))
+    _past = os.path.join(os.path.dirname(_np), "技能卡#K904-探针旧日期.md")
+    open(_past, "w", encoding="utf-8").write(
+        open(_np, encoding="utf-8").read().replace("date: 2099-01-01", "date: 2026-01-01", 1))
+    ck.append(("T11b 生效日之前的存量不判红（⛔假红海啸）",
+               not any("一句话定位" in k and not k.startswith(RETRO_EXTRA_PREFIX) for k, _ in check_card(_past, retro=False))))
+    ck.append(("T12 存量「一句话定位」缺项走【新增维度】单列·不并入头部账",
+               any(k.startswith(RETRO_EXTRA_PREFIX) and "一句话定位" in k for k, _ in check_card(_past, retro=True))
+               and not any(k.startswith(RETRO_EXTRA_PREFIX) for k, _ in check_card(_past, retro=False))))
+    # T13（2026-10-26 变异检验补牙·第一轮 T13/T13b 在真件上即红——因夹具文件名与
+    #      card_id 不符引入额外头部缺项、且 _np 已被 T9d 补上「相关卡」，断言两侧都取反了。
+    #      现自建洁净夹具：唯一差异=领域分诊合法与否，把"计数口径"单变量化）
+    import contextlib
+    import io as _io
+    _td = tempfile.mkdtemp()
+    def _mk(tag, dom, dt):
+        fp = os.path.join(_td, "技能卡#K9%d-%s.md" % (tag, tag))
+        open(fp, "w", encoding="utf-8").write(
+            "---\ncard_id: 技能卡#K9%d\ntopic: 探针\ntype: skill-card\n领域分诊: %s\n"
+            'reading_status: L1\ndate: %s\n相关卡: "无直接关联"\n---\n\n## 核心方法\n- ①x\n- ②y\n- ③z\n\n'
+            "## 适用边界\n- ✅适用：探针\n- ⛔不适用：探针外\n\n## 反例/失败模式\n- 探针失效形态\n\n"
+            "## 依据\n- 【实践·单样本⚠️】探针自测\n\n## 关联卡片\n- 无直接关联\n\n"
+            "## 写入前自检（三项）\n- [x] 证据平权\n- [x] 精细加工\n- [x] 类型匹配\n" % (tag, dom, dt))
+        return fp
+    _clean = _mk(10, "繁杂域", "2026-01-01")     # 唯一问题=缺「一句话定位」（新增维度）
+    _dirty = _mk(11, "随便写的域", "2026-01-01")  # 另有真缺项（领域分诊非法）
+    _b1 = _io.StringIO()
+    with contextlib.redirect_stdout(_b1):
+        run([_clean], retro=True)
+    ck.append(("T13 头部账不含新增维度且单列行必在（防并账漂移）",
+               "存量体检：0/1" in _b1.getvalue() and "新增维度单列" in _b1.getvalue()))
+    _b2 = _io.StringIO()
+    with contextlib.redirect_stdout(_b2):
+        run([_dirty], retro=True)
+    ck.append(("T13b 真实缺项仍计入头部账（反向对照·⛔把旧账藏进单列）",
+               "存量体检：1/1" in _b2.getvalue() and "领域分诊未落在 Cynefin 枚举" in _b2.getvalue()))
+    _b3 = _io.StringIO()
+    with contextlib.redirect_stdout(_b3):
+        run([_clean], retro=False)
+    ck.append(("T13c 存量日之前的卡不因新增维度被硬挡（缓冲期有牙）",
+               "全部通过" in _b3.getvalue()))
     if mutant:
 
         # 分辨条件自证：短路「正文缺段」判据后 T2 必须失能，否则 T2 是恒真用例。

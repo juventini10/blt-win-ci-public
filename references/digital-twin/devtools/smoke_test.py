@@ -22,6 +22,31 @@ except Exception:
 
 DEFAULT_PKG = Path.home() / "记忆共享中心/发布库/五层记忆系统/布洛陀-全平台安装包"
 
+
+def _safe_rglob(root):
+    """容错递归列文件（⛔判据不崩·2026-10-25 治尺）
+
+    ⚠️ 病：`Path.rglob("*")` 直接迭代 ⇒ 遍历途中遇断链 / 权限拒绝 / 竞态删除
+       即整体抛异常 ⇒ **整个 smoke 崩掉**（实测崩 1 次）⇒ 尺崩＝读数既非红也非绿
+       ＝ 最坏的读数状态（判据不可用）。
+    ⚠️ 另一处形态：运行面出现 `[记忆共享中心]` **占位符目录**（relocate_rules.py
+       单一真源：包内一律占位化，端用户安装时由 INSTALL 替换步骤落真路径）
+       ⇒ 走进去只会把占位符副本当包内件判（假阳）＋ 制造幽灵树 ⇒ 剪枝。
+    修法：os.walk(onerror=...) 逐项容错 ＋ 剪枝占位符目录 ＋ 不跟随软链目录。
+    ⛔ 只增强容错，**不放宽任何判据**（真缺陷照抓）。
+    """
+    out = []
+    try:
+        for dp, dn, fn in os.walk(str(root), onerror=lambda e: None):
+            dn[:] = [d for d in dn
+                     if d != "__pycache__"
+                     and not (d.startswith("[") and d.endswith("]"))]
+            for f in fn:
+                out.append(Path(dp) / f)
+    except Exception:
+        pass
+    return out
+
 # ── 必含文件/目录清单 ──
 REQUIRED_TOP = [
     "INSTALL.md", "version.md", "CHANGELOG.md", "README.md",
@@ -136,7 +161,7 @@ def check_required_files(pkg: Path) -> list:
 def check_empty_files(pkg: Path) -> list:
     """检测0字节文件（排除 __pycache__/.git/.DS_Store）。"""
     issues = []
-    for f in pkg.rglob("*"):
+    for f in _safe_rglob(pkg):
         if not f.is_file():
             continue
         # `.git-commit.lock` = 本仓 pre-commit 钩子重建的 0 字节锁（工具链副产物，非包内容）
@@ -146,6 +171,69 @@ def check_empty_files(pkg: Path) -> list:
             continue
         if f.stat().st_size == 0:
             issues.append(f"空文件(0字节): {f.relative_to(pkg)}")
+    return issues
+
+
+def check_skill_md_body(pkg: Path) -> list:
+    """references/skills/*/SKILL.md 去frontmatter后非空行≥50（afeng#1 机械拦截·2026-10-26）。
+
+    实证：2.2.9 出厂包 shall-we-talk SKILL.md 缺正文（400行只剩壳），
+    验收停在「文件在位」没走到「产物可用」。本门禁使该类缺陷不可能出厂。
+    """
+    issues = []
+    skills_dir = pkg / "references/skills"
+    if not skills_dir.exists():
+        return issues
+    for f in sorted(skills_dir.glob("*/SKILL.md")):
+        lines = _read(f).splitlines()
+        # 去 frontmatter：首行 --- 到下一个 --- 之间
+        if lines and lines[0].strip() == "---":
+            for i in range(1, len(lines)):
+                if lines[i].strip() == "---":
+                    lines = lines[i + 1:]
+                    break
+        body = [l for l in lines if l.strip()]
+        if len(body) < 50:
+            issues.append(
+                f"SKILL.md 正文过短({len(body)}非空行<50): {f.relative_to(pkg)}"
+                "（疑似缺正文的壳文件·afeng#1 同型）")
+    return issues
+
+
+def check_plist_template_args(pkg: Path) -> list:
+    """plist ProgramArguments 机械门禁（zhangyan#1 拦截·2026-10-26）。
+
+    两禁：
+    1. 禁 `-lc`——launchd 不做 shell 解析，-lc + 引号整串实测 exit 127；
+       改法=去外层引号 + `-c`（bash 运行时解析，分号串合法）。
+    2. 禁「首尾引号整串 string」——外层引号会被 launchd 当字面量塞给程序。
+    覆盖 references/ 与 adapters/ 下全部 *.plist 与 *.plist.template。
+    """
+    issues = []
+    for root in (pkg / "references", pkg / "adapters"):
+        if not root.exists():
+            continue
+        for f in sorted(root.rglob("*")):
+            if not f.is_file():
+                continue
+            if f.suffix != ".plist" and not f.name.endswith(".plist.template"):
+                continue
+            text = _read(f)
+            m = re.search(
+                r"<key>ProgramArguments</key>\s*<array>(.*?)</array>",
+                text, re.DOTALL)
+            if not m:
+                continue
+            rel = f.relative_to(pkg)
+            for s in re.findall(r"<string>(.*?)</string>", m.group(1), re.DOTALL):
+                if s.strip() == "-lc":
+                    issues.append(
+                        f"plist ProgramArguments 含 -lc: {rel}"
+                        "（zhangyan#1 实测 exit 127·改 -c）")
+                elif len(s) >= 2 and s[0] in "\"'" and s[-1] == s[0] and s.strip() not in ("'", '"'):
+                    issues.append(
+                        f"plist ProgramArguments 含首尾引号整串: {rel}"
+                        f"（launchd 不剥外层引号·去掉: {s[:40]}…）")
     return issues
 
 
@@ -304,7 +392,7 @@ def check_version_consistency(pkg: Path) -> list:
     prev_ver = old_vers[0]
     # 搜全包文件中是否残留旧版本号
     text_ext = {".md", ".py", ".sh", ".ps1", ".json"}
-    for fp in pkg.rglob("*"):
+    for fp in _safe_rglob(pkg):
         if not fp.is_file() or fp.suffix.lower() not in text_ext:
             continue
         if "__pycache__" in fp.parts or fp.name.endswith(".bak"):
@@ -347,7 +435,7 @@ def check_placeholder_residual(pkg: Path) -> list:
     if not refs.exists():
         return issues
     text_ext = {".md", ".py", ".sh", ".ps1", ".json", ".yaml", ".yml", ".txt"}
-    for f in refs.rglob("*"):
+    for f in _safe_rglob(refs):
         if not f.is_file() or f.suffix.lower() not in text_ext:
             continue
         if f.name in PLACEHOLDER_ALLOWED_FILES:
@@ -397,7 +485,7 @@ def _count_files(d):
     if not d.exists():
         return -1
     n = 0
-    for f in d.rglob("*"):
+    for f in _safe_rglob(d):
         if f.is_file() and not _skip_scan(f):
             n += 1
     return n
@@ -644,7 +732,7 @@ def check_reference_paths(pkg: Path) -> list:
     # 与 Diataxis 目录名同性质，非路径残留（实证=triwich SKILL.md L53 假阳性）。
     _diataxis_rx = re.compile(r"(?<![A-Za-z-])reference"
                               + r"/(?:explanation|how-to|tutorial|page)")
-    for f in pkg.rglob("*"):
+    for f in _safe_rglob(pkg):
         if not f.is_file() or f.suffix.lower() not in _PATH_EXT:
             continue
         if _skip_scan(f):
@@ -718,6 +806,8 @@ def main():
     checks = [
         ("必含文件/目录", check_required_files(pkg)),
         ("空文件检测", check_empty_files(pkg)),
+        ("SKILL.md正文门禁", check_skill_md_body(pkg)),
+        ("plist参数门禁", check_plist_template_args(pkg)),
         ("version.md格式", check_version_format(pkg)),
         ("版本号全链路一致", check_version_consistency(pkg)),
         ("组件账实对账", check_component_ledger(pkg)),

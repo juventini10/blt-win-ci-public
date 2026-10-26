@@ -19,23 +19,23 @@
 > ✅=端声明支持 · ❌=端声明不支持 · `—<br>无声明`=**该端没有 capability.yaml**
 > （不是「不支持」，是**没测过**——两者混同会诱导端 AI 去修不存在的问题）
 
-生成时间口径：随包内 `capability.yaml` 变��即变·⛔ 不写死日期（避免二次漂移源）
+生成时间口径：随包内 `capability.yaml` 变更即变·⛔ 不写死日期（避免二次漂移源）
 
 ## 一、能力矩阵（`capabilities` 段 × 各端）
 
-| 能力 | AutoClaw | 豆包办公 | Hermes | LobsterAI | Qoder CN | qwen | teleagent | Trae Work | WorkBuddy | ZCode | Zwork（AutoClaw 新客户端） |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| hooks 事件驱动 | ❌ | ❌ | ✅ | ❌ | ✅ | —<br>无声明 | —<br>无声明 | ❌ | ✅ | ❌ | ❌ |
-| 非标准钩子机制 | ✅ | ❌ | —<br>无声明 | ✅ | —<br>无声明 | —<br>无声明 | —<br>无声明 | ✅ | —<br>无声明 | ✅ | ❌ |
-| settings.json 注册 | ❌ | ❌ | ❌ | ❌ | ✅ | —<br>无声明 | —<br>无声明 | ❌ | ✅ | ❌ | ❌ |
-| rules/ 常驻文件注入 | ✅ | ❌ | ✅ | ❌ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ❌ | ❌ |
-| AGENTS.md 导航 | ✅ | ❌ | ✅ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ❌ | ✅ | ✅ | ❌ |
-| 自定义指令 | ✅ | ✅ | ✅ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ✅ | ✅ |
-| 钩子返回值注入 | ❌ | ❌ | ✅ | ❌ | ✅ | —<br>无声明 | —<br>无声明 | ❌ | ✅ | ✅ | ❌ |
-| 系统提示分段注入 | —<br>无声明 | —<br>无声明 | ✅ | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 |
-| 记忆支点（session 检索等） | ✅ | ❌ | ✅ | ❌ | ❌ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ❌ | ✅ |
-| Skill 软链 | ✅ | ❌ | ✅ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ✅ | ❌ |
-| 定时巡逻 | ✅ | ❌ | ❌ | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | ✅ | —<br>无声明 | —<br>无声明 | ❌ |
+| 能力 | AutoClaw | 豆包办公 | Hermes | LobsterAI | MiniMax Code | Qoder CN | qwen | teleagent | Trae CN | WorkBuddy | ZCode | Zwork（AutoClaw 新客户端） |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| hooks 事件驱动 | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ❌ | ❌ |
+| 非标准钩子机制 | ✅ | ❌ | —<br>无声明 | ✅ | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | ✅ | ❌ |
+| settings.json 注册 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | —<br>无声明 | —<br>无声明 | ❌ | ✅ | ❌ | ❌ |
+| rules/ 常驻文件注入 | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ❌ | ❌ |
+| AGENTS.md 导航 | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ❌ | ✅ | ✅ | ❌ |
+| 自定义指令 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ✅ | ✅ |
+| 钩子返回值注入 | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ✅ | ❌ |
+| 系统提示分段注入 | —<br>无声明 | —<br>无声明 | ✅ | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 |
+| 记忆支点（session 检索等） | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ❌ | ✅ |
+| Skill 软链 | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | —<br>无声明 | —<br>无声明 | ✅ | ✅ | ✅ | ❌ |
+| 定时巡逻 | ✅ | ✅ | ❌ | —<br>无声明 | ❌ | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | —<br>无声明 | ❌ |
 
 ## 二、端清单与声明状态
 
@@ -45,10 +45,11 @@
 | 豆包办公 | ✅ | 10 | 10 | `~/.doubaowork-config` |
 | Hermes | ✅ | 16 | 13 | `~/.hermes` |
 | LobsterAI | ✅ | 9 | 9 | `~/Library/Application Support/LobsterAI/openclaw/state` |
+| MiniMax Code | ✅ | 9 | 9 | `~/.minimax` |
 | Qoder CN | ✅ | 8 | 8 | `~/.qoder-cn` |
 | qwen | 🔴 **无**（未适配/未测） | 0 | 0 | `—` |
 | teleagent | 🔴 **无**（未适配/未测） | 0 | 0 | `—` |
-| Trae Work | ✅ | 10 | 10 | `~/.trae-cn` |
+| Trae CN | ✅ | 8 | 9 | `~/.trae-cn` |
 | WorkBuddy | ✅ | 9 | 8 | `~/.workbuddy` |
 | ZCode | ✅ | 9 | 9 | `~/.zcode` |
 | Zwork（AutoClaw 新客户端） | ✅ | 13 | 10 | `~/Library/Application Support/AutoClaw-official` |
@@ -61,10 +62,11 @@
 | 豆包办公 | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_alternative, hooks_event, launchd_patrol, settings_json, skill_symlink | — |
 | Hermes | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_event, launchd_patrol, launchd_patrol_note, parity_guard, settings_json, skill_symlink, system_prompt_section, twin_section_split | — |
 | LobsterAI | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_alternative, hooks_event, settings_json, skill_symlink | — |
+| MiniMax Code | agents_full_inject, custom_directive, hook_stdout_inject, hooks_event | awareness, skill_symlink | launchd_patrol, rules_inject, settings_json |
 | Qoder CN | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_event, settings_json, skill_symlink | — |
 | qwen | — | — | — |
 | teleagent | — | — | — |
-| Trae Work | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_alternative, hooks_event, launchd_patrol, settings_json, skill_symlink | — |
+| Trae CN | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_event, settings_json, skill_symlink | launchd_patrol |
 | WorkBuddy | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_event, settings_json, skill_symlink | — |
 | ZCode | custom_directive, rules_inject | agents_full_inject, awareness, hook_stdout_inject, hooks_alternative, hooks_event, settings_json, skill_symlink | — |
 | Zwork（AutoClaw 新客户端） | awareness, custom_directive | agents_full_inject, hook_stdout_inject, hooks_alternative, hooks_event, launchd_patrol, rules_inject, settings_json, skill_symlink | — |

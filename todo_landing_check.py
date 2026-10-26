@@ -70,7 +70,8 @@ job_probation_ledger.json／reply_format_guard.py），**全部落在 CHANGELOG.
   1 = 存在无实物且未登记的待办，或存在被改写的豁免登记
   2 = 用法/路径/豁免清单解析错误（fail-closed，⛔不返回"看起来没问题"）
 
-version: v1.1（2026-10-15·C32 收口轮：扫描面二分＋文件名抽取三处实测缺陷修＋12 条自检含 2 处变异自证；v1.0=同日初版）
+version: v1.2（2026-10-25 Trae CN 入包轮：补缺陷④「`·` 不是切段边界」——见 name_candidates docstring；
+  纯名字解析修，TODO_VOCAB/EXTS/判定强度零改动。v1.1=2026-10-15·C32 收口轮：扫描面二分＋文件名抽取三处实测缺陷修＋12 条自检含 2 处变异自证；v1.0=同日初版）
 """
 import argparse
 import hashlib
@@ -126,9 +127,17 @@ def extract_names(line):
 
 
 def name_candidates(run):
-    """整串优先；再给「中文→ASCII 边界」尾段候选（缺陷②·只改名不改判）。"""
+    """整串优先；再给「非ASCII→ASCII 边界」尾段候选（缺陷②·只改名不改判）。
+
+    2026-10-25 补缺陷④（Trae CN 入包轮实测 1 件假红）：
+      原式 `(?<=[一-鿿])(?=[0-9A-Za-z_])` 只认 CJK 紧邻 ASCII 的边界，而 `·`(U+00B7)
+      在 `NAME_CH` 里是合法名字符、却不在 CJK 区段 —— 「闸门互遮根治·run.sh」因此不切段，
+      整串当文件名 → 报"run.sh 无实物"，而 `references/skills/triwich/scripts/run.sh` 实际在位。
+      按 `NAME_CH` 自身的定义取边界：凡是 NAME_CH 允许的**非 ASCII**字符→ASCII 起始处即切。
+      这与缺陷②同性质（只修名字解析，⛔不动 TODO_VOCAB / EXTS / 判定强度）。
+    """
     cands = [run]
-    parts = re.split(r"(?<=[一-鿿])(?=[0-9A-Za-z_])", run)
+    parts = re.split(r"(?<=[^\x00-\x7F])(?=[0-9A-Za-z_])", run)
     if len(parts) > 1:
         cands.append(parts[-1])
     seen, res = set(), []

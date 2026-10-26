@@ -95,7 +95,7 @@ def _selfcheck():
     # 1. 注册状态
     registered = False
     try:
-        d = json.load(open(os.path.join(os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy"), "settings.json")))
+        d = json.load(open(os.path.join(os.environ.get("DOENGLINGZ_CONFIG_DIR") or os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy"), "settings.json")))
         for evt, entries in d.get("hooks", {}).items():
             for e in entries:
                 for h in e.get("hooks", []):
@@ -107,7 +107,7 @@ def _selfcheck():
     if not registered:
         print("  [注册] ⚠️ 未在 hooks 中找到本脚本注册")
     # 2. 调用实证
-    traces = sorted(glob.glob(os.path.join(os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy"), "traces") + "/*/trace_*.json"),
+    traces = sorted(glob.glob(os.path.join(os.environ.get("DOENGLINGZ_CONFIG_DIR") or os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy"), "traces") + "/*/trace_*.json"),
                     key=os.path.getmtime, reverse=True)[:3]
     print(f"  [调用实证] traces/ 最近 {len(traces)} 条记录存在" if traces else "  [调用实证] ⚠️ 无 traces 调用记录")
     for t in traces:

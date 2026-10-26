@@ -605,19 +605,19 @@ def parse_diary_file(filepath):
 
 
 def count_books_read():
-    """统计'已读'书本数（2026-08-08 第一性原理重构·你纠正拆书≠阅读）。
+    """统计'已读'书本数（2026-08-08 第一性原理重构·纠正拆书≠阅读）。
 
-    真相源 = 你的日记（唯一权威），两层构成：
-    1. 历史基线：皮叔 2026 年已读 9 本（铁证：2026-05-06 日记"📖 阅读9本"，
+    真相源 = 用户的日记（唯一权威），两层构成：
+    1. 历史基线：2026 年已读 9 本（铁证：2026-05-06 日记"📖 阅读9本"，
        3/26→3/28 累计 5→8 本计数链 + 成就系统去污染前备份"阅读总量 8 本（2026年新读）"佐证）。
        历史日记格式不统一，不逐日回填，直接以基线固化（READING_BASELINE）。
-    2. 增量：每晚复盘你把当天读完的书写入日记 YAML achievement_data.books_read
+    2. 增量：每晚复盘把当天读完的书写入日记 YAML achievement_data.books_read
        （如 books_read: ["《西瓜船》"]），脚本逐日扫描去重累加。
 
     明确排除：知识池 INDEX.md（读书助手拆书仓库）——拆解≠阅读，不再作为数据源。
     返回去重后的已读书本总数。
     """
-    READING_BASELINE = 9  # 2026年已读历史基线（你 5/6 日记铁证），从该数字起步，YAML 增量往上加
+    READING_BASELINE = 9  # 2026年已读历史基线（5/6 日记铁证），从该数字起步，YAML 增量往上加
     yaml_books = set()    # 从日记 YAML books_read 收集的书名（去重）
 
     files = sorted(glob(str(DIARY_DIR / "**" / "2026-*.md"), recursive=True))
@@ -721,7 +721,7 @@ def scan_all_diaries(cutoff=None):
             if total_minutes <= 7 * 60 + 30:
                 wake_early_days += 1
 
-    # 阅读数量：count_books_read() = 历史基线9 + 日记YAML books_read 增量（2026-08-08 重构·你纠正拆书≠阅读·不再数知识池）
+    # 阅读数量：count_books_read() = 历史基线9 + 日记YAML books_read 增量（2026-08-08 重构·纠正拆书≠阅读·不再数知识池）
     reading_count = count_books_read()
 
     # 暗黑之子成就计算（熬夜判断：入睡时间 > 00:00）

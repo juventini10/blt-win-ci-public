@@ -39,7 +39,9 @@ KOUJING = [
     ("禁词·安装包不携带该目录", "count0", [f"{GGS}/SKILL.md", f"{GGS}/references/topic-selection.md",
                                        f"{PKG}/references/skills/good-good-study/SKILL.md",
                                        f"{CL}/references/machine-acceptance.md"]),
-    ("needle·eval-set 当期条数（C2 分母）", "sync", [f"{GGS}/references/ROADMAP.md", f"{GGS}/SKILL.md"]),
+    ("needle·eval-set 当期条数（C2 分母）", "sync", [f"{GGS}/references/ROADMAP.md", f"{GGS}/references/eval-set.md"]),
+    # v1.2（2026-10-27）：原目标含 SKILL.md，但其索引行记载的是「迁移对账覆盖 43 用例」（eval-migration-map v1.2.0 配套·历史快照），
+    # 与「当期条数」不是同一个数→恒 ?? 假红。改以 ROADMAP + eval-set 构成账两处真源对账（C-206 登记表与实盘脱钩同族病）。
     ("术语单源·零阻断", "uniq", [f"{GGS}/references/ROADMAP.md", f"{GGS}/references/DESIGN-PHILOSOPHY.md",
                                f"{GGS}/references/CHANGELOG.md"]),
     ("needle·技能卡双实装声明", "sync", [f"{GGS}/SKILL.md", f"{PKG}/references/skills/good-good-study/SKILL.md"]),
@@ -57,7 +59,9 @@ d_skip = {"GB D7 枚举镜像点计数": {"CHANGELOG.md"}}
 d_decl_file = {"GB D7 枚举镜像点计数": os.path.join(GB, "references", "flow-C.md")}
 d_decl_rx = {"GB D7 枚举镜像点计数": r"共 (\d+) 处·数由清单与实扫双向核对"}
 NEEDLES = {   # sync 类判据：这些子串必须在每个落点上同时成立或同时不成立
-    "needle·eval-set 当期条数（C2 分母）": ["43 条"],  # v1.1：原needle取ROADMAP专属措辞，SKILL侧为「43 条用例」→假红（第5次探针过窄自捕）
+    # v1.2（2026-10-27）：GGS v1.2.15 把 ROADMAP C2 的「当期 43 条」订正为实盘 49 条（#44-49 入考后），
+    # needle 同步 43→49——原值导致宣称列读数为 ?? 并判 red（登记表与实盘脱钩同族病 C-206）。
+    "needle·eval-set 当期条数（C2 分母）": ["49 条"],
     "needle·技能卡双实装声明": ["**双实装**"],
     "GGS 自包含清单含 batch_auto_pass": ["batch_auto_pass.py（消费处"],
 }
@@ -144,7 +148,9 @@ def main():
     # eval-set 实际条数（防"账上 43 实际 40"型漂移）
     ev = open(f"{GGS}/references/eval-set.md", encoding="utf-8").read()
     n_real = len([l for l in ev.splitlines() if re.match(r"^\| \d+ \|", l)])
-    claimed = re.findall(r"当期 (\d+) 条", open(f"{GGS}/references/ROADMAP.md", encoding="utf-8").read())
+    # v1.2（2026-10-27）：原正则要求「当期 」后直接接数字，而 ROADMAP C2 实写「当期 **49 条**」（加粗）→ 探针假阴性（铁律-033 改源必重跑机检的活样本）。
+    # 修法=探针容忍 Markdown 强调标记（锚绑数字本身，不绑装饰），⛔不改文档迁就探针。
+    claimed = re.findall(r"当期\s*\**\s*(\d+)\s*条", open(f"{GGS}/references/ROADMAP.md", encoding="utf-8").read())
     okc = bool(claimed) and str(n_real) == claimed[-1]
     out.append(f'{"✅" if okc else "🔴"} eval-set 实数 vs 宣称          实={n_real} 宣称={claimed[-1] if claimed else "??"}')
     bad += 0 if okc else 1

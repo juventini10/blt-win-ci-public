@@ -332,6 +332,9 @@ def main():
     try:
         args = parser.parse_args()
     except SystemExit as e:
+        # --help 的 SystemExit(0) 必须原样放行（v3.52.6·否则 help 被误报为参数错误）
+        if e.code == 0:
+            raise
         raise SystemExit(1)
 
     # 参数校验

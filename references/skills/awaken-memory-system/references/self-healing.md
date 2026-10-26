@@ -13,12 +13,12 @@
 🔌 熔断器（关键）
 ├─ 成功条件：`python3 [记忆共享中心]/技能配置/awaken-memory-system/scripts/awaken_version_gate_check.py` 返回 exit 0
 ├─ 失败处理：中止
-├─ 可修正参数：SKILL.md路径 → 检查权威源 `[记忆共享中心]/技能配置/awaken-memory-system/SKILL.md` 是否存在（脚本 AUTHORITY 即此路径·审查P3-6修正）
+├─ 可修正参数：SKILL.md路径 → 检查权威源 `[记忆共享中心]/技能配置/awaken-memory-system/SKILL.md` 是否存在（脚本 AUTHORITY 即此路径）
 ├─ 重试次数：0
 └─ 降级方案：无——中止全量模式并报告
 
 ✅DO — 运行 `python3 [记忆共享中心]/技能配置/awaken-memory-system/scripts/awaken_version_gate_check.py`（v7.22 脚本闸门·双查合一·绝对路径调用——cwd 无关）
-- **调用预检**：运行前 `ls` 确认脚本文件存在；脚本文件不存在时 python 解释器也会 exit 2（与"缓存不一致"语义碰撞·审查P1-1）——故 exit 2 判定前必须先确认脚本自身可达，不可达按 exit 1 降级处理
+- **调用预检**：运行前 `ls` 确认脚本文件存在；脚本文件不存在时 python 解释器也会 exit 2（与"缓存不一致"语义碰撞）——故 exit 2 判定前必须先确认脚本自身可达，不可达按 exit 1 降级处理
 - exit 0 = 版本门禁过（权威源可达 + 真实独立副本全部一致）+ 规则.mdc 无过期
   - ⚠️ 脚本按 realpath 去重：与权威源同 inode 的软链路径记为「软链同源」而非验证样本。1e 自愈后各平台通常全为软链 → 独立副本为 0，此时本项**只等价于权威源可达性**，脚本会明确声明"不构成跨平台一致性验证"（v7.25 修 D① 可比对性）
 - exit 1 = 通用错误（权威源不存在/版本提取失败）→ 检查路径与 frontmatter
@@ -31,7 +31,7 @@
 
 1. Read USER.md → 提取系统版本号
 2. Read 变更日志头部 → 提取基线版本号
-3. 不一致 → 同步USER.md（用 Write 或端内等价编辑方式；allowed-tools 无 Edit 专用工具·审查P2-3对齐）→ 记录
+3. 不一致 → 同步USER.md（用 Write 或端内等价编辑方式；allowed-tools 无 Edit 专用工具）→ 记录
 
 ### §1.3 软链接自愈（1e） `[Poka-Yoke防误层]` Fail-Fast后自愈——断链自动重建，不依赖用户介入。
 
@@ -130,7 +130,7 @@ bash [记忆共享中心]/技能配置/restore-my-skills.sh
 
 下列五项互不依赖，✅DO 合并为**同一次 Bash 调用**输出——⛔DO NOT 逐项拆成多次往返，原因是每次工具往返=一次模型等待，逐项读取会把小美从目标 3 轮拖成 6 轮（2026-09-10 实测 6轮/13次调用）。一次调用同时输出：①记忆琥珀心跳（macOS/Linux `/tmp/guard-heartbeat-memoryamber.txt`；Windows `${MEMORY_BASE_PATH}/记忆琥珀/engine/logs/amber-watch.heartbeat`）②mirror-sync 心跳（先探测 `[记忆共享中心]/脚本中心/`：不存在→`N/A（发布者工具·未安装）`）③`bash [记忆共享中心]/脚本中心/changelog_guard.sh --check` ④`${MEMORY_BASE_PATH}/记忆琥珀/engine/amber-status.txt` 的 `MESSAGE=` 行 ⑤`${MEMORY_BASE_PATH}/记忆蒸馏/蒸馏中心.md`。
 
-**判定口径（沿用各自原标准·不新增）**：心跳 <90s ✅ / 90-180s 🟡 / >180s 或文件不存在 ⚠️守护未运行；changelog `candidates`>0 → 概览加一行「📋 变更日志：N 条 LIVE 变更疑未记（说"变更日志体检"可补）」；琥珀 `MESSAGE` 含⚠️ → 概览加一行「🟠 琥珀：[MESSAGE内容]」，仅「✅ 琥珀双轨正常」→ 轻量概览静默不输出（指令编写规范 §7.5 静默幂等：有结果才出声；全量模式按 dual-mode 3a.5 固定成行输出，v8.1.2·审查A6限定适用域）；蒸馏待办按 patrol.md §2 三级阈值判定，无待办→静默。
+**判定口径（沿用各自原标准·不新增）**：心跳 <90s ✅ / 90-180s 🟡 / >180s 或文件不存在 ⚠️守护未运行；changelog `candidates`>0 → 概览加一行「📋 变更日志：N 条 LIVE 变更疑未记（说"变更日志体检"可补）」；琥珀 `MESSAGE` 含⚠️ → 概览加一行「🟠 琥珀：[MESSAGE内容]」，仅「✅ 琥珀双轨正常」→ 轻量概览静默不输出（指令编写规范 §7.5 静默幂等：有结果才出声；全量模式按 dual-mode 3a.5 固定成行输出）；蒸馏待办按 patrol.md §2 三级阈值判定，无待办→静默。
 
 **安装包降级**：changelog_guard 是个人工具、mirror-sync 是发布者工具——安装包用户无此二者，`N/A` 是合法终态非告警（复用 system-logger 降级范式）；琥珀体检文件不存在 → 加一行「⚠️ 琥珀体检未运行」，不阻塞。
 

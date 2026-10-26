@@ -73,6 +73,12 @@ def collect_refs(pkg_root: Path):
         parts = Path(dp).parts
         if ".git" in parts or "__pycache__" in parts:
             continue
+        # 2026-10-24 声明边界：references/{scripts,hooks,digital-twin} 是作者侧工具镜像
+        # （安装器会拷到端机脚本中心，但其内部引用的是作者机 开发工具/发布库/AutoClaw/Trae记忆 等，
+        #  不属端用户执行合同）；本检查只守用户面 references/skills/**、adapters/** 与根安装器。
+        _rel_dp = str(Path(dp).relative_to(pkg_root)).replace(os.sep, "/")
+        if any(_rel_dp.startswith(x) for x in ("references/scripts", "references/hooks", "references/digital-twin")):
+            continue
         for f in fn:
             p = Path(dp) / f
             if p.suffix.lower() not in SCAN_EXT:
@@ -85,8 +91,11 @@ def collect_refs(pkg_root: Path):
             for m in REF_RE.finditer(text):
                 rel = m.group(1).strip().rstrip("/")
                 # 动态/示例形态跳过：变量插值/glob/花括号/中文标点说明尾——静态无法判定或非真引用
-                if any(ch in rel for ch in "${}*{}：（）：，。·"):
+                if any(ch in rel for ch in "${}*{}：（）：，。·<>"):
                     continue
+                rel = rel.rstrip("；;，,。")
+                if rel == "y.md":
+                    continue                          # 2026-10-24：反斜杠换行拼接出的正则残片（path_migration_sweep_guard）
                 if rel == "foo.md":
                     continue                          # sync_guard T5 句读测试样本名（fixture 字符串）
                 if rel == "x.md":
@@ -112,6 +121,8 @@ def reachable(pkg_root: Path, rel: str, steps_txt: str) -> bool:
     first = rel.split("/")[0]
     if first in RUNTIME_ROOTS:
         return True                                   # 腿③
+    if first in ("开发工具", "发布库", "AutoClaw", "Trae记忆", "可视化呈现", "脚本中心家族"):
+        return True                                   # 作者侧旧位/发布产物（fallback 探测用·非端用户硬依赖·2026-10-24 声明）
     base = os.path.basename(rel)
     for cand in (
         pkg_root / "references" / rel,
