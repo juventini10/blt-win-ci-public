@@ -443,7 +443,7 @@ def bootstrap_runtime_state(mc, dry=False):
             _env = dict(os.environ)
             _env["DIGITALTWIN_HOME"] = dt_root
             try:
-                r1 = _sp.run([sys.executable, _sync], capture_output=True, text=True, errors="replace",
+                r1 = _sp.run([sys.executable, _sync], capture_output=True, text=True, encoding="utf-8", errors="replace",
                              timeout=180, env=_env)
                 # 成功判据＝账本真的落盘（⛔不看 rc）：state_bus_sync 在装机态先种子、后检查，
                 # 判据源 watcher 缺失时检查段 rc=4，但账本已建 = 本步目标已达成。
@@ -451,7 +451,7 @@ def bootstrap_runtime_state(mc, dry=False):
                     report.append("⚠️ state_bus 种子未生成（rc=%d·不阻断安装）" % r1.returncode)
                 else:
                     r2 = _sp.run([sys.executable, _sync, "--update"],
-                                 capture_output=True, text=True, errors="replace", timeout=180, env=_env)
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180, env=_env)
                     report.append("created 数字分身/state_bus.json（种子%s）"
                                   % ("+--update" if r2.returncode == 0
                                      else "+--update rc=%d" % r2.returncode))
@@ -2242,7 +2242,7 @@ def gate_check(platform_id):
             _r1 = subprocess.run(
                 [_pwsh, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", verify_ps1,
                  "-Platform", platform_id],
-                capture_output=True, text=True, errors="replace")
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
             sys.stdout.write(_r1.stdout)
             sys.stderr.write(_r1.stderr)
             if _r1.returncode != 0:
@@ -2253,7 +2253,7 @@ def gate_check(platform_id):
     print("─" * 60)
     print("🔒 发版前置门禁：端适配三面判据（verify.sh §1.5 系统文件 / §1.6 钩子面 / twin_surface）")
     r = subprocess.run(["bash", verify, "--platform", platform_id],
-                       capture_output=True, text=True, errors="replace")
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
     sys.stdout.write(r.stdout)
     sys.stderr.write(r.stderr)
     if r.returncode != 0:
@@ -2272,7 +2272,7 @@ def gate_check(platform_id):
         #   ⇒ 跑后清理该占位目录（用户机上此路径本就该指向记忆中心·不涉及真实资产）。
         _self_ref = os.path.join(_pkg_dir, PLACEHOLDER)
         p = subprocess.run([sys.executable, pac, "--src", platform_id],
-                           capture_output=True, text=True, errors="replace")
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
         if os.path.isdir(_self_ref):
             shutil.rmtree(_self_ref, ignore_errors=True)
         if p.returncode == 0:
@@ -2910,7 +2910,7 @@ def _emit_receipt(mc, cfg_root, platform, bad=None, pending=None,
         argv += ["--degrade", "规则层硬失败 %d 项" % hard_err]
     for p in (pending or []):
         argv += ["--pending-manual", p]
-    r = _sp.run(argv, capture_output=True, text=True, errors="replace", timeout=300)
+    r = _sp.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
     sys.stdout.write(r.stdout or "")
     if r.returncode not in (0, 1):
         sys.stderr.write(r.stderr or "")
@@ -3101,7 +3101,7 @@ def _surface_gate_preflight():
         return 2
     try:
         _r = _sp.run([sys.executable, _gate, _pkg_root],
-                     capture_output=True, text=True, errors="replace", timeout=900)
+                     capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
     except Exception as _e:
         print("❌ 门禁执行自身故障（大声报·不静默放过）: %r" % (_e,))
         return 2
