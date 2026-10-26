@@ -443,7 +443,7 @@ def bootstrap_runtime_state(mc, dry=False):
             _env = dict(os.environ)
             _env["DIGITALTWIN_HOME"] = dt_root
             try:
-                r1 = _sp.run([sys.executable, _sync], capture_output=True, text=True,
+                r1 = _sp.run([sys.executable, _sync], capture_output=True, text=True, errors="replace",
                              timeout=180, env=_env)
                 # 成功判据＝账本真的落盘（⛔不看 rc）：state_bus_sync 在装机态先种子、后检查，
                 # 判据源 watcher 缺失时检查段 rc=4，但账本已建 = 本步目标已达成。
@@ -451,7 +451,7 @@ def bootstrap_runtime_state(mc, dry=False):
                     report.append("⚠️ state_bus 种子未生成（rc=%d·不阻断安装）" % r1.returncode)
                 else:
                     r2 = _sp.run([sys.executable, _sync, "--update"],
-                                 capture_output=True, text=True, timeout=180, env=_env)
+                                 capture_output=True, text=True, errors="replace", timeout=180, env=_env)
                     report.append("created 数字分身/state_bus.json（种子%s）"
                                   % ("+--update" if r2.returncode == 0
                                      else "+--update rc=%d" % r2.returncode))
@@ -2910,7 +2910,7 @@ def _emit_receipt(mc, cfg_root, platform, bad=None, pending=None,
         argv += ["--degrade", "规则层硬失败 %d 项" % hard_err]
     for p in (pending or []):
         argv += ["--pending-manual", p]
-    r = _sp.run(argv, capture_output=True, text=True, timeout=300)
+    r = _sp.run(argv, capture_output=True, text=True, errors="replace", timeout=300)
     sys.stdout.write(r.stdout or "")
     if r.returncode not in (0, 1):
         sys.stderr.write(r.stderr or "")
@@ -3101,7 +3101,7 @@ def _surface_gate_preflight():
         return 2
     try:
         _r = _sp.run([sys.executable, _gate, _pkg_root],
-                     capture_output=True, text=True, timeout=900)
+                     capture_output=True, text=True, errors="replace", timeout=900)
     except Exception as _e:
         print("❌ 门禁执行自身故障（大声报·不静默放过）: %r" % (_e,))
         return 2

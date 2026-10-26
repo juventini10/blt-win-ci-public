@@ -2,7 +2,7 @@
 title: Step0.5 三闸页（隐含假设/顺序判定/深度四格）
 type: page
 version: v1.0
-page_fingerprint: 51d347c4
+page_fingerprint: 9f7420ba
 author: 皮叔
 license: Proprietary
 source: 技能配置/triwich/pages/p05-assumption-gates.md

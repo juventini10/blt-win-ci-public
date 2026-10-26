@@ -2,7 +2,7 @@
 title: 发布自包含依赖清单（非热路径）
 type: page
 version: v1.0
-page_fingerprint: 0536d7bd
+page_fingerprint: 78ca9770
 author: 皮叔
 license: Proprietary
 source: 技能配置/triwich/pages/pr-reference/deps-manifest.md
