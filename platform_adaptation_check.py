@@ -187,6 +187,11 @@ SRC_EXCLUDED = {
 
 
 def log_line(msg):
+    # 2026-10-27（G路径体检·Win 真机 T15/T16/V15 根因）：源机/CI 上 [记忆共享中心] 占位符未展开，
+    #   原地落盘会在包内造出 [记忆共享中心]/脚本中心/logs/*.log ⇒ 卫生门禁自指污染（verify 报红）。
+    #   判据=占位符未展开即不写日志；用户机经安装器替换成真实 MC 路径后才落盘。
+    if "[记忆共享中心]" in LOG:
+        return
     try:
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
         with open(LOG, "a", encoding="utf-8") as f:
