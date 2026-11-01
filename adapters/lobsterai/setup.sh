@@ -98,6 +98,11 @@ if [ -z "$MC" ]; then
 fi
 
 # ─── LobsterAI 根（环境变量可覆盖·沙盒可测）───
+# ⚠️ 2026-11-01 D11 自纠：本端**有两个根**——LA_HOME＝LobsterAI 应用根（插件落位面）、
+#    而 capability 的 config_root ＝ LA_HOME/openclaw/state（宿主配置面）⇒ **二者不等**。
+#    把 LA_HOME 直接绑 DOENGLINGZ_CONFIG_DIR（=cfg_root=state 层）⇒ 插件落位面错位一��（state/third-party-extensions）。
+#    修法＝LA_HOME 保持「应用根」语义（LOBSTERAI_HOME 覆盖口保留·隔离验证可用它传隔离路径），
+#    ⛔不再拿 cfg_root 当应用根。
 LA_HOME="${LOBSTERAI_HOME:-$HOME/Library/Application Support/LobsterAI}"
 STATE="$LA_HOME/openclaw/state"
 CONFIG="$STATE/openclaw.json"
@@ -117,10 +122,21 @@ fp() { local f="$MC/$1" kw="${2:-}"
   if [ ! -s "$f" ]; then echo -e "${R}  [缺] $1（不存在或为空）${N}"; FP_FAIL=$((FP_FAIL+1)); return; fi
   if [ -n "$kw" ] && ! grep -q "$kw" "$f"; then echo -e "${R}  [疑] $1 存在但无关键词「${kw}」（疑似非布洛陀文件）${N}"; FP_FAIL=$((FP_FAIL+1)); return; fi
   echo -e "${G}  [OK] $1${N}"; }
-fp "核心层/CORE.md" "铁律"
+# ⚠️ 2026-11-01 D10 判据面＝落点面根治：`核心层/CORE.md` 是**作者态资产**（作者机的档案库里有），
+#    安装器装给用户的 MC **不装 核心层/** ⇒ 拿它当硬指纹 ⇒ 新用户必缺 ⇒ 端接入必然失败。
+#    修法=硬指纹只认安装器真装件；作者态件降为 ⏳待办（不判红）。
+if [ -f "$MC/核心层/CORE.md" ]; then echo -e "  [OK] 核心层/CORE.md（作者态资产·本机在位）"; else echo -e "  [⏳] 核心层/CORE.md（作者态资产·新用户机无·不判红）"; fi
 fp "记忆规则/用户基本规则-铁律版.md" "铁律"
-if [ "$FP_FAIL" -gt 0 ]; then echo -e "${R}[X] $MC 存在但不是完整布洛陀五层记忆系统（$FP_FAIL 项指纹缺失）${N}"; exit 1; fi
-echo -e "${G}[OK] 记忆中心指纹通过${N}"
+# ⚠️ 2026-11-01 D6 补实现（装机链自证标志 BLT_INSTALL_CHAIN=1·C30 裁定）：MC 尚未成型是
+#    **装机中途态**不是失败（判据源＝qodercn/setup.sh 同款范式）。此前本端硬拒 ⇒
+#    首次装机（公共资产尚未落盘）端接入面必然装不上。
+BLT_EMPTY_MC=0
+if [ "${BLT_INSTALL_CHAIN:-}" = "1" ] && { [ ! -d "$MC" ] || [ ! -d "$MC/核心层" ]; }; then
+  BLT_EMPTY_MC=1
+  echo -e "${Y}  [⏳] 记忆中心尚未成型（装机链内·指纹件稍后由公共资产腿落齐·本行≠失败）${N}"
+fi
+if [ "$FP_FAIL" -gt 0 ] && [ "$BLT_EMPTY_MC" -eq 0 ]; then echo -e "${R}[X] $MC 存在但不是完整布洛陀五层记忆系统（$FP_FAIL 项指纹缺失）${N}"; exit 1; fi
+[ "$BLT_EMPTY_MC" -eq 0 ] && echo -e "${G}[OK] 记忆中心指纹通过${N}"
 
 # ─── [2/6] 数据清理（强制·样例数据精确比对·绝不碰用户记录）───
 echo -e "${Y}[2/7] 数据清理（开发阶段遗留样例数据·SHA256 精确比对）...${N}"

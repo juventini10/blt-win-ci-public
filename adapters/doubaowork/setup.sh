@@ -106,7 +106,13 @@ say "    记忆中心: ${MC:-<未找到>}"
 say "    user_skills: $US"
 
 # ── [1/8] 记忆中心指纹检测（fail-loud·防装到通用空目录）──────────────────────
-if [ ! -d "$MC" ] || [ ! -f "$MC/核心层/CORE.md" ]; then
+# ⚠️ 2026-11-01 D6 补实现：装机链自证标志 BLT_INSTALL_CHAIN=1（安装器委派时注入·C30 裁定）
+#    「MC 尚未成型」是**装机中途态**不是失败——判据源＝qodercn/setup.sh 同款范式。
+#    此前本端只认「有 核心层/CORE.md」⇒ **首次装机（MC 目录树还没建）必被硬拒**
+#    ⇒ 端接入面装不上（2026-11-01 沙箱全新安装实跑 exit=1 实锤·非沙箱假象）。
+if [ "${BLT_INSTALL_CHAIN:-}" = "1" ] && { [ ! -d "$MC" ] || [ ! -d "$MC/核心层" ]; }; then
+  echo -e "${YELLOW}[⏳] 记忆中心尚未成型: ${MC:-<未创建>}（装机链内·稍后创建目录树与核心文件·本行≠失败）${NC}"
+elif [ ! -d "$MC" ] || [ ! -f "$MC/核心层/CORE.md" ]; then
   echo -e "${RED}[X] 记忆中心不存在或非布洛陀指纹: ${MC:-<未找到>}${NC}"
   echo -e "    请先完成布洛陀五层记忆系统安装，再跑本脚本（或显式传记忆中心绝对路径）。"; exit 1
 fi
@@ -117,7 +123,11 @@ fp_file() {
   if [ -n "$kw" ] && ! grep -q "$kw" "$f"; then echo -e "${RED}  [疑] $2: $1（无\"$kw\"关键词）${NC}"; FP_FAIL=$((FP_FAIL+1)); return; fi
   echo -e "${GREEN}  [OK] $2${NC}"
 }
-fp_file "核心层/CORE.md" "L1核心层"
+# ⚠️ 2026-11-01 D10 判据面＝落点面根治：`核心层/CORE.md` 是**作者态资产**（作者机的档案库里有），
+#    而安装器装给用户的 MC **不装 核心层/**（真装件＝脚本中心/数字分身/知识库/记忆规则/记忆蓝图/记忆蒸馏）
+#    ⇒ 拿它当硬指纹 ⇒ **新用户必缺 ⇒ 该端装包必然端接入失败**（2026-11-01 沙箱全新安装实跑
+#    doubaowork exit=1 实锤）。修法=硬指纹只认安装器真装件；作者态件降为 ⏳待办（不判红）。
+if [ -f "$MC/核心层/CORE.md" ]; then echo -e "  [OK] L1核心层（作者态资产·本机在位）"; else echo -e "  [⏳] L1核心层（作者态资产·新用户机无·不判红）"; fi
 fp_file "记忆规则/用户基本规则-铁律版.md" "行为规则" "铁律"
 if [ "$FP_FAIL" -gt 0 ]; then
   echo -e "${RED}[X] $MC 不是完整的布洛陀五层记忆系统（$FP_FAIL 项指纹缺失）${NC}"; exit 1
@@ -348,6 +358,10 @@ elif [ "$DRY" = "1" ]; then
   say "  [dry] plist 落位 → $PLIST"
 elif [ -f "$PLIST" ] && ! grep -qF '[记忆共享中心]' "$PLIST"; then
   echo -e "  ${YELLOW}[=] plist 已安装（占位符已替换）·跳过${NC}"
+elif [ -n "${DOENGLINGZ_CONFIG_DIR:-}" ]; then
+  # ⚠️ 2026-11-01 隔离装防护：launchd 是**端真机专属面**（~/Library/LaunchAgents）⇒
+  #    隔离装不得写真机 ⇒ 显形跳过（⛔不静默·不假绿：真实装机时 DOENGLINGZ_CONFIG_DIR 未设·正常装）。
+  echo -e "  ${YELLOW}[skip] 隔离装（DOENGLINGZ_CONFIG_DIR 已设）——launchd plist 面跳过·不写真机 LaunchAgents${NC}"
 else
   run mkdir -p "$(dirname "$PLIST")"
   sed -e "s|\[记忆共享中心\]|$MC|g" -e "s|{记忆共享中心}|$MC|g" "$PLIST_TMPL" > "$PLIST"
@@ -357,6 +371,9 @@ fi
 # 6c. bootstrap（尽力自动·失败给手动指令·不假绿·需手动不计 FAIL 不阻塞）
 if [ "$DRY" = "1" ]; then
   say "  [dry] 跳过 bootstrap"
+elif [ -n "${DOENGLINGZ_CONFIG_DIR:-}" ]; then
+  # ⚠️ 2026-11-01 隔离装防护：bootstrap 会真注册 launchd 到真机 ⇒ 隔离装显形跳过。
+  say "  [skip] 隔离装（DOENGLINGZ_CONFIG_DIR 已设）——launchd bootstrap 面跳过·不写真机"
 elif [ -f "$INSTALL_LD" ]; then
   if bash "$INSTALL_LD" </dev/null; then
     echo -e "${GREEN}  [OK] launchd patrol 已注册${NC}"

@@ -3,7 +3,7 @@ author: 皮叔
 title: Skill 标准规范
 type: reference
 status: active
-version: "v6.2.5"
+version: "v6.2.6"
 date: 2026-10-23
 summary: Skill编写的质量结构机制标准（Reference层）
 source: 记忆蓝图/03_开发规范/Skill架构规范/Skill标准规范.md

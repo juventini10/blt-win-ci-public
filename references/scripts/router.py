@@ -14,7 +14,16 @@ v3.1.0 (2026-10-18 · 实体管理域闸)：
         评估哪个是最好的，就留一个」宾语是**具体实体**（书目×留一个），对象/动作
         两词表均不在场 ⇒ 「评估」独木命中放行 triwich（QCN-20261018-001）。
   根治：新增平行闸 _entity_mgmt_veto，三条件结构同既有闸（全宽词×实体宾语×管理动作，
-        复用④日记豁免/⑤自家触发面豁免），⛔不动 _broad_object_veto 老逻辑（零回归）。
+  复用④日记豁免/⑤自家触发面豁免），⛔不动 _broad_object_veto 老逻辑（零回归）。
+v3.2.0 (2026-10-29 · 命令式前缀通道)：
+  病：clock-loop description 明写「以 "循环"/"loop" 加空格开头」，规则在 SKILL.md，
+      但引擎只做大小写敏感子串匹配 ⇒ 你打 "Loop"/"LOOP" 漏命中（实测 loop✅ Loop❌ LOOP❌），
+      表现为「路由不知道我的意图」，实为大小写实现缺陷而非规则缺失。
+  根治：_PREFIX_COMMANDS 登记表 + _prefix_command_hit()，句首前缀+分隔符+re.I。
+      ⛔ 不走全局 text.lower()——实测把通用词 "Skill" 归一后 find-skills/skill-creator/
+      skill-forge 在每句含"Skill"的话里全部误触发（60 条真实语料污染 10 条 = 17%）。
+  验证：目标用例 4 变体全绿 + 负例 3 条不误触（三明治的文件在哪/Looping/循环播放）+
+      60 条真实语料 diff=1（仅目标句，零扩散）。
 """
 # Win console UTF-8 guard (auto by build chain · V9)
 try:
@@ -449,11 +458,32 @@ def _entity_mgmt_veto(hit_words, text, trig):
     return ["宽词%s·实体宾语%s·管理动作%s" % (hit_words, sig[:3], act[:3])]
 
 
+# ── 命令式前缀通道（v3.2.0 · 2026-10-29）───────────────────────────────
+# 病：clock-loop 的 description 明写「以 "循环"/"loop" 加空格开头」，但引擎只做**大小写敏感**
+#     子串匹配 ⇒ 用户打 "Loop"/"LOOP" 直接漏命中（你实测：loop✅ / Loop❌ / LOOP❌）。
+#     规则本就在 SKILL.md，缺的是实现侧让已有规则不因大小写失效。
+# 判据：仅对登记在此表的 Skill 生效——句首 + 前缀词 + 分隔符，大小写不敏感。
+# ⛔ 不做全局 text.lower()：实测那样会把通用词 "Skill" 一并归一，令 find-skills /
+#     skill-creator / skill-forge 在每句含"Skill"的话里全部误触发（60 条真实语料污染 10 条）。
+_PREFIX_COMMANDS = {"clock-loop": ("loop", "循环")}
+
+
+def _prefix_command_hit(skill, text):
+    """句首命令式前缀命中（空列表=未命中）。"""
+    words = _PREFIX_COMMANDS.get(skill)
+    if not words:
+        return []
+    m = re.match(r"^\s*(%s)\s+" % "|".join(words), text, re.I)
+    return [m.group(1).lower()] if m else []
+
+
 def hit(skill, text):
     desc = get_desc(skill)
     trig, excl = extract_words(desc)
     mention, m_evidence = _is_self_mention(text, desc)
     hit_words = [w for w in trig if w and not _is_junk_trig(w) and w in text]
+    if not hit_words:
+        hit_words = _prefix_command_hit(skill, text)   # 命令式前缀通道（大小写不敏感）
     if not hit_words:
         # 降级：语义标签散列通道（自然语言离散结构兜底）
         tags = semantic_tags(trig)

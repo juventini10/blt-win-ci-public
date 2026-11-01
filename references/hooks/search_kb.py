@@ -2,10 +2,11 @@
 # TRUTH_OF: 脚本中心/search_kb.py   # 真源声明·派生面须软链指向本件（v1.2.227 副本声明面）
 # -*- coding: utf-8 -*-
 """
-search_kb.py v0.3.18 — 知识沉淀自动检索（v0.3.18·2026-10-22 Win反馈单V2 N-1：目录名形态归一兜底 _norm_layout_walk·候选链全miss后按 normalize(空格→-) 逐段扫描+漂移显形，根治历史空格形态实盘检索源静默不可达·配套实现 --status 真分支（原死接口被当查询词吃·E-1 状态头机检取）·负例夹具N1五测+E1三测·回滚点=记忆琥珀/fbkV2-fix-20261022/）（v0.3.17·2026-10-17 模块C库容治理：C-2 非卡入库排除表(_NONCARD_EXCLUDE)+缓存schema4·C-5 成长箱纯元块结构过滤(_is_meta_block·标题黑名单弃用改物理判据)·gate0 71%/0.638 前后对照零退化·回滚点=记忆琥珀/模块C-白名单-bak-20261017/）（v0.3.16·2026-10-16 门3换参 K_RRF 60→30·NDCG+3.5pp零Recall代价·标题保底floor机理·真尺n=21验证·回滚点=记忆琥珀search_kb_v0.3.15_K60_改前·母卡§八门3节）（v0.3.15·2026-10-13 技能卡专属分支·任务卡T3 判据预注册见工单§8）（v0.3.14·2026-10-07 CLI实跑落trail·原则17机械锚补全）（前值 v0.3.13·2026-10-05 布局+引擎根双自适应·P2 G4 检索面修复）（第二刀·BM25式+路由加权+ bge 向量 RRF 融合；v0.3 实体直通+单一真源）
+search_kb.py v0.3.22 — 知识沉淀自动检索（v0.3.22·2026-10-28 条件式 cross-encoder 重排接入 search() 出口（默认关·KB_RERANK=1 可开/--rerank 双开关·7s 硬预算·失败回退基线·gate0 18/36 逐位不变·任务卡§十六接线·版本串归正补记本次头串曾滞后 v0.3.19））（v0.3.21·2026-10-27 蓝图卡分支 text 补 title+source_files·区分型字段入检索面）（v0.3.20·2026-10-27 点名卡地板分1e-4强制入池 + type 白名单加 blueprint-card）（v0.3.19·2026-10-27 卡号可检索三刀：title编号token入text·点名并入标题保底通道·点名卡强制入池(地板分1e-4)·schema4→5强制重建·真尺14/21与改前版逐位相同零退化·生产 kb_serve 已重启验证）（v0.3.18·2026-10-22 Win反馈单V2 N-1：目录名形态归一兜底 _norm_layout_walk·候选链全miss后按 normalize(空格→-) 逐段扫描+漂移显形，根治历史空格形态实盘检索源静默不可达·配套实现 --status 真分支（原死接口被当查询词吃·E-1 状态头机检取）·负例夹具N1五测+E1三测·回滚点=记忆琥珀/fbkV2-fix-20261022/）（v0.3.17·2026-10-17 模块C库容治理：C-2 非卡入库排除表(_NONCARD_EXCLUDE)+缓存schema4·C-5 成长箱纯元块结构过滤(_is_meta_block·标题黑名单弃用改物理判据)·gate0 71%/0.638 前后对照零退化·回滚点=记忆琥珀/模块C-白名单-bak-20261017/）（v0.3.16·2026-10-16 门3换参 K_RRF 60→30·NDCG+3.5pp零Recall代价·标题保底floor机理·真尺n=21验证·回滚点=记忆琥珀search_kb_v0.3.15_K60_改前·母卡§八门3节）（v0.3.15·2026-10-13 技能卡专属分支·任务卡T3 判据预注册见工单§8）（v0.3.14·2026-10-07 CLI实跑落trail·原则17机械锚补全）（前值 v0.3.13·2026-10-05 布局+引擎根双自适应·P2 G4 检索面修复）（第二刀·BM25式+路由加权+ bge 向量 RRF 融合；v0.3 实体直通+单一真源）
 职责: 任务描述 → ①意图路由（5类型查路由表）→ ②检索（路由加权×3 + 词面命中×IDF + 向量余弦）
       → ③Top-K（路径+命中理由+摘要）。输出带纠错标记说明（⛔ 这条没用 → 回写路由表/关键词）。
-      数据源: 知识池卡(05-知识池) + 读书笔记(01-读书笔记) + 立场卡(AI学习库) + 概念卡(08-概念层) + Skill。
+      数据源: 知识池卡(05-知识池·读书卡唯一真源) + 立场卡(AI学习库) + 概念卡(08-概念层) + Skill。
+      ⛔ 01-读书笔记（老版）自 2026-10-30 起**出索**（你令两次重申：老版不可检索）。
       ⛔只读不写任何卡片；向量库 kb_vectors.json 由 build_kb_vectors.py 构建（缺失时自动降级 v0.1 纯 BM25）。
       v0.3: search() 核心单一真源（main/eval 共用）+ 任务内实体直通（文档侧自动生长·专名硬信号 > 向量软信号）
       + RRF bm25_rank 修复（插入序→得分序）+ 桶第一优先级源加权补齐（设计-实现差）。
@@ -66,7 +67,7 @@ def _find_mc():
         return os.path.dirname(os.path.dirname(rp("devtools")))
     except Exception:
         pass
-    sys.stderr.write("[search_kb] 未定位到记忆中心根，已回落 ~/个人AI档案（重装或改过配置请检查）\n")
+    sys.stderr.write("[search_kb] 未定位到记忆中心根，已回落本机默认记忆中心（重装或改过配置请检查）\n")
     return os.path.join(os.path.expanduser("~"), "[记忆共享中心]")
 _MC = _find_mc()
 def _pick_engine_dir(_mc):
@@ -707,17 +708,40 @@ def rank_mixed(scores, task, entity_docs=None, docs=None, allowed=None):
     # 存量卡无 verified → unverified ×1.0 → 零影响（eval 23/23 保持）。
     merged = [(s * TRUST_MULT.get(d.get("trust", "unverified"), 1.0), p, d, matched)
               for s, p, d, matched in merged]
+    # 点名卡强制入池（v0.3.20·2026-10-27 你批·补 pool_books 同型缺口）：
+    #   保底通道只是「事后抬分」，卡不在 merged 里就无从作用——实测 K004 零词面零向量命中，
+    #   text 里明明有卡号却连 Top20 都进不去；`s369` 小写同理（提取正则未归一大小写）。
+    #   对齐 pool_books「钦定书即使零词面命中也强制入候选池（地板分 1e-4）」：
+    #   query 里的编号 token 命中某卡 title 而未入池时，按地板分补入，再由保底通道抬到可见位。
+    #   ⛔只对含编号的 query 生效（影响面=点名查询），普通查询路径字节级不变。
+    if docs is not None:
+        _q_pool = {i.upper() for i in re.findall(r"[SKC]-?\d{3,}", task, flags=re.I)}
+        if _q_pool:
+            _seen_pool = {p for _, p, _, _ in merged}
+            for _fp, _fd in docs.items():
+                if _fp in _seen_pool:
+                    continue
+                _ft = str(_fd.get("title", "")).upper()
+                if any(_i in _ft for _i in _q_pool):
+                    merged.append((1e-4, _fp, _fd, ["🎯点名入池"]))
     # 标题保底通道（2026-10-11·「实现真正该命中的那一个」·对齐 pool_books 保底位范式·K007 D3 产物）：
     # 任务词面与卡标题精确包含 → 保底补偿分——抽词三源（词面∩桶/文档键词/实体）全空时词面腿
     # 空转，精确名卡被相关语义卡淹没（实证：K005 自搜 top-10 无本尊）。泛化机制非打地鼠。
     task_norm = re.sub(r"\s+", "", task)
+    # 点名卡号并入同一条保底通道（v0.3.19·2026-10-27 你批·⛔新增通道）：
+    #   原文只认「task 与 title 整串互含」，而「S369 立场卡」与「立场卡#S369-…」因 # 与长标题
+    #   永远对不上 ⇒ 保底静默失效、点名卡被自然分稀释（实测 S369 单词第1、加修饰词后未进 Top20）。
+    #   判据泛化=query 里的编号 token 命中 title 即给同一保底分（大小写归一，s369 ≡ S369）。
+    _q_ids = {i.upper() for i in re.findall(r"[SKC]-?\d{3,}", task, flags=re.I)}
     if task_norm:
         _tg = []
         for s, p, d, matched in merged:
             tnorm = re.sub(r"\s+", "", d.get("title", ""))
-            if tnorm and (task_norm in tnorm or tnorm in task_norm):
+            _hit_title = bool(tnorm) and (task_norm in tnorm or tnorm in task_norm)
+            _hit_id = bool(_q_ids) and any(i in tnorm.upper() for i in _q_ids)
+            if _hit_title or _hit_id:
                 s = max(s, ROUTE_BOOST / (K_RRF + 1) + 0.001)
-                matched = matched + ["🎯标题精确"]
+                matched = matched + (["🎯标题精确"] if _hit_title else ["🎯点名卡号"])
             _tg.append((s, p, d, matched))
         merged = _tg
     merged.sort(key=lambda x: -x[0])
@@ -868,10 +892,11 @@ _DOC_CACHE = os.path.join(_ENGINE_DIR, "cache", "doc_corpus.json")
 _CHUNK = 200  # 每分片文件数（沙箱文件监视配额实测 ~400-650 漂移·200 留双倍安全余量）
 
 def _glob_patterns():
-    """与 _build_docs_full 完全一致的 7 源 glob（单一真源·分片与指纹共用）。"""
+    """与 _build_docs_full 完全一致的 6 源 glob（单一真源·分片与指纹共用）·2026-10-30 起 01-读书笔记 出索。"""
     return [
         os.path.join(POOL_DIR, "*", "*.md"),
-        os.path.join(NOTES_DIR, "*.md"),
+        # ⛔ 2026-10-30 你令：01-读书笔记（老版）不入索；读书卡唯一真源＝05-知识池。删源不删常量=可回滚。
+        # os.path.join(NOTES_DIR, "*.md"),
         os.path.join(CONCEPT_DIR, "*.md"),
         os.path.join(AILIB_DIR, "*.md"),
         os.path.join(GROWTH_DIR, "*.md"),
@@ -949,7 +974,7 @@ def build_docs():
         try:
             if os.path.isfile(_DOC_CACHE):
                 c = json.load(open(_DOC_CACHE, encoding="utf-8"))
-                if c.get("schema") == 4 and c.get("fingerprint") == fp and isinstance(c.get("docs"), dict):
+                if c.get("schema") == 6 and c.get("fingerprint") == fp and isinstance(c.get("docs"), dict):
                     return c["docs"]
         except Exception:
             pass  # 缓存损坏=视作未命中，走全量重建
@@ -999,7 +1024,7 @@ def build_docs():
                     break
                 docs.update(json.load(open(partf, encoding="utf-8")))
             if _ok and docs:
-                _atomic_write_json(_DOC_CACHE, {"schema": 4, "fingerprint": fp, "docs": docs})
+                _atomic_write_json(_DOC_CACHE, {"schema": 6, "fingerprint": fp, "docs": docs})
                 for _old in glob.glob(os.path.join(parts_dir, "part_*.json")):
                     _stem = os.path.basename(_old)
                     try:
@@ -1018,7 +1043,7 @@ def build_docs():
     docs = _build_docs_full()
     try:
         os.makedirs(os.path.dirname(_DOC_CACHE), exist_ok=True)
-        _atomic_write_json(_DOC_CACHE, {"schema": 4, "fingerprint": fp, "docs": docs})
+        _atomic_write_json(_DOC_CACHE, {"schema": 6, "fingerprint": fp, "docs": docs})
     except Exception:
         pass  # 缓存写失败不阻断检索主流程（下次重建即可）
     return docs
@@ -1053,19 +1078,13 @@ def _build_docs_full():
         summary = fm.get("summary", [""])[0]
         title = base.replace(".md", "")
         body = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.S)[:500]
+        _use = fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else str(fm.get("usage") or "")
         docs[p] = {"title": title, "text": " ".join(cat) + " " + title + " " + summary + " " + body,
-                   "cat": " ".join(cat), "src": "知识池", "summary": summary or title, "trust": trust_of(fm)}
+                   "cat": " ".join(cat), "src": "知识池", "summary": summary or title, "trust": trust_of(fm), "usage": str(_use or "")}
 
-    # 读书笔记：category/tags + 标题 + 正文（B' 修复：原 0 字入索 → 补正文）
-    for p in glob.glob(os.path.join(NOTES_DIR, "*.md")):
-        raw = open(p, encoding="utf-8").read()
-        fm = parse_fm(raw)
-        cat = fm.get("category", []) + fm.get("tags", [])
-        title = os.path.basename(p).replace(".md", "")
-        body = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.S)[:800]   # ← B' 修复：原 0 字，现补正文
-        summary = fm.get("summary", [""])[0]
-        docs[p] = {"title": title, "text": " ".join(cat) + " " + (summary or "") + " " + body,
-                   "cat": " ".join(cat), "src": "读书笔记", "summary": summary or title, "trust": trust_of(fm)}
+    # ⛔ 2026-10-30 你令（第二次重申）：01-读书笔记 是**老版**、不可检索；读书卡唯一真源＝05-知识池。
+    #   原块把老笔记以 src="读书笔记" 混进召回 ⇒ 制造"读书卡检索命中了别的东西"的假象。
+    #   删源不删常量（NOTES_DIR 仍供布局回退映射）＝可回滚。
 
     # 立场卡：topic/type/领域分诊 + 承重字段优先（B' 修复：原 300 字盲截+summary=title → 承重字段多向量）
     for p in glob.glob(os.path.join(AILIB_DIR, "*.md")):
@@ -1083,16 +1102,23 @@ def _build_docs_full():
             _sk = fm.get("summary", [""])
             _sk = _sk[0] if isinstance(_sk, list) else _sk
             _sk = _sk or brief(_extract_md_section(body_full, "核心方法")) or title
-            docs[p] = {"title": title, "text": skill_card_view(raw, fm),
-                       "cat": " ".join(cat), "src": "立场卡", "summary": _sk, "trust": trust_of(fm)}
+            # v0.3.19：技能卡 view 同不含 title ⇒ 编号 token 在外层拼（⛔不改 skill_card_view 返回值形态）
+            _kid = " ".join(dict.fromkeys(re.findall(r"[SKC]-?\d{3,}", title)))
+            docs[p] = {"title": title, "text": (skill_card_view(raw, fm) + " " + _kid).strip(),
+                       "cat": " ".join(cat), "src": "立场卡", "summary": _sk, "trust": trust_of(fm), "usage": (fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else "")}
             continue
         sec = {k: extract_section(body_full, k) for k in LOAD_BEARING}
         segs = [s for s in sec.values() if s]  # 承重字段优先
+        # v0.3.19（2026-10-27 你批·卡号不可检索根治）：原 text 不含 title ⇒ 卡号（S369/K007）
+        #   在检索面里根本不存在，实测 S369/s369/「S369 立场卡」四种写法全未进 Top200，
+        #   而同卡正文词「新端接入先判势」第1名——点名卡号结构性失灵。
+        #   最小修法=只把 title 里的编号 token 补进 text，⛔不搬整条标题（A1 已证整标题×3 为负）。
+        _idtok = " ".join(dict.fromkeys(re.findall(r"[SKC]-?\d{3,}", title)))
         # B'' 修复：366/366 立场卡 frontmatter 无 summary 字段 → 回退承重字段首句（主要矛盾 > 立场），非 title
         summary = fm.get("summary", [""])[0] or brief(sec.get("主要矛盾") or sec.get("立场")) or title
         docs[p] = {"title": title,
-                   "text": " ".join(cat) + " " + " ".join(segs) + " " + body_full[:300],
-                   "cat": " ".join(cat), "src": "立场卡", "summary": summary, "trust": trust_of(fm)}
+                   "text": " ".join(cat) + " " + _idtok + " " + " ".join(segs) + " " + body_full[:300],
+                   "cat": " ".join(cat), "src": "立场卡", "summary": summary, "trust": trust_of(fm), "usage": (fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else "")}
 
     # 概念卡：标题 + 正文前缀
     for p in glob.glob(os.path.join(CONCEPT_DIR, "*.md")):
@@ -1100,8 +1126,13 @@ def _build_docs_full():
         fm = parse_fm(raw)
         title = os.path.basename(p).replace(".md", "")
         body = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.S)[:300]
+        # 2026-10-29（任务卡§三十一）：原写死空 cat ⇒ 概念卡类别词永不可检索；
+        # 改为「frontmatter 有 tags 就用」，无 tags 保持空（⛔不做 n-gram 派生，防噪声挤卡）
+        _tags = fm.get("tags", []) if isinstance(fm.get("tags"), list) else []
+        _tg = " ".join(str(x) for x in _tags)
+        _use = fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else ""
         docs[p] = {"title": title, "text": title + " " + body,
-                   "cat": "", "src": "概念卡", "summary": title, "trust": trust_of(fm)}
+                   "cat": _tg, "src": "概念卡", "summary": title, "usage": str(_use or ""), "trust": trust_of(fm)}
 
     # 成长箱 learnings：错误模式与实证记录（2026-08-29 扩·GROWTH 源）
     # 依据：分身判据层的证据应"可达"——此前成长箱 45 条模式 + 59 条记录完全检索不到，
@@ -1139,7 +1170,10 @@ def _build_docs_full():
         except OSError:
             continue
         fm = parse_fm(raw)
-        if fm.get("type", [""])[0] != "blueprint-index":  # 只索引蓝图索引卡类型
+        # v0.3.20（2026-10-27 蓝图卡重造）：白名单加 blueprint-card——
+        #   新卡与索引卡同目录存放（同目录省了"加源"），但 type 不同必须同批放行，
+        #   否则新卡落在目录里却一张都进不了索引（症状更隐蔽：文件在、搜不到）。
+        if fm.get("type", [""])[0] not in ("blueprint-index", "blueprint-card"):
             continue
         title = fm.get("title", [base.replace(".md", "")])[0]
         core_principles = fm.get("core_principles", [])
@@ -1148,10 +1182,17 @@ def _build_docs_full():
         source_path = fm.get("source_path", [""])[0]
         body = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.S)[:600]
         # 承重字段优先：core_principles > summary > tags > 正文
-        text = " ".join(core_principles) + " " + summary + " " + " ".join(tags) + " " + body + (" 常见问法 " + " ".join(fm.get("retrieval_queries", [])) if fm.get("retrieval_queries") else "")
+        # v0.3.21（2026-10-27 蓝图卡重造批1 判据复测）：text 补 title+source_files——
+        #   蓝图卡重造任务卡 §二 决策一定义检索面含 title 与 source_files（模板三处必改的承接面），
+        #   实况未拼装=「检索设计哲学」字面只在文件名/节锚里、卡进索引也召不回。
+        #   source_files 仅 blueprint-card 有（索引卡无此字段），空列表 join 不引入噪声。
+        text = (str(title) + " " + os.path.splitext(base)[0] + " "
+                + " ".join(str(x) for x in fm.get("source_files", [])) + " "
+                + " ".join(core_principles) + " " + summary + " " + " ".join(tags) + " " + body + (" 常见问法 " + " ".join(fm.get("retrieval_queries", [])) if fm.get("retrieval_queries") else ""))
+        _use = fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else ""
         docs[p] = {"title": title, "text": text,
                    "cat": " ".join(tags), "src": "蓝图索引卡",
-                   "summary": summary or title, "trust": trust_of(fm)}
+                   "summary": summary or title, "usage": str(_use or ""), "trust": trust_of(fm)}
 
     # Skill 一手 SKILL.md：工程类第一优先级知识源（方案 v3 §3.1）
     for p in glob.glob(os.path.join(_MC, "技能配置", "*", "SKILL.md")):
@@ -1193,7 +1234,7 @@ def _build_docs_full():
                 _cat_cn = _cand
         docs[p] = {"title": title, "text": title + " " + raw[:400],
                    "cat": _cat_cn, "src": "Skill", "summary": title,
-                   "first_line": first_line, "trust": trust_of(fm)}
+                   "first_line": first_line, "trust": trust_of(fm), "usage": (fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else "")}
     # C-2 入库排除（见 _NONCARD_EXCLUDE 注释块）：分片/全量两路都汇到此 chokepoint
     _ex = [k for k in docs if _is_noncard(k)]
     for k in _ex:
@@ -1244,7 +1285,7 @@ def idf_scores(docs, terms):
     return {t: math.log((N + 1) / (df[t] + 1)) + 1 for t in terms}
 
 
-def search(task, k=K):
+def search(task, k=K, rerank=None):
     """检索核心（单一真源）：main CLI 与 eval 评测共用。
     任务内实体识别（文档侧自动生长）→ 实体命中文档豁免源过滤 + 小加权（对象素材刚需）。
     返回 (sorted_scores[:k], buckets)。"""
@@ -1411,6 +1452,24 @@ def search(task, k=K):
         scores = rest[:insert_at] + pool_guaranteed + rest[insert_at:]
     else:
         _NAT.d = {}
+    # ── 条件式 cross-encoder 重排（2026-10-28 · 任务卡§十五 · 默认关）──
+    # 开关：形参 rerank 显式 > 环境变量 KB_RERANK=1 开 > 默认关（2026-10-29 实测：7s 延迟无法降——TOPN 15→10 模糊题 9/15 掉到 5/15，max_len 256 伤精确题，故不默认开）。
+    # 只在模糊形态问句上生效（rewrite_trigger 门卫），失败/超时/未预热一律原样返回。
+    _rr = rerank if rerank is not None else (os.environ.get("KB_RERANK", "0") == "1")
+    if _rr:
+        try:
+            _sd = os.path.dirname(os.path.abspath(__file__))
+            if _sd not in sys.path:
+                sys.path.insert(0, _sd)  # 2026-10-28：冷路径 sys.path[0] 可能不是 scripts/
+            import kb_rerank_ce as _krc
+            # 显式 rerank=True（CLI --rerank）=一次性进程：允许同步建会话；
+            # 环境变量开启（常驻引擎）走异步预热，⛔阻塞钩子预算。
+            scores = _krc.apply(task, scores, block_load=(rerank is True))
+        except Exception as _e:
+            try:
+                _log_degrade("rerank_ce_fail", f"{type(_e).__name__}: {_e}")
+            except Exception:
+                pass
     return scores[:k], buckets
 
 
@@ -1459,6 +1518,14 @@ def _log_cli_trail(task, scores, buckets):
 
 def main():
     args = sys.argv[1:]
+    # 显式重排开关（2026-10-28）：--rerank 强制走冷路径+重排；--no-rerank 强制关。
+    _rr_flag = None
+    if "--rerank" in args:
+        args = [a for a in args if a != "--rerank"]
+        _rr_flag = True
+    if "--no-rerank" in args:
+        args = [a for a in args if a != "--no-rerank"]
+        _rr_flag = False
     if not args:
         print("用法: python3 search_kb.py \"任务描述\"")
         print("     python3 search_kb.py --drill <相对HOME的路径>   # 渐进式加载·阶段2下钻全卡")
@@ -1502,7 +1569,7 @@ def main():
     # socket 在位→驻留引擎毫秒返回（实测 0.09-0.15s vs 冷路径 18.5s）；任何异常→回退冷路径
     # （kb_serve 设计约束"失败默认放行"同款·不阻塞）。trail 记 source=serve（诚实源分布账）。
     _task0 = args[0]
-    if not _task0.startswith("--"):
+    if not _task0.startswith("--") and not _rr_flag:
         try:
             import time as _time
             import socket as _socket
@@ -1571,7 +1638,7 @@ def main():
         except Exception:
             pass  # 快通道任何失败→回退冷路径（设计律：失败默认放行·kb_serve 同款）
     task = args[0]
-    scores, buckets = search(task)
+    scores, buckets = search(task, rerank=_rr_flag)
     _log_cli_trail(task, scores, buckets)
     print(f"⏱ {datetime.now().strftime('%H:%M')} | 意图路由: {', '.join(b[0]['name'] for b in buckets)} | 候选: {len(scores)}")
     if not scores:

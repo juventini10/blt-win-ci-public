@@ -55,8 +55,30 @@ if [ -f "$WATCH_LOG" ]; then
   fi
 fi
 
-# ── 监听目录（与白名单覆盖目录一致） ──
-PATHS=(
+# ── 监听面收窄根治（2026-10-28·Qoder CN·向 Win amber-watch.ps1 白名单语义对齐）──
+# 病根：整目录监听端配置根（~/.workbuddy 等）把守护/工具高频自写文件
+#   （automation.log/心跳/cache）算成变化 → 备份风暴（作者机实证单日 10,881 条 .bak）。
+# 新语义：监听面=白名单本体（amber-whitelist.txt 单一真源，文件级）；
+#   白名单缺失/为空时回退原目录级清单（兼容旧装机态）。
+WHITELIST="$MC/记忆琥珀/engine/amber-whitelist.txt"
+WHITELIST_FILES=()
+if [ -f "$WHITELIST" ]; then
+  while IFS= read -r _wl_line; do
+    case "$_wl_line" in ''|\#*) continue ;; esac
+    _wl_real="${_wl_line%%#*}"
+    _wl_real="$(echo "$_wl_real" | xargs)"
+    [ -z "$_wl_real" ] && continue
+    # 尾斜杠归一（fswatch 对带尾斜杠路径报 unpath 退出·目录级受保条目如 [日记仓库]/ 必踩）
+    while [ -n "$_wl_real" ] && [ "$_wl_real" != "/" ] && [ "${_wl_real%/}" != "$_wl_real" ]; do _wl_real="${_wl_real%/}"; done
+    _wl_real="${_wl_real/#\~/$HOMEDIR}"  # `~/` 条目兜底展开（同 amber_backup.sh 路径归一 C01）
+    # [端配置根] 端映射（同 amber_backup.sh P13#1 语义·谁调用谁定根）
+    case "$_wl_real" in *"[端配置根]"*) _wl_real="${_wl_real/\[端配置根\]/${_CFGROOT:-$HOMEDIR/.workbuddy}}" ;; esac
+    case "$_wl_real" in "$MC/记忆琥珀"/*) continue ;; esac  # ⛔递归监听备份落点
+    WHITELIST_FILES+=("$_wl_real")
+  done < "$WHITELIST"
+fi
+# 回退目录清单（仅白名单缺失/为空时用·旧语义）
+PATHS_DIR=(
   "${_CFGROOT:-$HOMEDIR/.workbuddy}"
   "$MC/核心层"
   "$MC/潜意识层"
@@ -74,14 +96,26 @@ PATHS=(
   "$MC/技能配置/system-logger"
   "$MC/技能配置/meta-aletheia"
 )
+if [ ${#WHITELIST_FILES[@]} -gt 0 ]; then
+  PATHS=("${WHITELIST_FILES[@]}")
+else
+  # ⚠️ 2026-11-01 D14 bash 变量名绑定修复（自引入缺陷·全端扫描实锤）：WHITELIST 变量名后紧跟
+  #    全角右括号 ⇒ bash 在 UTF-8 locale 下把全角首字节并入变量名 ⇒ 实际引用的是另一个未定义
+  #    变量名（WHITELIST 加全角括号）⇒ 本脚本 set -u ⇒ **白名单文件缺失这条分支必崩**（回退目录级监听失效）。
+  #    修法＝凡「变量后紧跟非 ASCII」一律改花括号 `${VAR}`。
+  log "⚠️ 白名单不可用（${WHITELIST}），回退目录级监听（面偏宽）"
+  PATHS=("${PATHS_DIR[@]}")
+fi
 
 # P13#3② 监听清单显形（泄监可见即可拦）
-log "实际监听目录候选清单（对账用·P13）：${PATHS[*]}"
-# 只保留真实存在的目录
+log "实际监听对象候选清单（对账用·P13·收窄版）：${PATHS[*]}"
+# 存在性过滤：文件级条目用 [ -e ]（收窄根治·原 [ -d ] 会把单文件判不存在）
 EXIST_PATHS=()
 for p in "${PATHS[@]}"; do
-  [ -d "$p" ] && EXIST_PATHS+=("$p")
+  [ -e "$p" ] && EXIST_PATHS+=("$p")
 done
+# 最终态显形（收窄根治配套：候选→实监听差值=白名单-文件系统漂移面，可见即可拦）
+log "实际监听对象最终清单（${#EXIST_PATHS[@]}/${#PATHS[@]} 入监）：${EXIST_PATHS[*]}"
 
 run_backup() {
   if [ ! -f "$BACKUP_SCRIPT" ]; then
@@ -135,8 +169,9 @@ fi
 # ═══ 模式 B：轮询回退（无 fswatch，与 Windows 同哲学，零依赖） ═══
 log "=== 记忆琥珀监听启动（轮询回退模式 interval=${INTERVAL}s，未检测到 fswatch，${#EXIST_PATHS[@]} 个目录）==="
 snapshot() {
-  # 输出所有文件的 路径:mtime:size，供比对
-  find "${EXIST_PATHS[@]}" -type f 2>/dev/null -exec stat -f '%N:%m:%z' {} + 2>/dev/null | sort
+  # 输出所有文件的 路径:mtime:size，供比对；噪音排除（.log/缓存/临时件不算"要备份的变化"·Win 同判据 2026-10-08）
+  find "${EXIST_PATHS[@]}" -type f 2>/dev/null -exec stat -f '%N:%m:%z' {} + 2>/dev/null \
+    | grep -vE '\.log:|__pycache__|\.DS_Store|\.tmp:' | sort
 }
 PREV=""
 FIRST=1

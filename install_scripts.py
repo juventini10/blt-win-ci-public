@@ -93,6 +93,9 @@ ROSTER = [
      ["rule_triggers_loader.py", "rule_triggers.yaml", "hook_protocol.py"]),
     ("Stop", ".", "references/scripts", "systemlog_stophook_check.py", []),
     ("Stop", ".", "references/scripts", "reply_tail_guard.py", []),
+    # 2026-10-27：铁律-026 执行位随包（作者令「真的对用户有帮助就去执行」）。全端注册是安全的：
+    #   取不到 last_assistant_message 载荷的端由 _load_reply() 回退原文，无签名格式即静默跳过。
+    ("Stop", ".", "references/scripts", "reply_time_truth_guard.py", []),
     ("Stop", ".", "references/scripts", "post_change_guard.py", []),
     ("Stop", ".", "references/scripts", "delivery_boundary_guard.py", []),
     ("PreToolUse", ".", "references/scripts", "edit_heading_guard.py", []),
@@ -246,7 +249,7 @@ DT_SUITE = {
     #   「数字分身/」根、改名、陪用户填，再跑 k2-slice-generator 造切片。
     #   全端共享同一份 → 任意端造芯流程一致；端差异只在 adapters/<端>/ 接入。
     "onboarding": ("童灵·人格向量-空模板.json", "童灵·人格规格书-骨架模板.md",
-                   "入门指南-通用版.md"),
+                   "入门指南-通用版.md", "08-会话级L7验证清单-骨架模板.md"),
 }
 
 
@@ -281,6 +284,19 @@ def deploy_digital_twin(mc, dry=False):
             for name in fs:
                 if name.endswith(TEXT_EXT):
                     _fill(os.path.join(root, name), mc)
+    # #6 判据源随包（2026-10-27）：TSL 协议骨架装机落位到与作者机同形的记忆蓝图目录，
+    #   使 LEVEL_SRC 默认路径在用户机可读（三层防御第 1 层=默认落位；第 2 层 env 覆盖、
+    #   第 3 层缺失显形已在守卫内）。⛔ 不覆盖用户已有同名件（防冲用户改过的副本）。
+    try:
+        _skel = os.path.join(MC_PATH, "数字分身", "onboarding", "08-会话级L7验证清单-骨架模板.md")
+        _dst_dir = os.path.join(MC_PATH, "记忆蓝图", "04_系统文件设计", "数字分身设计哲学")
+        _dst = os.path.join(_dst_dir, "08-会话级L7验证清单-骨架模板.md")
+        if os.path.isfile(_skel):
+            os.makedirs(_dst_dir, exist_ok=True)
+            shutil.copy2(_skel, _dst)
+            print("  ✓ TSL 协议骨架落位: %s" % _dst_dir)
+    except Exception as _e:
+        print("  !! TSL 协议骨架落位失败（不阻塞·判据源缺失会显形）: %s" % _e)
     return n
 
 
@@ -399,6 +415,7 @@ def _distillation_center_skeleton():
         "1. 每完成一次蒸馏/体检，在本月段追加一条账（格式同上表，预期下次=完成后推一个月）\n"
         "2. 想手动触发，直接说触发词（如「loop 资产体检」「启动系统日志月度蒸馏」）\n"
         "3. 体检行右列默认非日期=不提醒；想要定期提醒，把该列改成日期（如 2026-12-28）即订阅，改回文字即退订（调度器对非日期自动跳过）\n"
+        "4. 自定义蒸馏类型（如「📅 周蒸馏」）合法：行格式同上表，「预期下次」填 YYYY-MM-DD 即纳入到期检测（周蒸馏建议节律=完成日+7天）；填文字/—则该行不参与检测（WB反哺 FB-20260924-005 收口·2026-11-01）\n"
     ) % (month_tag, body)
 
 
@@ -854,9 +871,18 @@ def write_hook_fingerprints(deployed, dry=False):
             data[subpath] = {"pkg_sha8": _sha8(src), "installed_sha8": _sha8(landing),
                              "srcdir": srcdir}
     tmp = fp + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, fp)
+    try:
+        # ⚠️ 2026-11-01 半装根治：写入目录（如 <cfg>/plugins/<插件名>/hooks/）由端 setup 创建，
+        #    端 setup 缺席/失败时本件直写 ⇒ FileNotFoundError 未捕获 ⇒ **整个安装中止＝半装**
+        #    （脚本中心 322 件已落·端注册面/自检/回执全无）。修法=写前自建目录（幂等·exist_ok）
+        #    ＋写失败降级不崩（本安装器既有风格「降级不阻塞·公共资产继续部署」·⛔不静默吞·显形告警）。
+        os.makedirs(os.path.dirname(fp), exist_ok=True)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, fp)
+    except OSError as e:
+        print("⚠️ 钩子内容指纹基线写入失败（%s）——升级三态判定降级·⛔不阻断安装" % e)
+        return False
     print("🧭 钩子内容指纹基线已写：%d 件（升级三态判定的参照系·P12）→ %s" % (len(data), fp))
     return True
 
@@ -1599,9 +1625,15 @@ def write_guard_baseline(deployed, dry=False):
     for ev, sub, _sd, _m in deployed:
         exp.setdefault(ev, []).append(__import__("os").path.basename(sub))
     tmp = fp + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(exp, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, fp)
+    try:
+        # 同 write_hook_fingerprints：写前自建目录（幂等）＋写失败降级不崩（⛔基线缺失不阻断安装）
+        os.makedirs(os.path.dirname(fp), exist_ok=True)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(exp, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, fp)
+    except OSError as e:
+        print("⚠️ 期望基线写入失败（%s）——期望面判据降级·⛔不阻断安装" % e)
+        return False
     print("🧭 期望基线已写：%d 事件 %d 条 → %s" % (len(exp), sum(len(v) for v in exp.values()), fp))
     return True
 
@@ -2252,8 +2284,15 @@ def gate_check(platform_id):
 
     print("─" * 60)
     print("🔒 发版前置门禁：端适配三面判据（verify.sh §1.5 系统文件 / §1.6 钩子面 / twin_surface）")
-    r = subprocess.run(["bash", verify, "--platform", platform_id],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        r = subprocess.run(["bash", verify, "--platform", platform_id],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+    except OSError as e:
+        # ⚠️ 2026-11-01 同族崩全局根治：Windows 无 bash（git-bash/WSL 皆无）时
+        #    subprocess 抛 FileNotFoundError 未捕获 ⇒ 发版门禁自身崩（无门禁读数·流程中断）。
+        #    修法=起不来即显形并判失败（⛔不静默跳过·门禁缺失不能装作通过）。
+        print("❌ 发版门禁：无法启动 bash（%s）——verify.sh 三面判据跑不了 ⇒ 拒绝打包/发版该端" % e)
+        return 2
     sys.stdout.write(r.stdout)
     sys.stderr.write(r.stderr)
     if r.returncode != 0:
@@ -3099,16 +3138,41 @@ def _surface_gate_preflight():
         print("⚠️ 门禁件缺失（references/scripts/platform_compat.py）——按缺失处置，拒绝静默安装：")
         print("   包内容不完整（连门禁自己都没打进来）·请重新获取发布包")
         return 2
+    def _gate_run():
+        return _sp.run([sys.executable, _gate, _pkg_root],
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", timeout=900)
     try:
-        _r = _sp.run([sys.executable, _gate, _pkg_root],
-                     capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
+        _r = _gate_run()
+        # ⚠️ 2026-11-01 D16 门禁竞态根治（镜像同步守护改写包树）：
+        #   病根＝镜像同步守护（launchd com.qclaw.mirror-sync）在门禁**扫描期间**改写包内
+        #   文件 ⇒ platform_compat 遍历中途遇文件消失/半写 ⇒ 子进程崩 ⇒ 退出码非 0
+        #   ⇒ 安装器判「包内容有缺陷」**拒装**。实证：11 端沙箱全新安装串行跑里 1 端
+        #   被拒（lobsterai exit=2）·同包直跑却 0 缺陷＝**飘**⇒ 用户装包被随机拒。
+        #   治法①＝失败时打印子进程 **stderr**（原实现只打 stdout 尾巴 ⇒ 崩在何处
+        #   完全不可见 ⇒ 不可诊断·本轮两次让我误判成真缺陷）。
+        #   治法②＝**有界重试 1 次**（包树稳定后必过）；仍红才拒装（⛔不无限重试·
+        #   ⛔不静默吞·两次结果都显形）。
+        if _r.returncode != 0:
+            print("⚠️ 发布面内容级门禁首次未过——打印子进程 stderr 并有界重试 1 次"
+                  "（疑竞态：镜像同步守护可能在扫描期间改写包树）")
+            _e1 = (_r.stderr or "").strip()
+            if _e1:
+                print("── 首次 stderr 尾 ──\n%s" % _e1[-1200:])
+            _r = _gate_run()
+            if _r.returncode == 0:
+                print("✅ 发布面内容级门禁重试通过（首次失败＝扫描期间包树被并发改写·非包缺陷）")
+                return 0
     except Exception as _e:
         print("❌ 门禁执行自身故障（大声报·不静默放过）: %r" % (_e,))
         return 2
     _tail = (_r.stdout or "")[-1500:]
     if _r.returncode != 0:
-        print("❌ 发布面内容级门禁未通过——拒绝安装（包内容有缺陷·判据见上）：")
+        print("❌ 发布面内容级门禁未通过（重试后仍红）——拒绝安装（包内容有缺陷·判据见上）：")
         print(_tail)
+        _e2 = (_r.stderr or "").strip()
+        if _e2:
+            print("── stderr 尾 ──\n%s" % _e2[-1200:])
         print("   若为隔离装/夹具且确认可跳过：BLT_SKIP_SURFACE_GATE=1（逃生阀·理由自留痕）")
         return 2
     print("✅ 发布面内容级门禁通过（空/近空件 + Unix-only导入守卫 + 编码/配对等 %d 项）" % 18)
@@ -3180,6 +3244,26 @@ def main():
     # 注册执行方（2026-10-25 Trae CN 入包）：capability.hooks_registration=="setup" 时
     #   安装器只做 ② 部署、③ 注册由端 setup.sh 单点写入（防双写/两本账）。
     _hook_reg_mode = ""
+    # ⚠️ 2026-11-01 D15 自引入缺陷根治（D5 配套·端到端实装门禁 e2e 实锤）：
+    #   `_reg_face` 原只在 `if platform != "workbuddy"` 分支内赋值（读 capability），
+    #   却被下游**共享路径**引用（本行 3596 的 `_reg_face == "openclaw_plugins"`）
+    #   ⇒ workbuddy 平台走 WB 分支（无 capability 读取）⇒ 该名未绑定
+    #   ⇒ `UnboundLocalError: cannot access local variable '_reg_face'`
+    #   ⇒ **整个安装中止** ⇒ 钩子 0 件落盘 ⇒ e2e ①②③④⑤ 五项全红。
+    #   病根＝把分支内局部名当共享名用（⛔同「装机链自证标志只在 1/8 端认」族）。
+    #   修法＝与 `_hook_reg_mode` 同级**分支前预置默认值**（workbuddy 走默认注册面·
+    #   ⛔空串≠openclaw_plugins ⇒ 行为与修复前逐字一致）。
+    _reg_face = ""
+    # ⚠️ 2026-11-01 D15 同族第二处（机械扫描一次揪全·不逐个撞）：
+    #   `_install_mode` 原同样只在 `if platform != "workbuddy"` 分支内赋值，
+    #   却被 D7 的「二次委派」共享路径引用（`if (not _QUERY_MODE) and _install_mode and ...`）
+    #   ⇒ workbuddy 平台 ⇒ UnboundLocalError ⇒ 安装中止（沙箱实跑 exit=1 实锤）。
+    #   `alt_setup` 同族：靠 `_plat_args.platform not in (..., "workbuddy")` 短路侥幸未崩
+    #   ⇒ 一改条件就复发 ⇒ 一并预置（⛔不靠短路保命）。
+    #   机械口径＝「分支内赋值 ⇒ 共享路径可引用」改为「**分支前预置 ⇒ 分支内可覆写**」。
+    _install_mode = not any(a in sys.argv for a in ("--verify", "--list", "-h", "--help",
+                                                    "--gate", "--sweep-ghost"))
+    alt_setup = None
     # 端 setup 退出码约定：0=全成功；3=文件已全量落盘·仅「待手动收尾项」（如受限的 launchd 注册）
     #   未完成——降级不阻塞（条文16），安装器继续装公共资产；其余非零=真失败（中止）
     _pending_manual = []
@@ -3210,6 +3294,13 @@ def main():
             "hooks_json": os.path.join(cfg_root, "hooks.json"),
             "minimax_plugin_hooks": os.path.join(
                 cfg_root, "plugins", "bulutuo-guards", "hooks", "hooks.json"),
+            # ⚠️ 2026-11-01 装机面注册面形态补齐（D5·autoclaw/lobsterai 装包当场中止）：
+            #   核验面（L1858 plugin_form）认 openclaw_plugins＝宿主 openclaw.json 的
+            #   plugins.entries/allow，装机面此前只认 2 种 ⇒ 插件承载型端一进来就
+            #   「未知 hooks_registration_face」return 1 ⇒ **装包中止·cfg 落点 0 文件**
+            #   （2026-11-01 沙箱实跑 autoclaw exit=1 实锤）。修法=补第 3 种形态，
+            #   路径与核验面 L1862 同源（⛔同源不同面＝同型假红制造机）。
+            "openclaw_plugins": os.path.join(cfg_root, "openclaw.json"),
         }
         if _reg_face in _REG_FACE_MAP:
             SETTINGS = _REG_FACE_MAP[_reg_face]
@@ -3229,7 +3320,8 @@ def main():
             ROSTER.append(tuple(_er))
         # ⚠️ 2026-10-03 回归修正：委派只属安装模式——--verify/--list/--help/--gate 是查询面，
         #    走委派会把端 setup 真跑一遍（本端实测 --verify 触发了完整安装流程输出）。
-        _install_mode = not any(a in sys.argv for a in ("--verify", "--list", "-h", "--help", "--gate", "--sweep-ghost"))
+        #    ⛔ 2026-11-01 D15：`_install_mode` 定义已**上移至平台分支之前**（单一真源）
+        #    ——原在此处赋值 ⇒ workbuddy 平台走不到 ⇒ 共享路径引用时 UnboundLocalError。
         # 钩子形态分派：hooks_event=false → 跳过标准钩子注册（端钩子由端 setup 自管·条文8）
         _hook_reg_mode = cap.get("hooks_registration") or ""
         if not cap.get("capabilities", {}).get("hooks_event", False):
@@ -3283,7 +3375,33 @@ def main():
                     _sp_cmd.append("--dry-run")
                     _env["DRY"] = "1"
                 print(f"ℹ️ 委派端部署入口 {entry}（install_entry 单一真源·条文13·所有非占位端统一委派）")
-                rc = _sp.run(_sp_cmd, env=_env).returncode
+                # ⚠️ 2026-11-01 D8 顺序根治：端 setup 写的注册面里，钩子命令路径择优查的是
+                #   「①<CFG>/hooks/<name>＝端上副本 ②<MC>/脚本中心/**/<name>＝作者态」⇒
+                #   委派时 <CFG>/hooks/ 还空（② 钩子部署在其后）⇒ 择优**回落 MC 路径**
+                #   ⇒ 注册面命令指向 MC 而非端上副本 ⇒ 与安装器部署面不一致
+                #   ⇒ 升级三态判定/内容指纹基线对不上（D8·判据面≠落点面同族）。
+                #   修法=委派前先部署钩子副本（幂等·钩子段会再跑一次·内容同源）。
+                if not _skip_hooks:
+                    # ⚠️ MC_PATH 全局提前落（⛔原在 argparse 之后才赋值⇒此处调 deploy_hooks 会 NameError）：
+                    #   deploy_hooks 内部读 MC_PATH（骨架模板/占位符替换）⇒ 委派前调用必须先有值。
+                    #   用 globals() 赋值避开「global 声明前赋值」SyntaxError；⛔空 MC 不预部署。
+                    if _plat_args.mc:
+                        globals()["MC_PATH"] = _plat_args.mc.rstrip("/")
+                    _pre_dep, _pre_missing = deploy_hooks("--dry-run" in sys.argv)
+                    if _pre_missing:
+                        print("   !! 包内缺失（应报缺陷）：%s" % ", ".join(_pre_missing))
+                try:
+                    rc = _sp.run(_sp_cmd, env=_env).returncode
+                except OSError as e:
+                    # ⚠️ 2026-11-01 同族崩全局根治：端 setup 以 `bash <setup.sh>` 委派·
+                    #    目标机无 bash 时（Windows 无 git-bash/WSL）subprocess 抛 FileNotFoundError
+                    #    ⇒ 未捕获 ⇒ 整个安装中止＝半装（公共资产也没落）。
+                    #    修法=起不来即按「端接入未完成」降级不阻塞（沿用本段既有 rc≠0 语义·
+                    #    ⛔不谎称端接入已完成·显形告警）。
+                    rc = 127
+                    print(f"❌ 端 setup({entry}) 无法启动（{e}）——本端委派需 bash 运行时"
+                          f"（Windows 无 git-bash/WSL 时会走到这条）·端接入未完成"
+                          f"（降级不阻塞·公共资产继续部署）")
                 if rc == 3:
                     # 端 setup 退出码 3 = 文件已全量落盘·仅「待手动收尾项」(受限的 launchd 注册)未完成
                     # → 降级不阻塞(条文16)：记入 _pending_manual，继续装公共资产（⛔不整体中止）
@@ -3521,14 +3639,17 @@ def main():
 
     if _skip_hooks:
         print("%s②③ 钩子部署/注册：跳过（本端无 hook 事件·端适配承载非标准机制·公共资产已装）" % tag)
-    elif _hook_reg_mode == "setup":
+    elif _hook_reg_mode == "setup" or _reg_face == "openclaw_plugins":
         # ③ 由端 setup 单点写入（hooks_registration: setup）——防双写/两本账。
         # ② 仍由安装器部署副本（ROSTER + extra_hooks），端 setup 只负责注册文件。
+        # ⚠️ 2026-11-01 D5 配套：插件承载型端（openclaw_plugins）的注册面=宿主 openclaw.json 的
+        #    plugins.entries/allow（核验面 L1858 同源判据）⇒ 安装器若按标准分支往 openclaw.json
+        #    塞 "hooks" 键＝**错面写入宿主配置**（⛔污染·且核验面不认该键）⇒ 同「setup」语义跳过 ③。
         deployed, missing = deploy_hooks(a.dry_run)
         print("%s② 钩子部署：%d 件 → %s/" % (tag, len(deployed), HOOKS_ROOT))
         if missing:
             print("   !! 包内缺失（应报缺陷）：%s" % ", ".join(missing))
-        print("%s③ 钩子注册：由端 setup 单点写入（hooks_registration=setup·安装器跳过）→ %s" % (tag, SETTINGS))
+        print("%s③ 钩子注册：由端 setup 单点写入（hooks_registration=setup·插件承载型端同语义·安装器跳过）→ %s" % (tag, SETTINGS))
         if not missing:
             write_guard_baseline(deployed, a.dry_run)
             write_hook_fingerprints(deployed, a.dry_run)
@@ -3551,6 +3672,27 @@ def main():
         else:
             print("!! 包内缺失在列 → 跳过基线写入（装机器缺陷不算到用户头上·C4-D GIGO闸）")
         print("%s③ 钩子注册：新增 %d · 迁移纠正 %d · 已存在跳过 %d → %s" % (tag, added, migrated, skipped, SETTINGS))
+
+    # ★ 二次委派（2026-11-01 D7 顺序根治）：端 setup 第一次跑时 **MC 尚未成型**（公共资产
+    #   尚未落盘）⇒ 端指纹自检/分身核组装/模板取件会落空 ⇒ 端面半残（2026-11-01 多端沙箱
+    #   实跑实证：doubaowork/hermes 端接入未完成）。
+    #   修法=公共资产与② 钩子部署落完后**再委派一次**（端 setup 均幂等·命中即跳过·
+    #   二次跑只补 MC 依赖件：分身核/指纹件/模板源）。成功⇒撤销首次的「端接入未完成」判定。
+    if (not _QUERY_MODE) and _install_mode and _plat_args.platform not in (None, "", "workbuddy") \
+            and alt_setup and os.path.isfile(alt_setup):
+        print("%s③ 补跑：端 setup 二次委派（公共资产已落·MC 已成型→端指纹/分身核/模板可取件）" % tag)
+        try:
+            rc2 = _sp.run(_sp_cmd, env=_env).returncode
+        except OSError as _e2:
+            rc2 = 127
+            print("   ❌ 二次委派无法启动（%s）——首次判定保持" % _e2)
+        if rc2 in (0, None):
+            _delegate_fail = None
+            _pending_manual = [_p for _p in _pending_manual
+                               if not _p.startswith("%s 端 %s" % (_plat_args.platform, entry))]
+            print("   ✅ 二次委派成功（rc=0）——端接入面已补齐（首次未完成判定撤销）")
+        else:
+            print("   ❌ 二次委派 rc=%d（首次判定保持·端接入面可能仍残）" % rc2)
 
     # 写版本快照（供升级时组件级对比）— dry-run 也打印，不写盘
     write_user_versions(MC_PATH, a.dry_run)

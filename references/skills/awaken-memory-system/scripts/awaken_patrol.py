@@ -126,7 +126,7 @@ class Patrol:
 
     # ── ③ 触达层：有逾期/缺口才出声·无事不打扰（Fogg 补 P·只提醒不写入）──
     # mac=osascript 弹窗（B-1 原设计）；Win/其他=pending 文件留痕，由唤醒轻量会话内转述
-    # （S4U 非交互会话弹不出 toast 是 2026-10-21 任务卡设计决策 a·形态 b 待你拍板可升级）
+    # （S4U 非交互会话弹不出 toast 是 2026-10-21 任务卡设计决策 a·形态 b 待用户拍板可升级）
     # D-3：弹窗/留痕顶部带仪表盘单行摘要（脚本缺失/失败降级=不含摘要不阻塞）
     def _retire_pending(self):
         """巡检成功轮退场旧告警：pending 存在则归档（⛔不删·可追溯）。
@@ -190,6 +190,9 @@ class Patrol:
 
     def finish(self):
         self.log(f"[完成] 巡检结束（快照={self.snap_state}）")
+        # stdout 收口标记（2026-10-28·launchd 痕迹双轨）：自有日志人类可读，stdout 给
+        # 机器判据（verify 4.8 非零体积/完成标记腿）——旧版 stdout 恒空=装成也假红。
+        print(f"[完成] 巡检结束（快照={self.snap_state}）", flush=True)
 
 
 def main(argv=None):

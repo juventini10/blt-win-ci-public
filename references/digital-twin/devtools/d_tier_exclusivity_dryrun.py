@@ -22,7 +22,7 @@ try:
     import sys as _v9sys; _v9sys.stdout.reconfigure(encoding="utf-8"); _v9sys.stderr.reconfigure(encoding="utf-8"); _v9sys.stdin.reconfigure(encoding="utf-8")
 except Exception: pass
 # 版本载体（与 doenglingz_inject_prompt.py 同律：版本以盘上常量为真源，⛔以文档手写号为准）
-__version__ = "v1.3"  # v1.3(2026-10-26·D2收敛配套)：D2 探测前缀同步为「【童灵域切片命中·」（仅层标题·正文已不灌）·06 §1.6 三态表 D2 行同步；v1.2(2026-10-24·贴错根治批配套)：分类器双名兼容——确认块段首「启动确认块」→注入器已更名「启动确认指令」（存量4红根因·A/B 备份对照实证与注入器 v1.27 改动无关）；否定式逗号后缀用例期望随切片词表现况刷新为 D2（否定判据本体=不升 D3 不变）。
+__version__ = "v1.4"  # v1.4(2026-10-30·K007 重落批·皮叔令「符合愿景最优解根治」)：新增词面腿粘滞常驻组 sticky_wordleg_checks 8 例（t1-t6 行为面＋m1/m2 代码面），把「粘滞源=事件腿 OR 词面腿」与「安静模式/闭眼执行 可退」焊进机制。⚠️本组原于 2026-10-28 17:13 落过一次（唯一物证=__pycache__ 同名 .pyc 内含 sticky_wordleg_checks×5/闭眼执行×6），21:13 那次整文件重写从 v1.3 旧芯落盘把改动抹掉且从未入库——CHANGELOG v2.75/06 §2.2.1/系统日志三处声称与盘上脱钩。本次由本端反汇编恢复形状重落，并据 01规范 §二·三十 向 w1_tier_regress 追加安全词语料。v1.3(2026-10-26·D2收敛配套)：D2 探测前缀同步为「【童灵域切片命中·」（仅层标题·正文已不灌）·06 §1.6 三态表 D2 行同步；v1.2(2026-10-24·贴 错根治批配套)：分类器双名兼容——确认块段首「启动确认块」→注入器已更名「启动确认指令」（存量4红根因·A/B 备份对照实证与注入器 v1.27 改动无关）；否定式逗号后缀用例 期望随切片词表现况刷新为 D2（否定判据本体=不升 D3 不变）。
 
 # ── A5 去硬码（2026-10-18·来源唯一性迁移）：路径经 runtime_paths 单一出口 ──
 #   ⛔ 字面 [记忆共享中心]/数字分身/... 硬码；键值改由 runtime_paths.json 供给（改根不改脚本）。
@@ -144,6 +144,8 @@ def seg_names(out):
             got.add("D3段")
         elif s.startswith("【童灵·D1 常驻模式"):
             got.add("D1标签")
+        elif s.startswith("【童灵·D2 切片模式"):   # v1.31 D2 甲式单行正典（对齐注入器）
+            got.add("D2义务")
         elif s.startswith("【童灵显示义务·强制】本回合为 D1"):
             got.add("D1义务")
         elif s.startswith("【童灵显示义务·强制】本回合档位＝D2"):
@@ -165,13 +167,15 @@ def _fixture_slices(tmpdir, drop_layer):
     return d
 
 
-def run_target(script, prompt, env=None):
+def run_target(script, prompt, env=None, extra=None):
     import os as _os
     e = dict(_os.environ)
     if env:
         e.update(env)
-    r = subprocess.run([sys.executable, script, "--prompt", prompt, "--src", "dryrun"],
-                       capture_output=True, text=True, env=e)
+    cmd = [sys.executable, script, "--prompt", prompt, "--src", "dryrun"]
+    if extra:
+        cmd += list(extra)
+    r = subprocess.run(cmd, capture_output=True, text=True, env=e)
     if r.returncode != 0:
         raise SystemExit("注入器非零退出：%s\n%s" % (r.returncode, r.stderr[:400]))
     out = r.stdout
@@ -200,7 +204,7 @@ def sweep(script):
         env = {"DONGLINGZ_SLICES_DIR": fx} if name.startswith("D8") else None
         out_raw = run_target(script, prompt, env)
         g = seg_names(out_raw)
-        if name.startswith("D7") and "【童灵域切片命中·" not in out_raw:
+        if name.startswith("D7") and "【童灵·D2 切片模式" not in out_raw and "【童灵域切片命中·" not in out_raw:
             bad_extra = ["D7 声称 D2 却没有切片正文"]
         elif name.startswith("D8") and "降级留痕" not in out_raw:
             bad_extra = ["D8 未显形降级留痕（读失败被静默吞）"]
@@ -281,28 +285,144 @@ def make_mutant():
     return p
 
 
+def sticky_wordleg_checks():
+    """词面腿粘滞常驻用例（2026-10-30·K007 重落·工单验收②④·形状恢复自 10-28 17:13 的 .pyc 反汇编）。
+
+    病根（焊进机制⛔靠人记得）：粘滞函数原式（`_event_leg_d3_sticky`·注入器 v1.32 现名
+    `_d3_sticky_legs`）只认 `mode==skill_event` 的 D3 笔，
+    而词面腿「启动童灵」写的笔是 `mode=json, w1=True` → 进不了 180min 粘滞窗 → 逐轮清零重判
+    （10-11 根治只搬了事件腿那半边）。
+    断言分布：t1/t2 词面 D3 下轮须被粘滞撑起；t3 超窗负例不反噬；t4 跨 sid 不串档；
+    t5 安全词（安静模式）可打断不锁死；t6 闭眼执行已退出安全词→不打断（2026-11-01 你裁）；m1/m2 代码面钉住泛化腿与词表收窄（防"实现漂回文档"）。
+    夹具纪律：每例独立 `DOENGLINGZ_CONFIG_DIR` 临时目录——STATE_FILE 与 quiet flag 均隔离，
+    ⛔不碰真台账，⛔共享 tmpcfg（flag 是 per-config-root 全局态，共享会让 t5 之后全体假绿）。
+    ⛔词面判别（文件头同款坑）：按段首行定性。
+    """
+    import datetime as _dt
+    import json as _j
+
+    results = []
+    SID = "dtier_sticky_"
+
+    def fresh():
+        d = tempfile.mkdtemp(prefix="dtier_sticky_cfg_")
+        return d, {"DOENGLINGZ_CONFIG_DIR": d}
+
+    def tiers_for(prompt, cfg_env, sid):
+        out = run_target(TARGET, prompt, env=cfg_env, extra=["--session-id", sid])
+        return seg_names(out)
+
+    def last_row(cfgdir):
+        p = os.path.join(cfgdir, "doenglingz_inject_state.json")
+        try:
+            lines = [l.strip() for l in open(p, encoding="utf-8") if l.strip()]
+        except Exception:
+            return {}
+        for l in reversed(lines):
+            try:
+                return _j.loads(l)
+            except Exception:
+                continue
+        return {}
+
+    def rec(cfgdir, sid, tier="D3", w1=True, mode="json", minutes_ago=0):
+        ts = (_dt.datetime.now() - _dt.timedelta(minutes=minutes_ago)).isoformat(timespec="seconds")
+        with open(os.path.join(cfgdir, "doenglingz_inject_state.json"), "a", encoding="utf-8") as f:
+            f.write(_j.dumps({"ts": ts, "w1": w1, "d3_sticky": False, "d_tier": tier,
+                              "slices_injected": [], "slices_failed": [], "w3_layers": [],
+                              "src": "dryrun", "mode": mode, "session_id": sid},
+                             ensure_ascii=False) + "\n")
+
+    def say(name, bad):
+        results.append((name, "FAIL" if bad else "OK", bad or ""))
+
+    # t1 词面腿召唤→D3
+    cfg, env = fresh()
+    g = tiers_for("启动童灵，分析一下这个的本质为什么", env, SID + "t1")
+    say("t1 词面腿召唤→D3", "" if tiers_of(g) == {"D3"} else "应 D3 实为 %s" % sorted(tiers_of(g)))
+    # t2 词面腿D3→下轮粘滞撑起 D3（K007 病形的正身）
+    g2 = tiers_for("嗯我知道了", env, SID + "t1")
+    bad = ""
+    if tiers_of(g2) != {"D3"}:
+        bad = "词面 D3 未粘滞，回落=%s（K007 病形复发）" % sorted(tiers_of(g2))
+    else:
+        row = last_row(cfg)
+        if row.get("d3_sticky") is not True:
+            bad = "末行 d3_sticky=%r（期望 True·粘滞须显式记录）" % row.get("d3_sticky")
+        elif row.get("w1") is not False:
+            bad = "末行 w1=%r（粘滞不算词面命中·不抹平两腿差异）" % row.get("w1")
+    say("t2 词面腿D3→下轮粘滞撑起D3", bad)
+    # t3 词面腿D3超窗→回落（窗口语义不得反噬成永久 D3）
+    cfg, env = fresh()
+    rec(cfg, SID + "t3", minutes_ago=181)
+    g3 = tiers_for("嗯我知道了", env, SID + "t3")
+    say("t3 词面腿D3超窗→回落",
+        "" if tiers_of(g3) == {"D1"} else "超窗未回落仍粘滞=%s" % sorted(tiers_of(g3)))
+    # t4 词面腿D3跨sid→不串档
+    cfg, env = fresh()
+    rec(cfg, SID + "t4_src", minutes_ago=0)
+    g4 = tiers_for("嗯我知道了", env, "other_sid")
+    say("t4 词面腿D3跨sid→不串档",
+        "" if tiers_of(g4) == {"D1"} else "跨会话串档=%s" % sorted(tiers_of(g4)))
+    # t5 安静模式打断粘滞→D1
+    cfg, env = fresh()
+    tiers_for("启动童灵", env, SID + "t5")
+    g5 = tiers_for("安静模式", env, SID + "t5")
+    say("t5 安静模式打断粘滞→D1",
+        "" if tiers_of(g5) == {"D1"} else "安静模式未打断粘滞，仍=%s（锁死风险）" % sorted(tiers_of(g5)))
+    # t6 闭眼执行已退出安全词→不打断粘滞（2026-11-01 你裁「现在就只有安静模式」·原期望 D1 翻转）
+    cfg, env = fresh()
+    tiers_for("启动童灵", env, SID + "t6")
+    g6 = tiers_for("闭眼执行", env, SID + "t6")
+    say("t6 闭眼执行退出安全词→粘滞保持 D3",
+        "" if tiers_of(g6) == {"D3"} else "闭眼执行仍打断粘滞=%s（收窄未生效·检查 QUIET_ENTER_WORDS）" % sorted(tiers_of(g6)))
+    # m1/m2 代码面：两条泛化腿必须在盘上（行为绿了但实现被回退＝下一轮必红的前置哨）
+    src = open(TARGET, encoding="utf-8").read()
+    _i = src.find("def _d3_sticky_legs")
+    _j2 = src.find("\ndef ", _i + 10)
+    fn = src[_i:_j2 if _j2 > 0 else len(src)]
+    say("m1 粘滞函数含 w1 泛化（代码面）",
+        "" if 'and not d.get("w1")' in fn else "粘滞函数缺 w1 泛化腿（回退只认 skill_event＝K007 复发）")
+    _k = src.find("QUIET_ENTER_WORDS = (")
+    _seg = src[_k:src.find(")", _k) + 1] if _k > 0 else ""
+    say("m2 quiet门已收窄至安静模式（代码面·2026-11-01 你裁）",
+        "" if (_k > 0 and "安静模式" in _seg and "闭眼执行" not in _seg)
+        else "quiet 进入词表未收窄（闭眼执行仍在或安静模式缺失·收窄回退）")
+    return results
+
+
 def main():
     mutant = "--mutant" in sys.argv[1:]
     target = make_mutant() if mutant else TARGET
     rows, fails = sweep(target)
     dr = drift_checks()
-    for name, st, note in dr:
-        print("  %s 漂移对账 %-34s %s" % ("✅" if st == "OK" else "❌", name, note))
-    fails += ["drift:" + n for n, st, _ in dr if st != "OK"]
+    for name, st_, note in dr:
+        print("  %s 漂移对账 %-34s %s" % ("✅" if st_ == "OK" else "❌", name, note))
+    fails += ["drift:" + n for n, st_, _ in dr if st_ != "OK"]
+    st = sticky_wordleg_checks()
+    fails += ["sticky:" + n for n, st_, _ in st if st_ != "OK"]
     print("=== D 轴档位互斥回归（真源=06 §1.6 互斥律）%s ===" % ("·变异体" if mutant else ""))
     for name, tiers, bad in rows:
         print("  %s %-24s 档位段=%s%s" % ("✅" if not bad else "❌", name, tiers,
                                           "" if not bad else " ← " + "; ".join(bad)))
-    total = len(CASES) + 2   # CASES + D7/D8
-    print("合计 %d/%d 过（分母由 len(CASES_ALL) 实算·含漂移对账 %d 项）"
-          % (total + len(drift_checks()) - len(fails), total + len(drift_checks()), len(drift_checks())))
+    print("=== 词面腿粘滞常驻组（K007·粘滞源=事件腿 OR 词面腿 w1=True）===")
+    for name, st_, note in st:
+        print("  %s %-24s %s" % ("✅" if st_ == "OK" else "❌", name, note))
+    n_sweep_fail = len([f for f in fails if not f.startswith(("drift:", "sticky:"))])
+    n_drift_fail = len([f for f in fails if f.startswith("drift:")])
+    n_sticky_fail = len([f for f in fails if f.startswith("sticky:")])
+    total = len(CASES_ALL) + len(dr) + len(st)
+    passed = (len(CASES_ALL) - n_sweep_fail) + (len(dr) - n_drift_fail) + (len(st) - n_sticky_fail)
+    print("合计 %d/%d 过（互斥 %d/%d·漂移对账 %d/%d·粘滞组 %d/%d·分母全部实算，⛔手写数）"
+          % (passed, total, len(CASES_ALL) - n_sweep_fail, len(CASES_ALL),
+             len(dr) - n_drift_fail, len(dr), len(st) - n_sticky_fail, len(st)))
     if mutant:
         ok = bool(fails)
         print("变异判定：%s（抓到 %d 例＝本探针可证伪；未抓到＝恒真探针，作废）"
               % ("✅ 变异被逮住" if ok else "❌ 变异未逮住", len(fails)))
         return 0 if ok else 1
     if fails:
-        print("判定：❌ 存在多档并存/旧裁决残留 → ⛔不得落地（铁律-020）")
+        print("判定：❌ 存在多档并存/旧裁决残留/粘滞腿缺位 → ⛔不得落地（铁律-020）")
         return 1
     print("判定：✅ 全过；跑 --mutant 复验本探针可证伪性")
     return 0

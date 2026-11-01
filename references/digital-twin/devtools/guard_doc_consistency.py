@@ -99,7 +99,6 @@ HOST_CONFIGS = {
     "lobsterai": os.path.join(HOME, "Library", "Application Support", "LobsterAI", "openclaw", "state", "openclaw.json"),
     "dsh": os.path.join(os.path.expanduser("[记忆共享中心]"), "开发工具", "five-layer-memory", "src", "index.js"),
     "hermes": os.path.join(HOME, ".hermes", "config.yaml"),
-    "traework": os.path.join(os.path.expanduser("[记忆共享中心]"), "开发工具", "Skill路由引擎", "scripts", "route_traework_patrol.sh"),
 }
 
 

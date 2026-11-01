@@ -150,6 +150,10 @@ def main():
                  _inject_skill("| 1 | 下一步·决策 | 默认推荐 |"), 1, base)
         run_case("认知格旧表形态回流必红",
                  _inject_skill("| {已知已知} | 旧表第一行 | 内容 |"), 1, base)
+        run_case("未知未知挂档回流必红（v4.12.22 新锁验牙）",
+                 _inject_skill("| 未知未知 | 🔴 推测级 | 自报内容 |"), 1, base)
+        run_case("未知未知占位行不误伤（同锁必绿腿）",
+                 _inject_skill("未知未知\n🕳️ 占位：不列内容、不挂档位"), 0, base)
         run_case("无关反斜杠行不误命中（第8行校正验证）",
                  _inject_skill("\\{已知已知} 非表格行首"), 0, base)
         run_case("族零条可执行必红", None, 1, base, neg_file=_all_comments(base))

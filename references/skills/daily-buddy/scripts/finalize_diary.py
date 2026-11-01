@@ -96,11 +96,86 @@ def read_concept_ingest(date: datetime.date, ingest_date: datetime.date = None):
     prefix = f"## [{lookup}] ingest"
     hits = [ln.strip() for ln in lines if ln.strip().startswith(prefix)]
     if hits:
-        text = hits[-1].lstrip("# ").strip()
+        # 同日期可能有多条 ingest（如先"新增N"、后"合并M"分两次写）
+        # 聚合各计数再返回，禁止取 hits[-1]——否则末条"新增0概念"会掩盖真实新增
+        # （实证：2026-10-28 先新增4后合并4，旧逻辑取末条误报"新增0概念"·漏洞1根治）
+        agg = {"新增": 0, "合并": 0, "拒收": 0, "去重": 0}
+        for h in hits:
+            for k in agg:
+                m = re.search(rf"{k}(\d+)", h)
+                if m:
+                    agg[k] += int(m.group(1))
+        mtime = re.search(r"记录时间[:：]\s*([0-9\-: ]+)", hits[-1])
+        last_time = mtime.group(1).strip() if mtime else ""
+        note = f"（{len(hits)}次 ingest 已聚合）" if len(hits) > 1 else ""
+        text = (f"## [{lookup}] ingest | 新增{agg['新增']}概念 合并{agg['合并']} "
+                 f"拒收{agg['拒收']} 去重{agg['去重']} | 记录时间:{last_time}{note}")
         if lookup != date:
             text += f"（补录·ingest 记于 {lookup}）"
         return ("ok", text)
     return ("missing", "⚠️ 概念抽取未跑")
+
+
+def read_concept_cards(ingest_date: datetime.date) -> list:
+    """读概念层卡片，返回 derived_date == ingest_date 的卡片清单（供 §9.1 模块6 数据驱动呈现）。
+    返回: [{"id","name","source","owner","definition","derived_date"}, ...]。
+    纯读取幂等，单文件失败 skip，不碰抽取脚本。
+    漏洞3 根治：把真实卡号/卡名/一句话摘要/来源下发给 AI，模块6 由数据驱动而非记忆驱动（压缩场景不再丢）。
+    漏洞5 支撑：source 与 derived_date 一并下发，供跨日补录归属判断。
+    """
+    concept_dir = dbenv.HOME / "[日记仓库]" / "2-知识库" / "08-概念层"
+    cards = []
+    if not concept_dir.exists():
+        return cards
+    target = ingest_date.isoformat()
+    for p in sorted(concept_dir.glob("*.md")):
+        try:
+            t = p.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        parts = t.split("---", 2)
+        if len(parts) < 3:
+            continue
+        fm = parts[1]
+        # 简易 frontmatter 解析：支持多行列表（source_cards）
+        fm_fields = {}
+        cur_key = None
+        cur_lines = []
+        for line in fm.splitlines():
+            m = re.match(r'^([A-Za-z_]+):\s*(.*)$', line)
+            if m and not line.startswith(" "):
+                if cur_key is not None:
+                    fm_fields[cur_key] = "\n".join(cur_lines).strip()
+                cur_key = m.group(1)
+                cur_lines = [m.group(2)]
+            else:
+                if cur_key is not None:
+                    cur_lines.append(line)
+        if cur_key is not None:
+            fm_fields[cur_key] = "\n".join(cur_lines).strip()
+
+        def get(k):
+            return fm_fields.get(k, "").strip().strip('"')
+
+        if get("derived_date") != target:
+            continue
+        cid = get("concept_id")
+        cname = get("concept_name")
+        if not cid or not cname:
+            continue
+        # source_cards：取列表项（- 开头），拼成逗号分隔；非列表则原样
+        raw_src = get("source_cards")
+        src_items = re.findall(r'-\s*(.+)$', raw_src, re.M)
+        source = "；".join(s.strip().strip('"') for s in src_items) if src_items else raw_src
+        cards.append({
+            "id": cid,
+            "name": cname,
+            "source": source,
+            "owner": get("source_owner"),
+            "definition": get("definition"),
+            "derived_date": get("derived_date"),
+        })
+    return cards
 
 
 def read_diary(date: datetime.date) -> str:
@@ -261,7 +336,11 @@ def check_advice_section(content: str, require_present: bool = False) -> list:
     for k in ["我看见的", "我想问的", "需关注"]:
         if k not in adv:
             v.append(f"伙伴建议缺「{k}」（仅👁️/❓/📌三段式）")
-    if not re.search(r'^—— .*[\U0001F000-\U0001FAFF]', adv, re.M):
+    # emoji 区间须含 Misc Symbols/Dingbats（U+2600-27BF，如 ⚡=U+26A1）+ 常用 Emoji 区
+    # 根治 2026-10-29：原正则仅认 U+1F000-1FAFF，把 5-8 月主力署名「WorkBuddy ⚡」
+    # 判为缺署名，迫使执行者改挂他端 emoji（🦞 实为 Qclaw 专属）→ 权威源被实现细节绑架。
+    # 已 dry-run 验证：195 行真样本零回归，负样本（无 emoji 行）仍不命中。
+    if not re.search(r'^—— .*[\u2600-\u27BF\u2B00-\u2BFF\U0001F000-\U0001FAFF]', adv, re.M):
         v.append("伙伴建议缺署名（—— 你的 {动态前缀} {工具名} {emoji}）")
     return v
 
@@ -410,6 +489,14 @@ def main():
     if ingest_status == "missing" and args.skip_ingest:
         ingest_text = "⚠️ 概念抽取未跑（--skip-ingest 显式跳过）"
 
+    # 漏洞3 修复：把真实卡数据下发给 AI，模块6 由数据驱动（非记忆驱动·压缩场景不再丢）
+    concept_cards = read_concept_cards(ingest_lookup) if ingest_status == "ok" else []
+    concept_module_required = len(concept_cards) > 0
+    if concept_module_required:
+        print("🔒 概念卡已抽取（%d 张）·封口对话「🧠 今日新增概念卡」模块为【必做·不可省略】" % len(concept_cards), file=sys.stderr)
+        print("   §9.1 模块6 须逐张呈现：**C-XXX 概念名**：一句话摘要（≤30字）·数据见 JSON concept_cards（id/name/definition/source）", file=sys.stderr)
+        print("   ⛔DO NOT 因对话压缩/截断而丢弃该模块；若 --ingest-date≠日记日，source 非当日的卡须标注（补录·source X-XX-XX）", file=sys.stderr)
+
     # === Step 1.6: 评级门禁（v3.22.0 物理阻断·无跳过选项） ===
     # 背景：2026-07-31 错评事故（适用不存在的"番茄<16硬项"）+ 2026-07-10 待评定漏网封口。
     # 评级=全流程含金量最高判定，文本层门禁可被跳（7/26 实证），故下沉脚本层。
@@ -488,6 +575,8 @@ def main():
         "tomorrow_anchor": anchor if anchor else "（今日未设明日目标）",
         "year_progress": year_progress_display,
         "concept_ingest": ingest_text,
+        "concept_module_required": concept_module_required,
+        "concept_cards": concept_cards,
     }
 
     # stdout 输出 JSON — AI 必须从此处取数据填入封口确认块

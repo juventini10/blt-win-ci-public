@@ -69,6 +69,30 @@ POS_EXTRA = [
     # ── 2026-10-08 预注册：明确上岗口令漏触发（W1_TRIGGERS 缺「童灵上岗」）──
     ("p7", "童灵上岗"),
 ]
+# ── 安静态进入判据语料组（2026-10-30·K007 重落批·01规范 §二·三十「词表增删须同轮追加语料」）──
+# ⚠️ 本组同时补上一处历史空头声称：注入器 v1.26（2026-10-19）版本行自述「新增安静用例组入
+#    w1_tier_regress」，盘上本件此前无任何安静语料（本轮 grep 实锤）。判据本体＝_quiet_enter_hit
+#    （纯函数·无副作用）——原式内联在 _inject 里，无法进回归网，这本身就是"规则只住文档层"的形态。
+QUIET_POS = [
+    ("q1", "安静模式", "安静模式"),
+    ("q3", "进入安静模式", "安静模式"),
+]
+QUIET_NEG = [
+    ("qn1", "他说了一句 闭眼执行 而已"),          # 转述（差分面 2026-10-30 实抓）
+    ("qn2", "刚才那句是「安静模式」，我在引用规则不是下命令"),  # 引号内引述（差分面实抓）
+    ("qn3", "关闭安静模式"),                      # 反向话术：退出只认"启动童灵"
+    ("qn4", "结束闭眼执行"),                      # 反向话术（差分面抓出的漏词）
+    ("qn5", "安静模式是什么意思？"),               # 疑问形（审查4.2）
+    ("qn6", "我没有说闭眼执行"),                   # 否定引述
+    ("qn7", "<internal-error> 系统回显 安静模式"),   # C类机器块（审查4.4）
+    ("qn8", "我们来讨论一下安静模式和闭眼执行这两档安全词在童灵上岗机制建立以后应该怎么分层，"
+            "以及粘滞窗口是不是应该共享同一个 flag，我担心共享以后退出路径只剩一条，"
+            "但分开又会有两本账，两本账迟早漂移，漂移就得对账，想想还是先跑回归再说"),  # 长句讨论>30字无动词
+    # ── 2026-11-01 你裁「现在就只有安静模式」：闭眼执行退出安全词·原 q2/q4/q5 正例转负 ──
+    ("qn9", "闭眼执行"),                       # 原 q2 正例·退出后不再进入安静态
+    ("qn10", "切闭眼执行"),                    # 原 q4
+    ("qn11", "闭眼执行，把这单干完"),          # 原 q5
+]
 def main():
     bad = 0
     for tag, p in POS + POS_EXTRA:
@@ -79,7 +103,16 @@ def main():
         got = dg.w1_fired(p)
         if got is not False: bad += 1
         print(("✅" if not got else "❌"), tag, "期望静默", "实跑", got)
-    print("结果:", "全绿" if bad == 0 else "%d 红" % bad)
+    for tag, p, want in QUIET_POS:
+        got = dg._quiet_enter_hit(p)
+        if got != want: bad += 1
+        print(("✅" if got == want else "❌"), tag, "期望进安静(%s)" % want, "实跑", got or "不进入")
+    for tag, p in QUIET_NEG:
+        got = dg._quiet_enter_hit(p)
+        if got: bad += 1
+        print(("✅" if not got else "❌"), tag, "期望不进入安静态", "实跑", got)
+    n = len(POS) + len(POS_EXTRA) + len(NEG) + len(QUIET_POS) + len(QUIET_NEG)
+    print("结果:", "全绿 %d/%d" % (n, n) if bad == 0 else "%d 红 / 共 %d 例" % (bad, n))
     return 1 if bad else 0
 if __name__ == "__main__":
     sys.exit(main())

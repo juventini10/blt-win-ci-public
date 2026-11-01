@@ -38,6 +38,7 @@ try:
 except Exception: pass
 import sys as _sys, os as _os; _SCROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))); _SCROOT in _sys.path or _sys.path.insert(1, _SCROOT)  # sc-rootfix-20261014 域搬补路
 import os, re, sys, json
+from datetime import datetime  # v1.5-c：档位新鲜期判据需要（缺它=NameError被except吞=时间窗静默失效）
 
 # 输出协议单一真源（2026-10-07·与注入钩子家族同源·WB 端必须 text）
 _p = os.path.dirname(os.path.abspath(__file__))
@@ -112,12 +113,18 @@ def _fire_recent(fs, window=600):
         return False
 
 
+# 取档口径真源=分身/doenglingz_tier_read.py（2026-10-28 方案B）。本处=TSL专用变体：空sid→非D3·60min新鲜窗；与 tier_gate 的「空sid→全局兜底」版语义不同，⛔不可硬并（硬并会改门控语义/碰TSL关键路径）。改取档先改共享件并回归。
 def session_d_tier(sid):
     """本会话最新档位——TSL 呈现义务仅 D3（08 §七·06 v1.89 档位门控）。
     sid 为空 → 退全局最新行（旧宿主兼容）；本会话无注入行 → 判非 D3（⛔不退全局·那正是串台源）。"""
     try:
         with open(STATE, encoding="utf-8") as f:
             lines = [l for l in f if l.strip()]
+        # v1.5-b（与 tsl_tree_hook 同源·实测补刀）：无 sid 必须在进循环前短路。
+        #   循环首句 `if sid and ...` 在 sid 为空时恒假 ⇒ 第一行档位直接返回，
+        #   加在循环之后的 return "" 永远走不到。
+        if not sid:
+            return ""
         for line in reversed(lines):
             d = json.loads(line)
             # 🔴 2026-10-08 空值漏洞根治（与 tsl_tree_hook 同源同修）：
@@ -126,13 +133,21 @@ def session_d_tier(sid):
             if sid and d.get("session_id") != sid:
                 continue
             if d.get("d_tier"):
+                # v1.5-c（2026-10-27·与 tsl_tree_hook 同源同修·⛔两边分叉即双本账）：
+                #   档位取「该会话历史最新」且无时间窗 ⇒ 会话曾 D3 过后，后续回合全被判 D3。
+                #   加 60min 新鲜期：超期视为「本回合无档位证据」。阈值依据见 tree_hook 同段。
+                try:
+                    _t = datetime.strptime(str(d.get("ts"))[:19], "%Y-%m-%dT%H:%M:%S")
+                    if (datetime.now() - _t).total_seconds() > 60 * 60:
+                        return ""
+                except Exception:
+                    pass
                 return d.get("d_tier")
         if sid:
             return ""
-        for line in reversed(lines):
-            d = json.loads(line)
-            if d.get("d_tier"):
-                return d.get("d_tier")
+        # v1.5-b（与 tree_hook 同源）：无 sid 必须在进循环前短路——原式循环首句
+        #   `if sid and ...` 在 sid 为空时恒假 ⇒ 第一行档位直接返回，后面的 return '' 走不到。
+        return ""
     except Exception:
         pass
     return ""

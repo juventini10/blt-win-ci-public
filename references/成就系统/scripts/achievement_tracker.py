@@ -44,6 +44,15 @@ READING_NOTES_DIR = Path.home() / "[日记仓库]/2-知识库/01-读书笔记"
 KNOWLEDGE_INDEX = Path.home() / "[日记仓库]/2-知识库/05-知识池/INDEX.md"  # 读书助手拆书索引（⛔不再作为阅读数数据源·拆解≠阅读·2026-08-08）
 GREATEST_ME_DIR = Path.home() / "[记忆共享中心]/最伟大的我/成就证据"  # 与最伟大的我联动
 
+# ─── 业务日期（复盘日）·跨午夜根治 · 2026-10-29 ─────────────────
+# 语义：这份成就数据"是为哪一天的复盘生成的"= AS_OF_DATE
+#   ⛔ ≠ 系统当前时刻（datetime.now()）——二者混同是跨午夜假阴性的根因
+# 作用域：仅落盘归属日（last_updated 日期段 / 成就证据文件名），
+#         生成时刻 HH:MM 仍取真实 now，保留溯源能力（⛔不伪造时刻）
+# 默认 = 今天；不传 --date 时行为零回归（与改动前完全一致）
+# 根治来源：2026-10-29 凌晨复盘 10-28，verify_achievement_seal 判 STALE（假阴性）
+AS_OF_DATE = date.today().strftime("%Y-%m-%d")
+
 # ─── 成就定义 ────────────────────────────────────────────────
 ACHIEVEMENTS = {
 
@@ -341,9 +350,8 @@ def sync_to_greatest_me(achievement, value):
     幂等：同名文件已存在则不重复写入
     格式：{YYYY-MM-DD}-{achievement_id}.md
     """
-    today = date.today().strftime("%Y-%m-%d")
     safe_id = achievement["id"].replace("/", "-").replace(" ", "-")
-    evidence_file = GREATEST_ME_DIR / f"{today}-{safe_id}.md"
+    evidence_file = GREATEST_ME_DIR / f"{AS_OF_DATE}-{safe_id}.md"
     
     if evidence_file.exists():
         print(f"  ⏭️ 成就证据已存在：{evidence_file.name}")
@@ -353,7 +361,7 @@ def sync_to_greatest_me(achievement, value):
     
     content = f"""# 成就证据 · {achievement['name']}
 
-- **达成日期**：{today}
+- **达成日期**：{AS_OF_DATE}
 - **成就ID**：{achievement['id']}
 - **等级**：{achievement['level']}
 - **达成值**：{value}
@@ -452,7 +460,7 @@ def save_data(data):
     
     # 更新版本号和元数据
     data["version"] = current_version + 1
-    data["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    data["last_updated"] = f"{AS_OF_DATE} {datetime.now().strftime('%H:%M')}"
     
     # 记录写入者（从环境变量或默认值获取）
     agent_id = os.environ.get("AGENT_NAME", "unknown")
@@ -608,16 +616,19 @@ def count_books_read():
     """统计'已读'书本数（2026-08-08 第一性原理重构·纠正拆书≠阅读）。
 
     真相源 = 用户的日记（唯一权威），两层构成：
-    1. 历史基线：2026 年已读 9 本（铁证：2026-05-06 日记"📖 阅读9本"，
-       3/26→3/28 累计 5→8 本计数链 + 成就系统去污染前备份"阅读总量 8 本（2026年新读）"佐证）。
-       历史日记格式不统一，不逐日回填，直接以基线固化（READING_BASELINE）。
+    1. 历史基线：用户可在 achievement_data.json 设 "reading_baseline"（缺省 0），
+       用于把"系统启用前已读"的书量一次性固化，避免逐日回填历史日记（历史日记格式不统一）。
     2. 增量：每晚复盘把当天读完的书写入日记 YAML achievement_data.books_read
        （如 books_read: ["《西瓜船》"]），脚本逐日扫描去重累加。
 
     明确排除：知识池 INDEX.md（读书助手拆书仓库）——拆解≠阅读，不再作为数据源。
     返回去重后的已读书本总数。
     """
-    READING_BASELINE = 9  # 2026年已读历史基线（5/6 日记铁证），从该数字起步，YAML 增量往上加
+    # 基线来源=用户自己的数据文件（缺省 0 = 干净起步）；⛔不硬编码任何个人历史读数
+    try:
+        READING_BASELINE = int(load_data().get("reading_baseline", 0) or 0)
+    except (TypeError, ValueError):
+        READING_BASELINE = 0
     yaml_books = set()    # 从日记 YAML books_read 收集的书名（去重）
 
     files = sorted(glob(str(DIARY_DIR / "**" / "2026-*.md"), recursive=True))
@@ -1381,6 +1392,17 @@ if __name__ == "__main__":
     as_json = "--json" in sys.argv
     if as_json:
         sys.argv.remove("--json")
+    # 业务日期（复盘日）解析——先于模式分支，对 --all / --date 两种模式均生效
+    # 根治：--all 是正式写入路径但原本不接受日期，跨午夜复盘只能按 now 落盘
+    if "--date" in sys.argv:
+        try:
+            _idx = sys.argv.index("--date")
+            _dval = sys.argv[_idx + 1] if _idx + 1 < len(sys.argv) else None
+        except Exception:
+            _dval = None
+        if _dval:
+            AS_OF_DATE = _dval
+            print(f"📅 业务日期（复盘日）= {AS_OF_DATE}（落盘归属日·生成时刻仍取真实 now）")
     if "--all" in sys.argv:
         result = run_check(scan_all=True)
     elif "--date" in sys.argv:

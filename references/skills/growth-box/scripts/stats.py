@@ -32,7 +32,7 @@ import os
 from pathlib import Path
 from datetime import date
 
-__version__ = "1.2.0"  # v1.2.0=--board 看板计数口径源（2026-10-12·成长箱设计哲学 v2.8 配套）
+__version__ = "1.3.0"  # v1.3.0（2026-11-01·WB反哺 FB-20261022-001 收口）：计数口径随输出自报（记录块计1/类比豁免/扫描根·声明与实现同面可质证）\n               # v1.2.0=--board 看板计数口径源（2026-10-12·成长箱设计哲学 v2.8 配套）
 
 
 # PAT 编号正则（PAT-001, PAT-002, ...）
@@ -389,6 +389,10 @@ def main():
             pats[pat_id] = {'count': 0, 'latest': None}
 
     table = generate_table(pats, meta)
+
+    # v1.3.0（WB反哺 FB-20261022-001 收口）：口径随输出自报——数字含义随输出可质证，
+    # 口径声明不再只住 docstring（防"声明X/实现Y"型分裂再犯；WB 实证 PAT-050 机械4+实为独立2次须人工拆解）。
+    print("ℹ️ [计数口径 v1.3] 记录块计1（同记录多次提及=1次）· 类比豁免=「（类比）PAT-NNN」· 未标注类比提及计入并在末尾 _UNANNOUNCED 显形 · 扫描根=%s" % learnings)
 
     if args.write and index.exists():
         text = index.read_text(encoding='utf-8')

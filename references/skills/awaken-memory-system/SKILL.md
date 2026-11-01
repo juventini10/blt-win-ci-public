@@ -14,7 +14,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/awaken-memory-system/
 modifiable: true
-version: "8.5.3"
+version: "8.5.4"
 license: Proprietary
 complies_with: 文件格式规范 v2.7.1
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
@@ -234,7 +234,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 |:-:|:--|:--|
 | V1 | `python3 scripts/awaken_version_gate_check.py` | exit 0 或 3（3=规则过期告警） |
 | V2 | `python3 scripts/update_snapshot_from_diary.py --dry-run` | exit 0/2，输出跳过项留痕，**且执行前后快照 md5 不变**（v8.5.2：表序自愈曾绕过 dry-run 写盘） |
-| V3 | `python3 scripts/awaken_distill_due_check.py` | exit 0，输出 DUE 行或 NONE；**位置参数与 `DISTILL_CENTER_PATH` 必须生效**（v8.5.2：曾二次读盘写死 `Path.home()`，指向沙箱仍读真档案） |
+| V3 | `python3 scripts/awaken_distill_due_check.py` | exit 0，输出 DUE 行或 NONE；**位置参数与 `DISTILL_CENTER_PATH` 必须生效**（v8.5.2：曾二次读盘写死 `Path.home()`，指向沙箱仍读真档案）；**NONE 仅在确无到期项时成立·0 可解析行=stderr NO_ROWS 显形**（v8.5.4·WB反哺收口） |
 | V4 | `python3 scripts/awaken_health_dashboard.py --summary` | exit 0，输出一行摘要 |
 | V5 | `python3 -m pytest scripts/test_distill_core.py -q` | 5 passed |
 | V6 | `python3 [记忆共享中心]/脚本中心/skill_neutrality_check.py --root <本目录> --references` | NEUTRAL:OK |

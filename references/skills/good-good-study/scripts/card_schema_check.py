@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # REG: family=守卫 | registry=记忆蓝图/04_系统文件设计/布洛陀脚本架构设计哲学/守卫编写规范.md§四 | board=记忆蓝图/04_系统文件设计/布洛陀脚本架构设计哲学/03-进度看板.md
 # -*- coding: utf-8 -*-
-# version: v0.2.0（2026-10-09 v1.1.2批·+相关卡枚举闸T7；创建v0.1.0 2026-10-01·把card-schema「缺必填字段=阻断」物理化）
+# version: v0.2.1（2026-10-09 v1.1.2批·+相关卡枚举闸T7；创建v0.1.0 2026-10-01·把card-schema「缺必填字段=阻断」物理化）
 """card_schema_check.py — 立场卡/技能卡 字段级结构闸（零依赖）
 
 为什么要有它（根因）：
@@ -61,6 +61,7 @@ COMPLEX_DOMAINS = ("复杂域", "混沌域")
 ID_RE = re.compile(r"^(立场卡#S\d+|技能卡#K\d+|示例卡#X\d+)$")
 REL_TYPES = ("主题相似", "结论一致", "依据链重叠", "视角互补", "认知工具维度一致")  # card-schema §一五枚举·v1.1.2闸验锚
 REL_REQUIRED_FROM = "2026-10-12"
+USAGE_REQUIRED_FROM = "2026-10-29"   # §一 usage 新卡必填生效日（存量豁免·照 REL 先例）
 RETRO_EXTRA_PREFIX = "【新增维度】"   # retro 下单列不计入头部账的项目前缀（防新考题污染既有趋势读数）
 LOC_HARD_FROM = "2026-11-01"   # §8.1「一句话定位」硬判生效日（缓冲期先例同 REL；此前存量走 --retro 报数）   # v1.1.11：本日起的新卡必填 `相关卡`（对齐 card-schema §一 v1.2.0 起强制条·闸此前未实现=双松反向变体）
 REL_EMPTY_OK = ("无直接关联",)            # §七：无关联须显式写该值——空着不算交代，写了才是交代
@@ -195,6 +196,16 @@ def check_card(path, retro=False):
         if dt and dt >= REL_REQUIRED_FROM:
             errs.append(("新卡必填字段缺失：相关卡",
                          "card-schema §一：v1.2.0 起新卡必填；无关联须显式写「无直接关联」（⛔留空，也⛔为过闸填与正文互斥的值）"))
+
+    # usage 新卡必填（2026-10-29起·存量豁免·≤80字·立场卡+技能卡同分支 card-schema §一）
+    _u = str(fm.get("usage") or "").strip()
+    _dt = str(fm.get("date") or fm.get("created") or "")
+    if not is_example and _dt and _dt >= USAGE_REQUIRED_FROM and not _u:
+        errs.append(("新卡必填字段缺失：usage",
+                     "card-schema §一：2026-10-29 起新卡必填 usage（用途+怎么用三步≤80字）；存量卡豁免"))
+    elif _u and len(_u) > 80:
+        errs.append(("usage 超80字（%d 字）" % len(_u),
+                     "card-schema §一：usage 须≤80字"))
 
     # 7) 示例件护栏：example:true 却占真实取号域 → 会污染用户卡库的取号/查重
     if is_example and (cid.startswith("立场卡#S") or cid.startswith("技能卡#K")):

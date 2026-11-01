@@ -3,8 +3,7 @@
 <!-- com.buluotuo.awaken-patrol — 记忆健康自动巡检 macOS 载体（8.4.0 入包·此前仅文档引用无实体=Mac 新用户也从未有自动巡检的根因）
      等价 Windows 侧 awaken-patrol-install-task.ps1；执行体同一份平台中性 python awaken_patrol.py（单一真源⛔sh/ps1逻辑副本）。
      结构承作者机活件 com.buluotuo.awaken-patrol（StartInterval=21600·RunAtLoad）。
-     装机渲染：[记忆共享中心]→<MC>绝对路径（与 slice-watch/drift-check 模板同惯例）；
-     [日志中心]→~/Library/Logs/buluotuo 绝对路径（守护日志不落记忆中心 2026-10-26）。 -->
+     装机渲染：[记忆共享中心]→<MC>绝对路径（与 slice-watch/drift-check 模板同惯例）。 -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
@@ -12,9 +11,14 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>-c</string>
-        <string>/usr/bin/env -u PYTHONHOME -u PYTHONPATH python3 '[记忆共享中心]/技能配置/awaken-memory-system/scripts/awaken_patrol.py'</string>
+        <!-- 2026-10-28 形态修（plist 参数门禁 zhangyan#1 同判据）：旧版 /bin/bash -lc "整串" 把带空格命令当单个可执行文件名⇒必死 exit127、静默零痕迹（作者机 err.log 实证）。env 逐 arg 直 exec，语义不变；本形态已经作者机 launchd 真机跑绿（stdout 有「[完成] 巡检结束」痕）。 -->
+        <string>/usr/bin/env</string>
+        <string>-u</string>
+        <string>PYTHONHOME</string>
+        <string>-u</string>
+        <string>PYTHONPATH</string>
+        <string>python3</string>
+        <string>[记忆共享中心]/技能配置/awaken-memory-system/scripts/awaken_patrol.py</string>
     </array>
 
     <key>StartInterval</key>
@@ -24,9 +28,9 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>[日志中心]/awaken_patrol_launchd.out.log</string>
+    <string>[记忆共享中心]/脚本中心/logs/awaken_patrol_launchd.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>[日志中心]/awaken_patrol_launchd.err.log</string>
+    <string>[记忆共享中心]/脚本中心/logs/awaken_patrol_launchd.err.log</string>
 </dict>
 </plist>

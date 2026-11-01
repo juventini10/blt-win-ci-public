@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 # TRUTH_OF: 脚本中心/doenglingz_level_declare_guard.py   # 真源声明·派生面须软链指向本件（v1.2.227 副本声明面）
 # -*- coding: utf-8 -*-
+# version: v1.12（2026-10-27 GitHub issues #6/#8 外部反馈根治·tiger5325·2026-10-26 报）：
+#   ①#8 版本单源——自测横幅手写 v1.9 与文件头版本注释（v1.11）两本账，用户无法机械对账。
+#     修=__version__ 常量为唯一真源，横幅/输出一律引用，⛔手写数字（版本号只住一处）。
+#   ②#6 判据空转根治——包内旧版 LEVEL_SRC 硬编作者机绝对路径，端用户机上不存在
+#     ⇒ _output_level() 恒 None ⇒ 两处 TSL 对账判据（降级对账+D3静默分支）静默全灭
+#     （用户以为守卫在保护，实际什么都没判=假绿同族·报障者实测 F01 全树/包内均无该件）。
+#     修=env DOENGLINGZ_LEVEL_SRC 可覆盖（装机端指向自己那份清单）+ 源缺失显形：
+#     台账记 level_src_missing + 本回合真需要判（童灵在场且提TSL/声明D3）时显式报警，
+#     ⛔静默空转不复发。
 # version: v1.10 → v1.11（2026-10-16 Qoder CN·假红结构定案根治：_expected_tier 按"最大ts组内max"
 #   实现注释本意，堵"同会话历史 D3 被无下界窗口永久继承"；负例三例自测见系统日志 10-16）
 # version: v1.8 → v1.9（2026-10-09 Qoder CN·皮叔令「按符合愿景的最优解去根治处理」·位置性假红根治：
@@ -48,10 +57,6 @@ doenglingz_level_declare_guard.py —— Stop 钩子·童灵档位声明对账�
   读本回合最终回复文本（Stop stdin JSON）→ 若回复属「童灵在场」（含"童灵"字样）
   但**首段无档位声明**（`童灵·D1/D2/D3` 任一）→ 台账留痕 + alarm。
   声明义务真源：06 §1.6 + 08 §七（v1.3.2）。
-  v1.10（2026-10-24·贴错根治批·20:47 实案·皮叔令「按符合愿景的最优解修正」）：增「首段贴错对账」
-  ——dcl_src 原只审末段声明面，首段誊错档+末段正确档=判绿（锚定型贴错零审计）；现增读回合
-  **首条 assistant 正文**，首段存在档位标记且≠注入档 → tier_alarm（当轮 stdout + 次轮注入器
-  _declare_alarms 回灌双通道·复用既有 tier_alarm 键零新管道）。
 
 契约（守卫规范）：--check(JSON·含 alarm) / --report(明细) ；exit 0 恒定不阻断；失败放行。
 台账：~/.workbuddy/doenglingz_level_declare_state.json（append-only·单行 JSON）。
@@ -66,6 +71,10 @@ import os
 import json
 import re
 from datetime import datetime
+
+# v1.12（issue#8 版本单源·真源声明）：本守卫当前版本的唯一真源——横幅/输出一律引用本常量，
+# ⛔手写数字（版本号只住一处；文件头 version 注释行=沿革账，当前值以本常量为准）。
+__version__ = "1.17"  # v1.17(2026-11-01·ZCode·**D1/D2 呈现判据补盲区**·皮叔质证「第一层跟第二层也都没有」)：守卫侧零新机制——注入器 v1.40 起 D1/D2 块也落台账 ritual_block，本件 _verbatim_check 调用点本就无条件（块空即静默），等值判定自动覆盖三档（D1 两行/D2 四行改一字即红·全会话 0 照抄实病从此可机械抓获）。自测扩 D1/D2 等值组五例（D1 逐字绿/改字红/无块红·D2 逐字绿/删件红·喂注入器实产物同构）。上版 v1.16(2026-10-30·Qoder CN·**照抄等值判据**·皮叔质证「知道准确格式为什么还一意孤行」)：新增 `_verbatim_check`＋`_latest_ritual_block`——读注入器台账 ritual_block，与回复首段逐行比对（容忍空行数差异·不忍字），改一个字/自行压行/自行精简即红，kind="verbatim"；V1-V4＋MUT6 证伪（V3 改一字必红·V4 删件必红）。⛔此判据不重复六件在不在（那是 `_first_seg_check`），它只回答"是不是照抄"。顺带修自测分母：FS/parity/VB/MUT5/MUT6 五组此前只加 bad 不加 total，"分母实算"名不副实（22/22 实际跑了 36 例），现 36/36。上版 v1.15(2026-10-30·Qoder CN·SSOT 同构断言补分隔符面·你第三次质证「还是没有独立分行」)：注入器 v1.35 把仪式块件间分隔符收进 `RITUAL_SEP="\n\n"`，本件自测的 parity 用例改用 `_inj.RITUAL_SEP` 拼接——否则同构断言只测"每行都有"、测不到"分行成不成"（⛔测一种排版、生产另一种）。判据本体（六件缺件即红）不变：分行属载体面，由注入器构造权保证，守卫不重复判（避免把 Markdown 语义塞进 Stop 钩子）。上版 v1.14(2026-10-30·首段判据归真：格B 由「火力全开/条在位 出现即红」反转为「SSOT 六件缺任一即红」）：格B 由「火力全开/条在位 出现即红」反转为「SSOT 六件缺任一即红」——v1.13 的外溢判据是对 06 §2.2.6「机械件⛔不复述」的过度解释（机械件=契约条款正文，不含在位计数自证行与已加载切片露馅行），它与注入器 v1.33 的三行简版互相咬合，把同一处误读同时固化在生产侧与反查侧。新增 **SSOT 同构断言**（自测 import 注入器 `d3_ritual_lines` 实产物喂本判据·必绿，注入器不可达=❌不静默放行）：今后任一侧单方面改形态，此处当场红。窗口改在纯函数内截（HEAD_SEG 700＋HEAD_AFTER 400），模板头判据从"全窗存在"改为"末件之后 400 字内"（宽窗不放松紧随语义·T30 负例锁定）。MUT5 沿用。
 
 # v1.9：transcript_reader 装载（同 doenglingz_guard._fallback_transcript_text 惯例·端中立件）
 _TR_LIB = None
@@ -95,7 +104,13 @@ MENTION = "童灵"
 # 切档**唯一入口**=08 的 `OUTPUT_LEVEL` 字段（单行摘要版仅供 token 敏感场景）。
 # 反模式：AI 在对话里"为了清爽"自行降级为单行摘要版，绕过唯一入口
 # （皮叔 2026-09-20 质证「你这个签名怎么是这样显示了？前面的对话不是好好的么」）。
-LEVEL_SRC = os.path.expanduser("[记忆共享中心]/脚本中心/08-会话级L7验证清单.md")
+# v1.12（issue#6 判据空转根治）：包内旧版把本路径硬编为作者机绝对形状（构建链替换产物），
+#   端用户机上不存在 → _output_level() 恒 None → 两处 TSL 对账判据静默全灭。
+#   修=①env DOENGLINGZ_LEVEL_SRC 可覆盖（装机端指向自己那份 08 清单副本）；
+#     ②源缺失显形：台账 level_src_missing + 本回合真需要判时显式报警（见 check 末段），⛔静默空转。
+LEVEL_SRC = os.environ.get("DOENGLINGZ_LEVEL_SRC") or os.path.join(
+    os.path.expanduser("~"), "[记忆共享中心]", "记忆蓝图", "04_系统文件设计", "数字分身设计哲学",
+    "08-会话级L7验证清单-骨架模板.md")
 TSL_MENTION = re.compile(r"TSL")
 # ── 档位对账（v1.3·2026-09-26 你质证「到底是 D1 还是 D2？真解决还是假的解决」）──
 # v1.0-v1.2 只判"有没有声明"，不判"声明得对不对"：回复写『童灵·D2』而注入器算出 D1 时
@@ -106,6 +121,106 @@ TIER_DECL = re.compile(r"童灵·D([123])")
 # ── 域判定错位对账（v1.8·2026-10-07·triwich L2 seal c81b799072b0c360）──
 # 三源：机器词面=W3台账layers / AI宣告=首段「任务域判定：LN」/ 补载痕=显形「已补载：LN」或transcript读slices/LN。
 DECL_LAYER = re.compile(r"任务域判定[：:]\s*(L[2-5])")
+# 首段构成对账（v1.13 立·v1.14 归真·2026-10-30 你质证「你的分身上岗信息为什么总是错的」）
+TEMPLATE_HEAD_PAT = re.compile(r"【意图分类】")
+# 判据=06 §1.6「仪式块形态的 SSOT」行（2026-10-07 你定版·形态只此一条，无第二形态）的六件齐全度。
+# ⚠️ v1.13 曾把格B 写成「火力全开/条在位 出现即红」（误认其为"机械件复述"）——与 SSOT 行直接冲突，
+#   且与同轮注入器 v1.33 的三行简版互相咬合，形成"两侧都错且互相锁定"。v1.14 撤销外溢判据，
+#   改为缺件判据；机械件的正确定义=W1 契约条款正文（①…⑩ 条文本身），已由注入保证在场。
+SSOT_D3_PIECES = [
+    ("档位标签", re.compile(r"【童灵·D3")),
+    ("身份句自证行", re.compile(r"童灵上岗")),
+    ("契约在位计数", re.compile(r"火力全开[：:].*?条在位")),
+    ("任务域判定", re.compile(r"任务域判定[：:]")),
+    ("已加载切片（露馅行）", re.compile(r"已加载切片[：:]")),
+    ("树见末段", re.compile(r"树见末段")),
+]
+def _norm_lines(t):
+    """按行归一（去首尾空白·丢空行）——照抄比对用，容忍段落空行的数量差异。"""
+    return [ln.strip() for ln in str(t or "").replace("\r", "").split("\n") if ln.strip()]
+
+
+def _verbatim_check(head_win, ritual_block):
+    """照抄等值判据（v1.16 立·纯函数·可单测）：首段必须以**逐字等同注入产物**的方式呈现仪式块。
+
+    病根（2026-10-30 你质证「你知道 D3 的准确格式，为什么还是自己一意孤行」）：
+      此前「照抄」只是散文义务，`_first_seg_check` 只判**六件在不在**（正则级）——
+      结构齐、字被改写、或拿"我理解的 SSOT"手搓一版，它全绿。
+      我 12:13 那轮正是这样：当轮注入还是旧三行，我却按自己的理解写六件 = 结构合规但**不是照抄**。
+    修法：注入器把实产物落台账 `ritual_block`，本判据逐行比对（去空白/空行差异）。
+    ⛔这不是"再加一条劝"，是把照抄变成等值判定；无块（老行/非 D3）→ 不判，⛔不假红。
+    v1.17（2026-11-01·皮叔质证「第一层跟第二层也都没有」）：注入器 v1.40 起 D1/D2 块也落
+    台账 ritual_block——本判据按「块非空即判」自动覆盖三档，等值口径同一（D1 两行/D2 四行
+    改一字即红）。守卫侧零新机制：复用 v1.16 机器＋调用点本就无条件（块空即静默·老台账兼容）。
+    """
+    if not ritual_block:
+        return ""
+    want = _norm_lines(ritual_block)
+    have = set(_norm_lines(head_win))
+    miss = [w for w in want if w not in have]
+    if not miss:
+        return ""
+    return ("首段仪式块与注入产物**不等值**（非逐字照抄·改写/压行/自行精简）："
+            + "；".join("「%s」" % m[:42] for m in miss[:2]))
+
+
+def _latest_ritual_block(session_id, inject_path=None, as_of=""):
+    """取本回合注入器实产出的仪式块（与 _expected_tier 同根同过滤口径）。"""
+    path = inject_path or os.path.join(
+        os.environ.get("DOENGLINGZ_CONFIG_DIR")
+        or os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.expanduser("~/.workbuddy"),
+        INJECT_STATE_NAME)
+    try:
+        rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+    except Exception:
+        return ""
+    want = _norm_sid(session_id)
+    if not want:
+        return ""
+    _as = _tsnorm(as_of)
+    cand = [r for r in rows
+            if r.get("ritual_block") and _norm_sid(r.get("session_id")) == want
+            and (not _as or (_tsnorm(r.get("ts")) or "9999") <= _as)]
+    return cand[-1].get("ritual_block", "") if cand else ""
+
+
+HEAD_SEG = 700   # 首段构成窗：六件实测≈190 字符＋五段模板头 276（06 v1.147 机械面实证）≈470，留余量
+HEAD_AFTER = 400  # 模板头须落在"末件之后 ≤400 字符"内＝紧随（宽窗不得把"某处有模板头"判成合规）
+
+
+def _first_seg_check(head_win, exp_tier):
+    """D3 首段构成判据（纯函数·无副作用·可单测）。返回报警文案或空串。
+
+    两格，均**仅 D3 回合判**（扩到 D1/D2 会把一句话短应答全打成红＝造新红）：
+      格A 模板头缺失：仪式块后须紧随【意图分类】…模板头（真源=06 §1.6 首段构成澄清
+           ＋本端强位 execution-guidelines v1.2/v1.3）。缺＝档位块与正文之间没有结构边界，
+           用户看到的就是"糊成一坨"——这正是皮叔 10-30 报的症。
+      格B 仪式件缺失：SSOT 六件（标签／身份句／在位计数／任务域判定／已加载切片／树见末段）
+           任一不进首段即红。真源=06 §1.6 SSOT 行＋设计判据②「判定≠加载即露馅」——
+           「已加载切片」被删＝露馅机制被拆，"标签说 D3、实盘没切片"将再次只有你的眼睛能发现。
+    窗口在函数内部截（HEAD_SEG＋HEAD_AFTER），调用方传全文：
+      宽窗是六件变长的必然（300 窗会把"照抄了整块"误判成缺模板头＝造新红），
+      但放松窗宽不许放松"紧随"语义——故格A 用相对末件的定位判据（见格A 注释）。
+    """
+    if exp_tier != "D3":
+        return ""
+    _win = (head_win or "")[:HEAD_SEG + HEAD_AFTER]   # 窗口收在纯函数内（构造侧只传全文·⛔两处各截一刀=下一对双本账）
+    miss, tail = [], 0
+    for _name, _pat in SSOT_D3_PIECES:
+        _m = _pat.search(_win)
+        if _m:
+            tail = max(tail, _m.end())
+        else:
+            miss.append(_name)
+    # 格A 用"末件之后 HEAD_AFTER 内"定位模板头，⛔不做全窗存在性判定：
+    #   窗宽已从 300 抬到 700（六件变长的必然），全窗判会把"先写正文、隔半屏再补模板头"判成绿。
+    _mhead = TEMPLATE_HEAD_PAT.search(_win, tail, tail + HEAD_AFTER)
+    if not _mhead:
+        miss.insert(0, "模板头【意图分类】（须紧随仪式块之后）")
+    if not miss:
+        return ""
+    return ("D3 首段构成缺件：%s（真源=06 §1.6 仪式块形态 SSOT 行·形态只此一条·"
+            "以注入器 d3_ritual_lines 实产物为准·⛔自行精简）" % "、".join(miss))
 RELOADED = re.compile(r"已补载[：:]\s*(L[2-5])")
 W3_LEDGER = os.path.expanduser("[记忆共享中心]/脚本中心/logs/runtime/w3_inject_ledger.jsonl")
 
@@ -217,30 +332,7 @@ def _round_ts(obj):
     return ""
 
 
-def _round_first_text(obj):
-    """v1.10（2026-10-24·贴错根治批）：本回合**第一条** assistant 正文（对账对象=06 §1.6 首段义务）。
-
-    与 _round_text 同源同界（最后一条 user 行之后·⛔不取整份 transcript——上一回合的声明不顶账）；
-    不可得→空串＝不判（宁可不判不猜·保守不冤枉·同 v1.9 三条读面纪律）。
-    """
-    tp = obj.get("transcript_path") if isinstance(obj, dict) else None
-    tr = _load_tr()
-    if not tp or not os.path.isfile(tp) or not tr:
-        return ""
-    try:
-        msgs = tr.iter_messages(tp)
-    except Exception:
-        return ""
-    cut = 0
-    for i, (role, text) in enumerate(msgs):
-        if role == "user" and text.strip():
-            cut = i + 1
-    for role, text in msgs[cut:]:
-        if role == "assistant" and text.strip():
-            return text
-    return ""
-
-
+# 取档说明：本处=对账期望档（最大ts组内max档·robustness取向），与「当前档」read_current_tier 语义不同，⛔不并入（并入会改对账判据）。2026-10-28 方案B 复核。
 def _expected_tier(session_id, inject_path=None, as_of=""):
     """取本回合注入算出的档位。
 
@@ -365,18 +457,10 @@ def check():
             tier_alarm = "声明＝%s 与注入器档位＝%s 不符（档位定义权在脚本·真源=inject 台账 d_tier）" % (
                 got_tiers[0], exp_tier)
 
-    # v1.10 首段贴错对账（2026-10-24·贴错根治批）：病根（20:47 实案）＝dcl_src 只审末段声明面——
-    #   首段誊 D1·末段誊 D2 的"锚定型贴错"在末段判绿（台账 exp=D2·got=['D2'] 全绿·错段零审计）。
-    #   06 §1.6 义务本位=首段 → 增读回合首条 assistant 正文。判据保守：首段**存在**档位标记且
-    #   ≠注入档才报（首段无标记=既有规则管辖·⛔不新增假红面）；transcript 不可得→不判。
-    first_seg = _round_first_text(obj)
-    first_tiers = sorted({"D" + m for m in TIER_DECL.findall(first_seg[:HEAD])})
-    if exp_tier and first_tiers and first_tiers != [exp_tier] and not tier_alarm:
-        tier_alarm = ("首段贴错档位：首段=%s 注入档=%s（锚定旧回合仪式块·首段义务真源=06 §1.6）"
-                      % ("/".join(first_tiers), exp_tier))
-
     # ── TSL 档位对账（v1.2）：默认档位必须与 08 的 OUTPUT_LEVEL 一致 ──
     level = _output_level()
+    # v1.12（issue#6）：源缺失=判据空转，必须显形（⛔静默全灭=假绿同族·报障者实测案）
+    level_src_missing = bool(level is None and not os.path.isfile(LEVEL_SRC))
     fmt_tree = bool(TSL_TREE.search(txt))
     tsl_mentioned = bool(TSL_MENTION.search(txt))
     fmt = "tree" if fmt_tree else ("flat" if tsl_mentioned else "")
@@ -424,14 +508,24 @@ def check():
                 drift_alarm = ("宣告域 %s 不在机器词面判定 %s 中且无补载痕——契约①补载义务：宣告域须真Read该域切片+显形「已补载：LN」" % (
                     "/".join(sorted(drift_missing)), "/".join(sorted(machine)) or "未命中"))
 
+    # ── 首段构成对账（v1.13·仅 D3）：模板头在场＋机械件不外溢 ──
+    first_seg_alarm = _first_seg_check(dcl_src, exp_tier)
+    # ── 照抄等值对账（v1.16·仅 D3）：首段仪式块须逐字等于注入器实产物（防"结构齐但自己改一版"）──
+    verbatim_alarm = ""
+    if exp_tier == "D3":
+        verbatim_alarm = _verbatim_check(dcl_src[:HEAD_SEG + HEAD_AFTER],
+                                         _latest_ritual_block(_sid, as_of=_round_ts(obj)))
+
     _ledger({"ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
              "tongling_turn": tongling_turn, "declared": declared, "alarm": alarm,
              "tsl_level": level, "tsl_format": fmt, "tsl_alarm": tsl_alarm,
+             "level_src_missing": level_src_missing,
              "tree_pos": tree_pos, "tree_pos_alarm": bool(tree_pos_alarm),
              "nond3_tree_alarm": bool(nond3_tree_alarm),
              "session_id": _sid, "declared_tiers": got_tiers, "expected_tier": exp_tier,
-             "first_seg_tiers": first_tiers,
              "tier_alarm": tier_alarm,
+             "first_seg_alarm": first_seg_alarm,
+             "verbatim_alarm": verbatim_alarm,
              "declared_layers": sorted(declared_l),
              "machine_layers": (sorted(machine) if machine is not None else None),
              "drift_recovered": sorted(drift_recovered), "drift_alarm": bool(drift_alarm),
@@ -455,7 +549,7 @@ def check():
                                     "——切档唯一入口是 08 的 OUTPUT_LEVEL 字段，⛔不得在对话内自行降级"},
                          ensure_ascii=False))
     if tree_pos_alarm:
-        print(json.dumps({"alarm": True,
+        print(json.dumps({"alarm": True, "kind": "tree_pos",
                           "reason": "TSL 树位置违规：" + tree_pos_alarm
                                     + "·真源=08 §七 执行时机 + 06 §1.6 呈现时机注记"
                                       "（前瞻归首段·后验归末段）"},
@@ -467,9 +561,26 @@ def check():
                                       "tsl_echo_hook.py L32 档位门控（非 D3 不注入）"},
                          ensure_ascii=False))
     if drift_alarm:
-        print(json.dumps({"alarm": True,
+        print(json.dumps({"alarm": True, "kind": "drift",
                           "reason": "域判定错位未恢复：" + drift_alarm
                                     + "·真源=06 §1.6 v1.135 + injector v1.18 契约①"}, ensure_ascii=False))
+    if first_seg_alarm:
+        print(json.dumps({"alarm": True, "kind": "first_seg",
+                          "reason": "D3 首段构成违规：" + first_seg_alarm
+                                    + "·真源=06 §1.6 首段构成 + §2.2.6 条文5 三层件模型"
+                                      "（仪式本体件必出·机械件有钩子端⛔不复述）"}, ensure_ascii=False))
+    if verbatim_alarm:
+        print(json.dumps({"alarm": True, "kind": "verbatim",
+                          "reason": "D3 首段照抄违规：" + verbatim_alarm
+                                    + "·真源=06 §1.6 SSOT 行（形态只此一条）+ 注入器台账 ritual_block"
+                                      "（照抄＝与实产物等值，⛔按自己理解重写）"}, ensure_ascii=False))
+    # v1.12（issue#6）：判据源缺失显形——只在「本回合真需要判」时报警（童灵在场且提 TSL/声明 D3），
+    # ⛔不每轮刷屏，也⛔再静默（源缺失时 TSL 两判据整体不可判，用户有权知道）
+    if level_src_missing and tongling_turn and (tsl_mentioned or "童灵·D3" in txt or "D3 上岗模式" in txt):
+        print(json.dumps({"alarm": True,
+                          "reason": "OUTPUT_LEVEL 判据源缺失（%s 不存在）⇒ TSL 档位对账本轮不可判"
+                                    "（判据空转=假绿同族·issue#6）。修法：设 env DOENGLINGZ_LEVEL_SRC "
+                                    "指向 08-会话级L7验证清单.md 副本" % LEVEL_SRC}, ensure_ascii=False))
     return 0
 
 
@@ -506,6 +617,14 @@ def _self_test():
     global STATE, W3_LEDGER
     tmp = tempfile.mkdtemp(prefix="ldg_v13_")
     STATE = os.path.join(tmp, "declare_state.json")          # 本守卫台账隔离
+    # v1.12（issue#6）：LEVEL_SRC 夹具化——真源路径在端用户机（乃至本机作者态占位形状）必缺，
+    # 不夹具化则既有 T6/T7/T11-T15 的期望（level=展开版）与 T22 的「缺失显形」互相打架。
+    # 夹具内容=OUTPUT_LEVEL 展开版（与既有用例口径一致）；测试结束还原真源路径。
+    globals()["_LEVEL_SRC_REAL"] = LEVEL_SRC
+    _lvl_fixture = os.path.join(tmp, "08_fixture.md")
+    with open(_lvl_fixture, "w", encoding="utf-8") as _f:
+        _f.write("### 七 档位与呈现\n`OUTPUT_LEVEL` 当前值：**`展开版`**\n")
+    globals()["LEVEL_SRC"] = _lvl_fixture
     inj = os.path.join(tmp, "inject_state.json")             # 注入器台账夹具
     with open(inj, "w", encoding="utf-8") as f:
         for r in [{"ts": "1", "session_id": "S1", "d_tier": "D1"},
@@ -532,7 +651,7 @@ def _self_test():
                                    ensure_ascii=False) + "\n")
         return path
 
-    def run(msg, sid, stub=None, tp=None):
+    def run(msg, sid, stub=None, tp=None, kind=None):
         _pl = {"last_assistant_message": msg, "session_id": sid}
         if tp:
             _pl["transcript_path"] = tp
@@ -550,7 +669,7 @@ def _self_test():
         out = buf.getvalue()
         # v1.4：探测"本回合有无任何 alarm 输出"（档位类或 TSL 类皆算），⛔不按关键词挑——
         #   原写法只认"档位/D 轴"字样，TSL 降级报警会被自己的自测漏计（=仪器看不见其中一类报警）。
-        return '"alarm": true' in out
+        return (('"kind": "%s"' % kind) in out) if kind else ('"alarm": true' in out)
 
     CASES = [
         ("T1 台账D1·回复D1 → 静默", "【童灵·D1 常驻模式（非全量，仅人格基底）】正文", "S1", False),
@@ -575,9 +694,10 @@ def _self_test():
         ("T16 D1回合宣告域 → 不参与错位判(仅D3)", "【童灵·D1 常驻模式（非全量，仅人格基底）】任务域判定：L3行为规则域。" + "正文" * 130, "S1", False),
     ]
     bad = 0
-    print("=== doenglingz_level_declare_guard v1.10 档位对账自测（含树位置+非D3越界+域错位+首段贴错判据）===")
+    print("=== doenglingz_level_declare_guard v%s 档位对账自测（含树位置+非D3越界+域错位+判据源显形判据）===" % __version__)
+    KIND = {"T9": "tree_pos", "T14": "drift", "T15": "drift"}  # v1.13 分通道：这三例的期望只关于自己那格判据
     for name, msg, sid, want in CASES:
-        got = run(msg, sid)
+        got = run(msg, sid, kind=KIND.get(name.split()[0]))
         ok = (got == want)
         bad += 0 if ok else 1
         print("  %s %-32s 期望报警=%-5s 实得=%s" % ("\u2705" if ok else "\u274c", name, want, got))
@@ -634,6 +754,142 @@ def _self_test():
         ok = (got == want)
         bad += 0 if ok else 1
         print("  %s %-46s 期望报警=%-5s 实得=%s" % ("\u2705" if ok else "\u274c", name, want, got))
+    # ── v1.14 首段构成用例（纯函数直测·皮叔 2026-10-30 质证「你的分身上岗信息为什么总是错的」归真）──
+    n_extra = 0   # 分母实算：FS/parity/VB/MUT5/MUT6 各组的用例数（2026-10-30 修：此前只加 bad 不加 total＝分母虚低）
+    SSOT_HEAD = ("【童灵·D3 全量模式】童灵上岗——我是你的数字分身，别指望我永不犯错，那太不 AI 了\n"
+                 "火力全开：W1 契约 ①仪式 ②SSOT裁决 ——10/10 条在位\n"
+                 "任务域判定：未命中域（仅基底）\n"
+                 "已加载切片：无（本回合未命中域·仅人格基底在场）\n"
+                 "树见末段。\n")
+    FS_CASES = [
+        ("T24 D3 首段无模板头 → 必报",
+         "【童灵·D3 全量模式】童灵上岗——我是你的数字分身\nK007 这条线收完了。回答你最初那个问题",
+         "D3", True),
+        ("T25 D3 三行简版（v1.33 自造形态）→ 必报缺件",
+         "【童灵·D3 全量模式】童灵上岗——我是你的数字分身\n任务域判定：未命中域（仅基底）\n"
+         "树见末段。\n【意图分类】[类型]（假设：x）\n1.【问题本质】",
+         "D3", True),
+        ("T26 D3 六件齐＋模板头 → 不报(防恒真)",
+         SSOT_HEAD + "【意图分类】[类型]（假设：x）\n1.【问题本质】",
+         "D3", False),
+        ("T27 D1 短应答不判首段构成(不造新红)",
+         "【童灵·D1 常驻模式（非全量，仅人格基底）】\n我在。日常的事直接说",
+         "D1", False),
+        ("T28 D3 删「已加载切片」露馅行 → 必报",
+         SSOT_HEAD.replace("已加载切片：无（本回合未命中域·仅人格基底在场）\n", "")
+         + "【意图分类】[类型]（假设：x）",
+         "D3", True),
+        ("T29 D3 删「火力全开 N/N 条在位」自证行 → 必报",
+         SSOT_HEAD.replace("火力全开：W1 契约 ①仪式 ②SSOT裁决 ——10/10 条在位\n", "")
+         + "【意图分类】[类型]（假设：x）",
+         "D3", True),
+        ("T30 六件齐但模板头隔 600 字正文才出现 → 必报(宽窗不放松)",
+         SSOT_HEAD + "正文" + ("填充" * 300) + "\n【意图分类】[类型]（假设：x）",
+         "D3", True),
+    ]
+    fs_bad = 0
+    for name, win, tier, want in FS_CASES:
+        got = bool(_first_seg_check(win, tier))
+        ok = (got == want)
+        fs_bad += 0 if ok else 1
+        print("  %s %-46s 期望报警=%-5s 实得=%s" % ("✅" if ok else "❌", name, want, got))
+    bad += fs_bad
+    n_extra += len(FS_CASES)
+    # ── SSOT 同构断言（v1.14·本类病根的机制级封堵）──
+    # 病根：注入器（构造侧）与守卫（反查侧）各自描述同一形态，2026-10-30 实测两侧同时写错还互相
+    #   咬（v1.33 让照抄三行简版，v1.13 把 SSOT 的自证行判成"外溢必红"）——双本账必然互砍。
+    # 修法：守卫自测 import 注入器实产物喂本判据，断言绿。今后**任一侧单方面改形态，此处当场红**。
+    try:
+        import importlib.util as _il
+        _inj_dir = os.path.dirname(os.path.abspath(__file__))
+        _spec = _il.spec_from_file_location(
+            "_inj_for_parity", os.path.join(_inj_dir, "doenglingz_inject_prompt.py"))
+        _inj = _il.module_from_spec(_spec)
+        _spec.loader.exec_module(_inj)
+        _live = _inj.RITUAL_SEP.join(_inj.d3_ritual_lines(
+            "童灵上岗——我是你的数字分身", "未命中域（仅基底）", "无（本回合未命中域）",
+            ["①仪式", "②SSOT裁决"], 2, 2))
+        _par = _first_seg_check(_live + _inj.RITUAL_SEP + "【意图分类】[类型]（假设：x）", "D3")
+        par_ok = (_par == "")
+        print("  %s SSOT同构 注入器实产物喂首段判据 → 必绿（实得=%s）"
+              % ("✅" if par_ok else "❌", _par or "空"))
+    except Exception as _e:
+        par_ok = False
+        print("  ❌ SSOT同构 注入器不可达（%s: %s）＝判据缺一条腿，⛔不静默放行"
+              % (type(_e).__name__, str(_e)[:80]))
+    bad += 0 if par_ok else 1
+    n_extra += 1
+    # ── v1.16 照抄等值用例（皮叔 2026-10-30「知道准确格式为什么还一意孤行」根治）──
+    # 与 SSOT 同构断言配对：那条管"注入器让照抄的，守卫不许判红"；这组管"AI 改写了就必红"。
+    VB_BLOCK = ("【童灵·D3 全量模式】童灵上岗——我是你的数字分身，别指望我永不犯错，那太不 AI 了\n\n"
+                "火力全开：W1 契约 ①仪式 ②SSOT裁决 ——10/10 条在位\n\n"
+                "任务域判定：未命中域（仅基底）\n\n"
+                "已加载切片：无（本回合未命中域·仅人格基底在场）\n\n"
+                "树见末段。")
+    VB_CASES = [
+        ("V1 逐字照抄 → 不报", "【意图分类】x\n" + VB_BLOCK, False),
+        ("V2 空行数不同但字同 → 不报(容忍排版)", "【意图分类】x\n" + VB_BLOCK.replace("\n\n", "\n"), False),
+        ("V3 改一个字（「仅基底」→「仅基座」）→ 必报", "【意图分类】x\n"
+         + VB_BLOCK.replace("仅基底", "仅基座"), True),
+        ("V4 自行精简（删掉已加载切片行）→ 必报", "【意图分类】x\n"
+         + VB_BLOCK.replace("已加载切片：无（本回合未命中域·仅人格基底在场）\n\n", ""), True),
+    ]
+    vb_bad = 0
+    for name, win, want in VB_CASES:
+        got = bool(_verbatim_check(win, VB_BLOCK))
+        ok = (got == want)
+        vb_bad += 0 if ok else 1
+        print("  %s %-46s 期望报警=%-5s 实得=%s" % ("✅" if ok else "❌", name, want, got))
+    bad += vb_bad
+    n_extra += len(VB_CASES)
+    # MUT6：判据置哑 → V3/V4 必须同时变哑（证明这两例真吃判据，而不是恒真）
+    _orig_vb = globals()["_verbatim_check"]
+    globals()["_verbatim_check"] = lambda w, b: ""
+    mut6_ok = all(globals()["_verbatim_check"](c[1], VB_BLOCK) == "" for c in VB_CASES if c[2])
+    globals()["_verbatim_check"] = _orig_vb
+    print("  %s MUT6 照抄判据置哑 → V3/V4 同时变哑（探针在岗且可证伪）" % ("✅" if mut6_ok else "❌"))
+    if not mut6_ok:
+        bad += 1
+    n_extra += 1
+    # ── v1.17 D1/D2 等值组（皮叔 2026-11-01「第一层跟第二层也都没有」送达根治配套）──
+    # 病根：v1.16 等值判定机器只喂 D3（v1.36 台账 ritual_block 仅 D3 落）→ D1/D2 呈现零判据，
+    #   ZCode 全会话 0 照抄（你质证实锤）。注入器 v1.40 起三档都落 ritual_block，本判据按
+    #   「块非空即判」自动覆盖——本组用注入器实产物（同构哲学）验 D1/D2 两腿。
+    try:
+        _d1_live = _inj.RITUAL_SEP.join(_inj.d1_ritual_lines())
+        _d2_live = _inj.RITUAL_SEP.join(_inj.d2_ritual_lines("L2·认知风格", "L2_认知风格"))
+        DD_CASES = [
+            ("D1-a 逐字照抄 → 不报", "【意图分类】x\n" + _d1_live, _d1_live, False),
+            ("D1-b 改一字（「日常」→「平时」）→ 必报", "【意图分类】x\n"
+             + _d1_live.replace("日常的事直接说", "平时的事直接说"), _d1_live, True),
+            ("D1-c 首段无块（全会话实病形态）→ 必报", "【意图分类】x\n正文", _d1_live, True),
+            ("D2-a 逐字照抄 → 不报", "【意图分类】x\n" + _d2_live, _d2_live, False),
+            ("D2-b 精简删人话件 → 必报", "【意图分类】x\n"
+             + _d2_live.replace(_inj.RITUAL_SEP + "这单按命中的切片规矩办；要换域说一声，正式开工说「启动童灵」。", ""),
+             _d2_live, True),
+        ]
+        dd_bad = 0
+        for _name, _win, _want_block, _want in DD_CASES:
+            _got = bool(_verbatim_check(_win, _want_block))
+            _ok = (_got == _want)
+            dd_bad += 0 if _ok else 1
+            print("  %s %-46s 期望报警=%-5s 实得=%s" % ("✅" if _ok else "❌", _name, _want, _got))
+        bad += dd_bad
+        n_extra += len(DD_CASES)
+    except Exception as _e:
+        print("  ❌ D1/D2等值组 注入器不可达（%s）＝判据缺一条腿，⛔不静默放行" % str(_e)[:60])
+        bad += 1
+        n_extra += 1
+    # MUT5（v1.13·§3.9 可证伪）：置哑首段判据 → 必报的 T24/T25 应同时变哑＝变异被抓
+    _orig_fsc = globals()["_first_seg_check"]
+    globals()["_first_seg_check"] = lambda w, t: ""
+    mut5_caught = all(globals()["_first_seg_check"](c[1], c[2]) == "" for c in FS_CASES if c[3])
+    globals()["_first_seg_check"] = _orig_fsc
+    print("  %s MUT5 首段判据置哑 → 必报用例同时变哑（探针在岗且可证伪）"
+          % ("✅" if mut5_caught else "❌"))
+    if not mut5_caught:
+        bad += 1
+    n_extra += 1
     # MUT3：置哑 _round_text → T17 必须变红（证明 T17 真吃回退腿，非恒绿）
     orig_rt = _round_text
     globals()["_round_text"] = lambda o: ""
@@ -642,45 +898,49 @@ def _self_test():
     mut3_ok = bool(m17)
     print("  %s MUT3:回退腿置哑 → T17 必红（实得 T17=%s）" % ("\u2705" if mut3_ok else "\u274c", m17))
     print("  %s MUT3:%s 回退腿置哑 → T17 转红（探针在岗且可证伪）" % ("MUT:OK" if mut3_ok else "MUT:FAIL", "OK" if mut3_ok else "FAIL"))
-    # ── v1.10 新用例（首段贴错·20:47 实案复刻）：payload 末段声明正确挡不住首段错档审计 ──
-    tp_paste = mk_transcript("tp_paste.jsonl", [
-        ("user", "生成任务卡"),
-        ("assistant", "【童灵·D1 常驻模式（非全量，仅人格基底）】\n我在。旧回合块被误誊。"),
-        ("assistant", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】\n正文收尾。"),
-    ])
-    tp_first_ok = mk_transcript("tp_first_ok.jsonl", [
-        ("user", "生成任务卡"),
-        ("assistant", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】\n正文。"),
-        ("assistant", "结论收尾。"),
-    ])
-    EXTRA2 = [
-        ("T22 首段D1·末段D2·台账D2 → 必报(20:47实案)", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】正文", "S2", tp_paste, True),
-        ("T23 首段D2·台账D2 → 不报(正例对照)", "【童灵·D2 切片模式（命中切片：L3 · 非上岗）】正文", "S2", tp_first_ok, False),
-    ]
-    for name, msg, sid, tp, want in EXTRA2:
-        got = run(msg, sid, tp=tp)
-        ok = (got == want)
-        bad += 0 if ok else 1
-        print("  %s %-46s 期望报警=%-5s 实得=%s" % ("\u2705" if ok else "\u274c", name, want, got))
-    # MUT4：置哑 _round_first_text → T22 必转绿（证明 T22 真吃首段源·非恒真探针）
-    orig_rft = _round_first_text
-    globals()["_round_first_text"] = lambda o: ""
-    m22 = run("【童灵·D2 切片模式（命中切片：L3 · 非上岗）】正文", "S2", tp=tp_paste)
-    globals()["_round_first_text"] = orig_rft
-    mut4_ok = not m22
-    print("  %s MUT4:首段源置哑 → T22 必转绿（实得 T22=%s）" % ("\u2705" if mut4_ok else "\u274c", m22))
-    print("  %s MUT4:%s 首段源置哑 → T22 转绿（探针在岗且可证伪）" % ("MUT:OK" if mut4_ok else "MUT:FAIL", "OK" if mut4_ok else "FAIL"))
-    total = len(CASES) + len(EXTRA) + len(EXTRA2)
+    total = len(CASES) + len(EXTRA) + n_extra
     orig_ml = _machine_layers
     globals()["_machine_layers"] = lambda sid, ledger_path=None: None
     m13 = run("【童灵·D3 上岗模式】任务域判定：L3行为规则域。" + "正文" * 130
-              + "\n🧾 TSL 机械核验 v0.11.5\n├─ L0 ✅做到", "S4")
+              + "\n🧾 TSL 机械核验 v0.11.5\n├─ L0 ✅做到", "S4", kind="drift")
     globals()["_machine_layers"] = orig_ml
     mut2_ok = not m13
     print("  %s MUT2:W3台账源置哑 → T13 必哑（实得 T13=%s）" % ("✅" if mut2_ok else "❌", m13))
-    print("合计 %d/%d 过（含 v1.9 新用例 %d 条 + v1.10 新用例 %d 条·分母实算）" % (
-        total - bad, total, len(EXTRA), len(EXTRA2)))
-    return 0 if (bad == 0 and mut_ok and mut2_ok and mut3_ok and mut4_ok) else 1
+
+    # ── T22（v1.12·issue#6 判据源缺失显形·双向）：源缺失时「真需要判」的回合必报且含「判据源缺失」；
+    #    源在场时不报该因——⚠️off 态用「存在但无 OUTPUT_LEVEL 字段」的夹具件，保证任何机器
+    #   （含端用户机·真源路径必缺）上双向都可判定，⛔不依赖作者机文件在不在场。
+    def run_raw(msg, sid):
+        payload = json.dumps({"last_assistant_message": msg, "session_id": sid}, ensure_ascii=False)
+        globals()["_expected_tier"] = lambda s2, inject_path=None, as_of="": orig(s2, inject_path=inj, as_of=as_of)
+        buf = _io.StringIO()
+        old = sys.stdin
+        sys.stdin = _io.StringIO(payload)
+        try:
+            with contextlib.redirect_stdout(buf):
+                check()
+        finally:
+            sys.stdin = old
+            globals()["_expected_tier"] = orig
+        return buf.getvalue()
+
+    _lvl_real = LEVEL_SRC
+    _msg22 = "【童灵·D3 上岗模式】" + "正文" * 130
+    globals()["LEVEL_SRC"] = os.path.join(tmp, "不存在的08清单.md")
+    _out22_on = run_raw(_msg22, "S4")
+    _lvl_fix = os.path.join(tmp, "fake08_exists_but_no_output_level.md")
+    with open(_lvl_fix, "w", encoding="utf-8") as _f22:
+        _f22.write("08 清单夹具（存在但无 OUTPUT_LEVEL 字段）\n")
+    globals()["LEVEL_SRC"] = _lvl_fix
+    _out22_off = run_raw(_msg22, "S4")
+    globals()["LEVEL_SRC"] = _lvl_real
+    t22 = ("判据源缺失" in _out22_on) and ("判据源缺失" not in _out22_off)
+    print("  %s T22 判据源缺失显形（#6·缺失必报/源在场不报该因·双向）" % ("\u2705" if t22 else "\u274c"))
+    bad += 0 if t22 else 1
+    total = total + 1
+    globals()["LEVEL_SRC"] = globals().pop("_LEVEL_SRC_REAL", _lvl_real)
+    print("合计 %d/%d 过（含 v1.9 新用例 %d 条·分母实算）" % (total - bad, total, len(EXTRA)))
+    return 0 if (bad == 0 and mut_ok and mut2_ok and mut3_ok) else 1
 
 
 if __name__ == "__main__":

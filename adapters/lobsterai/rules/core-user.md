@@ -2,8 +2,8 @@
 title: USER.md — LobsterAI 端承载模板
 platform: lobsterai
 layer: end-specific          # ⛔ 端专属层·不进 references/templates 公共层
-version: v1.0-lobsterai
-date: 2026-10-06
+version: v1.1-lobsterai
+date: 2026-10-27
 real_file: USER.md
 inject_channel: OpenClaw workspace bootstrap（每会话加载·state/workspace-main/）
 official_role: "directive-based user model"
@@ -12,6 +12,7 @@ budget_authority: "OpenClaw 官方 docs/concepts/agent-workspace.md（⛔ 本数
 contains: 称呼·当前关注·认知风格·协作模式
 end_note: |
   ⚠️ **本端最易踩的坑**：OpenClaw 官方给 USER.md **独立 4,000 字符预算**（不受 bootstrapMaxChars 约束），且它是 **optional 文件**（缺失静默省略·无 marker）⇒ 超限失效完全不可见。⛔ persona/切片一律不进本件·一律进 SOUL.md。
+  ⛔ **本端下方 CORE_SLICE/L6 嵌入位弃用**（公共层同步保留）：分身切片落位=SOUL.md（见 setup.sh post_install_message 与造芯第4步）——粘进 USER.md 会复现坑1（4,000 预算截断静默失效）
 source: |
   正文基线 ← references/templates/USER.md（公共脱敏层·单真源）
   本 frontmatter（char_budget / official_role / end_note）← LobsterAI 端专属（2026-10-06 立）

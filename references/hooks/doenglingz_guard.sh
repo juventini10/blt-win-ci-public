@@ -108,7 +108,7 @@ from datetime import datetime
 text = sys.stdin.read()
 TSL_MARKER_PATTERNS = {
     "ts_l3_ritual": r"童灵上岗",
-    "ts_l3_slice_report": r"命中域切片",
+    "ts_l3_slice_report": r"切片模式|命中域切片",   # 2026-10-30 D2 改三行后标签不再含"命中域切片"，双名兼容（观测层·非硬闸）
     "ts_l4_loaded": r"(切片：?L[2-5]|L[2-5]_[^，。\s]{2,12}\.md)",
     "ts_l5_selfcheck": r"(守护三查|8要素|试金石)",
     "ts_l6_sync": r"(state_bus|watcher|in sync|全绿)",

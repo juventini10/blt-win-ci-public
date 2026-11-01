@@ -26,7 +26,11 @@ SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 RULE_SRC="$SRC_DIR/rules"
 SKILL_SRC="$SRC_DIR/skills"
 # 本端配置根 = MiniMax Code 的 activeDataDir（默认 ~/.minimax·可由环境覆盖）
-CFG="${MINIMAX_CONFIG_DIR:-${MINIMAX_DATA_DIR:-$HOME/.minimax}}"
+# ⚠️ 2026-11-01 隔离链根治：安装器委派本脚本时**只**传 DOENGLINGZ_CONFIG_DIR（＝本端配置根·
+#    隔离装时被 --cfg-root 覆盖），本脚本原先不认它 ⇒ 回落 $HOME/.minimax ⇒ **隔离装写真机**。
+#    （hermes 同款认 DOENGLINGZ_CONFIG_DIR·本端抄错取值入口＝判据面≠落点面）
+#    取值优先级：DOENGLINGZ_CONFIG_DIR（安装器委派/隔离装）→ MINIMAX_CONFIG_DIR → MINIMAX_DATA_DIR → $HOME/.minimax。
+CFG="${DOENGLINGZ_CONFIG_DIR:-${MINIMAX_CONFIG_DIR:-${MINIMAX_DATA_DIR:-$HOME/.minimax}}}"
 PLUGIN_DIR="$CFG/plugins/bulutuo-guards"
 HOOKS_DIR="$PLUGIN_DIR/hooks"
 HOOKS_JSON="$HOOKS_DIR/hooks.json"
@@ -94,12 +98,15 @@ link_skill_dir() {
     local src="$1" dst="$2"
     if [ -L "$dst" ]; then
         [ "$(readlink "$dst")" = "$src" ] && return 0
-        ln -sfn "$src" "$dst"
+        ln -sfn "$src" "$dst" || return 1
+        return 0
     elif [ -e "$dst" ]; then
         echo -e "  ${Y}SKIP（实体已存在·不覆盖）: $(basename "$dst")${N}"
         return 1
     fi
-    ln -s "$src" "$dst"
+    # ⚠️ 2026-11-01 假绿根治：ln 失败必须回传失败（⛔旧写法无条件 return 0 ⇒ 父目录缺失时
+    #    90 件全失败却计数 90/90·自验证再报 ✅＝双重假绿）。
+    ln -s "$src" "$dst" || return 1
     return 0
 }
 
@@ -173,6 +180,14 @@ if [ -L "$SKILLS_DST" ]; then
     else
         echo -e "  ${R}❌ 归一失败：mv $SKILLS_DST ${_bak} 未成功${N}"
     fi
+fi
+# ⚠️ 2026-11-01 静默失败根治：全新机器上 <CFG>/skills **不存在** ⇒ ln -s 因父目录缺失全失败
+#    （旧写法只在本段归一分支里 mkdir ⇒ 全新机走不到 ⇒ 90 件通用 Skill 一个没装上）。
+#    修法=建目录幂等（dry-run 不建·⛔不许看着像演练实际写盘）。
+if [ -n "$DRY" ]; then
+    echo -e "  ${C}[dry-run] 将确保 skills 目录存在: $SKILLS_DST${N}"
+else
+    mkdir -p "$SKILLS_DST"
 fi
 SK=0; TOT=0
 for skill in "$MC/技能配置"/*; do
@@ -386,7 +401,18 @@ ln=[x for x in items if os.path.islink(os.path.join(d,x))]
 print(len(ln), len(items))
 " "$SKILLS_DST" 2>/dev/null)
         _LNK="${_CS%% *}"; _ALL="${_CS##* }"
-        echo -e "  ${G}✅${N} skills 形态＝普通目录（通用软链 ${_LNK}/${_ALL} 件 → 唯一真源）"
+        _LNK="${_LNK:-0}"; _ALL="${_ALL:-0}"
+        # ⚠️ 2026-11-01 假绿根治（判据面＝落点面）：通用软链 0 件 ⇒ 用户看不到任何通用 Skill
+        #    ⇒ 必红（⛔旧写法照报 ✅「通用软链 0/2 件」＝假绿）。三态分账：待办/失败/正常不混装。
+        if [ -n "$DRY" ]; then
+            echo -e "  ${C}[dry-run] 通用 Skill 软链未实跑（不判红·跑完即消）${N}"
+        elif [ "${_LNK}" -eq 0 ] && [ "${TOT}" -gt 0 ]; then
+            echo -e "  ${R}❌${N} 通用 Skill 软链 0 件（真源 ${TOT} 件·落点 0 件）——用户看不到通用 Skill"; MISS=$((MISS+1))
+        elif [ "${_LNK}" -eq 0 ]; then
+            echo -e "  ${Y}⏳待办${N} 通用 Skill 软链 0 件（记忆中心 技能配置/ 本轮无通用件·非端侧缺陷）${N}"
+        else
+            echo -e "  ${G}✅${N} skills 形态＝普通目录（通用软链 ${_LNK}/${TOT} 件 → 唯一真源·共 ${_ALL} 项）${N}"
+        fi
         for _es in 布洛陀-童灵守护 布洛陀-童灵切片导航; do
             if [ -L "$SKILLS_DST/$_es" ]; then
                 echo -e "  ${R}❌${N} 端专属 Skill ${_es} 是软链（应实体落端内·⛔不进真源）"; MISS=$((MISS+1))

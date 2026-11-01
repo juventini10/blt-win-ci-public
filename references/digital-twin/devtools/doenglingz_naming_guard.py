@@ -22,6 +22,21 @@ r"""命名红线机械校验器——把规格书「全系统机械校验为证�
   python3 doenglingz_naming_guard.py              # 扫现状
   python3 doenglingz_naming_guard.py --selfcheck  # 夹具自证：证明它真会报警
 退出码: 0 = 全绿；1 = 有红；2 = 校验器自身失效（⛔不得当通过读）
+
+变更注记（2026-11-01·WorkBuddy·你批 R-20261101-001 抗体①）：NORM_SOURCES 加 ~/.workbuddy/USER.md
+  ——WB 端 USER.md L15 曾残留 tongling_guard.sh 61 天（红线 09-01 立·guard 建成但未挂本端·
+  残留靠他端审计撞出），本端规范文件纳入扫描面＝C1-C5 对端 config 生效；端上副本该路径
+  不存在时 targets() 按 exists 过滤＝端中立安全。
+
+变更注记（2026-11-01·MiniMax Code·C4 hash 种类化·绑定律 §3.4 落地）：C4 判据从
+  「声明关键词出现在同行任意位置即绑定 + 行内所有 12hex 逐一比对」改为
+  「①token 自带显式键名 ⇒ 以键名定种类（src 类比 src_hash；region_hash/expected_hash/
+  k2_core_hash/md5 等自有真源对账单的命名 hash 不参与）②无显式键名 ⇒ 只认紧邻关键词
+  （≤40 字符）·远端提及不绑定」。病灶＝06 §2.4 MiniMax Code 行**同行双 hash**：
+  行首「SSOT 规格书路径」里的"规格书"把 region_hash 拖去比 manifest.src_hash ⇒ 假红
+  （本端实测 region_hash 现值 ≡ state_bus minimaxcode.expected_hash＝1b585b9ee7e7·戳记合法）。
+  自测 23/23 → 31/31（增 8 例对偶夹具：同行双 hash 负例 + 同行 src 过期阳性 + region 单行 +
+  其它命名 hash + 远端提及不绑定 + 切片来源/规格书/src_hash 三阳性）。
 """
 # Win console UTF-8 guard (auto by clock-loop 1.7.2)
 try:
@@ -74,15 +89,42 @@ NORM_SOURCES = [
     os.path.join(BASE, "记忆蓝图/04_系统文件设计/数字分身设计哲学/03-进度看板.md"),
     os.path.join(TWIN, "K2切片蒸馏/各端切换分发话术.md"),
     os.path.join(BASE, "技能配置/布洛陀-童灵守护/SKILL.md"),
+    os.path.expanduser("~/.workbuddy/USER.md"),  # 2026-11-01 R-20261101-001 抗体①：端 config 规范面入扫（端上不存在时按 exists 过滤）
 ]
 MANIFEST = os.path.join(SLICES, "manifest.json")
 
 # C4 声明对账：凡正文以"切片来源 hash / 规格书 hash / src_hash / 应为 X"形式写出 12 位十六进制的，
 #    该值必须等于 manifest.src_hash。戳记是手填的→规格书一变即腐烂成假声明，
 #    且守护 Skill 里的期望值一烂就天天假红（2026-09-02 实测三处不一致）。
-#    绑定＝"声明关键词出现在同一行、且在 token 之前"，不认全文任意 12 位 hex（防 git 短号误报）。
+#
+# ⚠️ 2026-11-01·MiniMax Code·C4 hash 种类化（绑定律 §3.4 落地·"只采绑定到被检对象本身的片段"）：
+#    旧判据＝"声明关键词出现在同行任意位置即绑定 + 行内所有 12hex 逐一比对" ⇒ **他物 hash 冒充
+#    本对象声明**（整行取"最大 token"同族病）。实锤（2026-11-01·WB 端报红）：
+#      06-跨端适配规范.md §2.4 MiniMax Code 行**同行双 hash**——
+#        region_hash=`1b585b9ee7e7`（K2 恒驻核**区段** hash·真源=state_bus.expected_hash）
+#        + `src_hash=b4b99e5de2dd`（**规格书** hash·真源=manifest.src_hash）
+#      行首「SSOT **规格书**路径」里的"规格书"把 region_hash 拖去比 src_hash ⇒ 假红。
+#      本端实测：region_hash 现值 = 1b585b9ee7e7 ≡ state_bus minimaxcode.expected_hash
+#      （~/.minimax/AGENTS.md 区段实测同值·in_sync）⇒ 戳记合法·假红坐实。
+#    新判据（种类化 + 绑定收紧）：
+#      ① token 自带**显式键名**（xxx= / xxx:）⇒ 以该键名定种类：src 类（src_hash/spec_hash/
+#         source_hash）才与 manifest.src_hash 对账；**其它命名 hash**（region_hash/
+#         expected_hash/k2_core_hash/md5…）有各自真源对账单（state_bus.expected_hash ·
+#         slice_watch.k2_region_hash）⇒ **不参与**本判据（它们另有对账面，不是本尺的账）。
+#      ② 无显式键名 ⇒ 只认**紧邻**声明关键词（切片来源/规格书/src_hash/应为·窗口 BIND_WINDOW
+#         字符）⇒ 远端提及（隔了几十字的"SSOT 规格书路径"）**不构成绑定**。
+#      ③ 泛化键名（hash/md5/sha…）不足以定种类 ⇒ 落回 ② 的关键词判定。
+#    ⛔ 不改 C4 的真值基准（manifest.src_hash）与 NEAR_DATE 历史实录豁免；本次只改"谁参与比对"。
 HASH12 = re.compile(r"(?<![0-9a-f])[0-9a-f]{12}(?![0-9a-f])")
+# token 紧前的显式键名（正则尾锚 ⇒ 只认紧邻者，不认行内远处同名）
+EXPLICIT_KIND = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*[=:：]\s*[`\"'‘“]?$")
+# src 语义键名＝参与 manifest.src_hash 比对
+SRC_KINDS = {"src_hash", "spec_hash", "source_hash"}
+# 泛化键名＝不足以定种类 ⇒ 落回关键词判定
+GENERIC_KINDS = {"hash", "sha", "sha1", "sha256", "md5", "checksum", "digest"}
+# 声明关键词（无显式键名时按紧邻窗口判定·远端提及不构成绑定）
 STAMP_KEY = re.compile(r"(切片来源|规格书|src_hash|应为)")
+BIND_WINDOW = 40   # 声明关键词与 token 的最大距离（字符）·超此＝远端提及·不绑定
 
 # 紧邻日期豁免：现状登记表常内嵌"2026-08-27 重跑生成器对齐规格书 70c9…"式行内实录——
 #   那是当时真相，按「历史行不回改」铁律不得为凑绿而改写（否则判据反过来逼人伪造取证）。
@@ -269,9 +311,30 @@ def check_derivation():
     return check_derivation_core(pairs, SLICES)
 
 
+def _hash_kind(text, start):
+    """token 绑定的 hash 种类（绑定律 §3.4：只认绑定到该 token 自身的片段）：
+      'src'   ＝与 manifest.src_hash 对账（规格书 hash 声明）
+      'other' ＝自有真源对账单的命名 hash（region_hash/expected_hash/k2_core_hash/md5…）⇒ 本判据不管
+      None    ＝不是 src 声明（无声明语境）⇒ 不判
+    绑定优先级：显式键名（紧邻）＞ 紧邻关键词（≤BIND_WINDOW 字符）。"""
+    pre = text[:start]
+    km = EXPLICIT_KIND.search(pre)
+    if km:
+        kind = km.group(1).lower()
+        if kind in SRC_KINDS:
+            return "src"
+        if kind not in GENERIC_KINDS:
+            return "other"
+    if STAMP_KEY.search(pre[-BIND_WINDOW:]):
+        return "src"
+    return None
+
+
 def check_stamps(paths, manifest_hash):
-    """C4：文档里声明的规格书 hash 必须等于 manifest.src_hash。
+    """C4：文档里声明的**规格书 hash**必须等于 manifest.src_hash。
     戳记手填＝必腐烂；守护 Skill 的期望值腐烂＝天天假红。声明与实盘脱钩即红。
+    hash 种类化（2026-11-01）：只有绑定到规格书语义的 hash 才参与本对账；
+    region_hash 等自有真源对账单的命名 hash 有各自对账面（state_bus.expected_hash）⇒ 不判。
     例外：hash 前 30 字内带日期＝行内实录（当时真相），按历史行不回改铁律不判。"""
     reds = []
     for p in paths:
@@ -282,8 +345,8 @@ def check_stamps(paths, manifest_hash):
             continue
         for lineno, text in scope:
             for m in HASH12.finditer(text):
-                if not STAMP_KEY.search(text[:m.start()]):
-                    continue  # 无声明语境的 12 位 hex（git 短号等）不判
+                if _hash_kind(text, m.start()) != "src":
+                    continue  # 他物 hash（自有真源对账单）或无声明语境 ⇒ 不判
                 if NEAR_DATE.search(text[max(0, m.start() - 30):m.start()]):
                     continue  # 带日期的行内实录不判
                 if m.group(0) != manifest_hash:
@@ -449,6 +512,50 @@ def selfcheck():
             "- Qoder CN：规格书 hash `70c917662765`（现状声明）\n")
         results.append(("C4 带日期的行内实录不判",
                         len(check_stamps([f_dated], "ffff9999eeee")) == 1))
+
+        # C4 夹具（2026-11-01·hash 种类化·对偶组）：
+        #   负例＝他物 hash 冒充本对象声明（本案真样本复刻）必须放行；
+        #   正例＝同一行里的规格书声明过期必须仍报警（证尺有牙，不是一味放宽）。
+        f_two = os.path.join(d, "two_hashes.md")
+        open(f_two, "w", encoding="utf-8").write(
+            "## 2.4 端接入登记\n\n"
+            "| **MiniMax Code** | 接入完成。**L1**=AGENTS.md 恒驻核含童灵身份层+SSOT 规格书路径"
+            "+身份分层声明（布洛陀=端层搭档人格｜童灵=分身层｜端署名=端层·三层并存不互斥）；"
+            "**L2**=K2 core_slice+L6 标记对逐字嵌入（格式 B·deploy_marked·region_hash=`1b585b9ee7e7`）"
+            "+命名红线块+单一真源声明+`src_hash=b4b99e5de2dd` |\n")
+        results.append(("C4 同行双 hash：region 不冒充 src（本案假红样本）",
+                        len(check_stamps([f_two], "b4b99e5de2dd")) == 0))
+        results.append(("C4 同行双 hash：src 过期仍报警（尺有牙）",
+                        len(check_stamps([f_two], "ffffffffffff")) == 1))
+        f_reg = os.path.join(d, "region_only.md")
+        open(f_reg, "w", encoding="utf-8").write(
+            "## 现状\n\n- K2 恒驻核区段 region_hash=`1b585b9ee7e7`（自有真源对账单·state_bus）\n")
+        results.append(("C4 region_hash 单行不判（manifest 不同也不判）",
+                        len(check_stamps([f_reg], "ffffffffffff")) == 0))
+        f_kinds = os.path.join(d, "kinds.md")
+        open(f_kinds, "w", encoding="utf-8").write(
+            "## 现状\n\n"
+            "- expected_hash=f3a3313a7c36（state_bus 基线·自有真源）\n"
+            "- k2_core_hash=ced5829a1ae0（整文件 sha12·自有真源）\n"
+            "- lib=软链≡真源 md5 7d0533015cf7（md5·非规格书 hash）\n"
+            "- 关联提交 aaaaa1111111 已合入\n")
+        results.append(("C4 其它命名 hash（expected/k2_core/md5）不判",
+                        len(check_stamps([f_kinds], "b4b99e5de2dd")) == 0))
+        f_far = os.path.join(d, "far_bind.md")
+        open(f_far, "w", encoding="utf-8").write(
+            "## 现状\n\n"
+            "- 恒驻核含童灵身份层+SSOT 规格书路径+身份分层声明（布洛陀=端层搭档人格｜童灵=分身层｜"
+            "端署名=端层·三层并存不互斥）；**L2**=K2 标记对逐字嵌入（格式 B·deploy_marked·"
+            "hash=`1b585b9ee7e7`）\n")
+        results.append(("C4 远端「规格书」提及不构成绑定",
+                        len(check_stamps([f_far], "ffffffffffff")) == 0))
+        for label, text in (("切片来源", "- 切片来源 hash `ffff9999eeee`（现状声明）\n"),
+                            ("规格书", "- 规格书 hash `ffff9999eeee`（现状声明）\n"),
+                            ("src_hash=", "- 单一真源声明+`src_hash=ffff9999eeee`\n")):
+            fx = os.path.join(d, "src_%s.md" % re.sub(r"\W", "_", label))
+            open(fx, "w", encoding="utf-8").write("## 现状\n\n" + text)
+            results.append(("C4 %s 声明过期仍报警" % label,
+                            len(check_stamps([fx], "b4b99e5de2dd")) == 1))
 
     # C5 夹具：格式 A／格式 B 各造一份真端文件，再手改一行验证会报警
     with tempfile.TemporaryDirectory() as d:

@@ -2,8 +2,8 @@
 title: MEMORY.md — LobsterAI 端承载模板
 platform: lobsterai
 layer: end-specific          # ⛔ 端专属层·不进 references/templates 公共层
-version: v1.0-lobsterai
-date: 2026-10-06
+version: v1.1-lobsterai
+date: 2026-10-27
 real_file: MEMORY.md
 inject_channel: OpenClaw workspace bootstrap（每会话加载·state/workspace-main/）
 official_role: "curated long-term memory"
@@ -51,7 +51,7 @@ source: |
 | 核心层（CORE.md） | [记忆共享中心]/核心层/ |
 | 认知层（摘要版） | [记忆共享中心]/记忆规则/摘要版 |
 | 行为层（摘要版） | [记忆共享中心]/记忆规则/摘要版 |
-| 系统文件（SOUL/IDENTITY/USER） | ~/.workbuddy/ |
+| 系统文件（SOUL/IDENTITY/USER） | 本端工作区 workspace-main/（state 下·装机自检实位） |
 | 回滚脚本 | [记忆共享中心]/rollback.sh（升级后说"帮我回滚"自动恢复旧文件） |
 | 工作日志 | [记忆共享中心]/工作日志/ |
 | 最伟大的我（镜像层·8子目录） | [记忆共享中心]/最伟大的我/ |

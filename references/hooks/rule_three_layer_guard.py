@@ -73,6 +73,19 @@ from rule_triggers_loader import load_triggers, extract_tielu_index_ids
 
 HOME = os.path.expanduser("~")
 BASE = os.path.join(os.path.expanduser("[记忆共享中心]"), "记忆规则")  # v2.1.5(2026-10-08 Qoder CN·Stop真红回修)：v2.1.4注释写HOME+相对段却塞了作者机绝对路径(v1.2.237③所罚之病·假绿藏形态)→脱敏投影通道剥段回写成~/记忆规则(v2.1.1病根)→D4真红。正解=HOME+相对段三例齐。
+# 2026-10-27（双内容面扩面·Qoder CN）：包面模板的真实源不是 记忆规则/，而是策展副本
+#   （installer「双内容面真源律」条文49）。原守卫只扫作者侧三文件 ⇒ 改作者侧忘了改策展时
+#   三层全绿而包面还是旧版＝**假闭环**（本端 2026-10-27 v8.46 实案）。
+CURATION_BASE = os.path.join(os.path.expanduser("[记忆共享中心]"), "开发工具", "buluotuo-release-sync",
+                             "assets", "rules-curation")
+# 策展侧文件名映射（详解件少一个「版」字，见 manifest filename_differs）
+# 键=作者侧 FILES 的短名（vers 的键即此），值=策展侧真实文件名
+CURATION_NAMES = {
+    "铁律版": "用户基本规则-铁律版.md",
+    "摘要版": "用户基本规则-摘要版.md",
+    "详解存档版": "用户基本规则-详解存档.md",
+}
+
 _CFG_ROOT = os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.join(HOME, ".workbuddy")
 MEMORY_PATH = os.path.join(_CFG_ROOT, "MEMORY.md")
 # 豆包办公端 MEMORY（2026-09-11 P2 扩展：豆包端无钩子·静态常驻可跑同样适用·双端同巡）
@@ -314,6 +327,39 @@ D5_ANCHOR_RE = re.compile(
     r"(?:Read|读了|查阅|已读|参考|看了|去读|读取|阅读)\s*"
     r"(?:用户基本规则-?)?详解存档版?"
 )
+
+
+def d8_dual_surface(vers):
+    """双内容面一致性：作者侧三层版本 vs 包面策展副本三份版本（2026-10-27 扩面）。
+
+    病根：包面模板源＝`assets/rules-curation/`（条文49 双内容面），本守卫原只看作者侧
+      ⇒ 改作者侧不改策展 ⇒ 三层全绿而包面旧版＝假闭环。
+    判据：①策展三份必须存在 ②每份版本必须＝作者侧同名层版本。缺/异 ⇒ 红。
+    """
+    drift, missing = [], []
+    if not os.path.isdir(CURATION_BASE):
+        return (True, "策展目录不在（非本机形态或未部署）·跳过（显形不判红）")
+    for author_name, cur_name in CURATION_NAMES.items():
+        fp = os.path.join(CURATION_BASE, cur_name)
+        if not os.path.isfile(fp):
+            missing.append(cur_name)
+            continue
+        try:
+            cv = parse_version(read(fp))
+        except Exception:
+            drift.append((author_name, vers.get(author_name, "?"), "读取失败"))
+            continue
+        av = vers.get(author_name)
+        if av and cv and str(cv).strip() != str(av).strip():
+            drift.append((author_name, av, cv))
+    if missing or drift:
+        parts = []
+        if missing:
+            parts.append("策展缺失 %d 份: %s" % (len(missing), ", ".join(missing)))
+        for a, av, cv in drift:
+            parts.append("%s 作者侧=v%s 策展=v%s" % (a, av, cv))
+        return (False, "｜".join(parts))
+    return (True, "作者侧三层 ≡ 策展三份（v%s）" % vers.get("铁律版", "?"))
 
 
 def d5_static():
@@ -716,6 +762,7 @@ def main():
     d6_drift = (not d6_ok)  # 触发规格与真源脱钩=真漂移；预注入硬墙出现洞
     # ⑦ 双名并存巡查（2026-10-09 缺陷③根治·只告警不进 drift——归档属人的裁决）
     d7_ok, d7_msg = d7_dual_name()
+    d8_ok, d8_msg = d8_dual_surface(vers)
 
     if args.json:
         print({
@@ -732,6 +779,7 @@ def main():
             "d5_static": {"ok": d5s_ok, "msg": d5s_msg},
             "d5_dynamic": {"ok": d5d_ok, "msg": d5d_msg},
             "d6_coverage": {"ok": d6_ok, "msg": d6_msg},
+            "d8_dual_surface": {"ok": d8_ok, "msg": d8_msg},
             "d7_dual_name": {"ok": d7_ok, "msg": d7_msg},
         })
     else:
@@ -769,6 +817,7 @@ def main():
             print(f"⑤ 冲突→详解版 动态：{'✅ ' if d5d_ok else '⚠️ '}{d5d_msg}")
         print(f"⑥ 触发规格覆盖：{'✅ ' if d6_ok else '⚠️ '}{d6_msg}")
         print(f"⑦ 双名并存巡查：{'✅ ' if d7_ok else '⚠️ '}{d7_msg}")
+        print(f"⑧ 双内容面（策展副本）：{'✅ ' if d8_ok else '⚠️ '}{d8_msg}")
 
     # drift 改为「漂移原因列表」：空列表 falsy / 非空 truthy（455/458 判真假不变），
     # 且 457 行 drift[:2] 可切片取前2条原因 join（原 bool 切片=TypeError 崩溃·2026-09-17 修复）
@@ -781,6 +830,8 @@ def main():
         drift_reasons.append("铁律版描述计数漂移 frontmatter=%s/标题=%s/实际=%s" % (desc_count, title_count, actual_max))
     if d4_drift:
         drift_reasons.append("D4 静态布线错误")
+    if not d8_ok:
+        drift_reasons.append("双内容面漂移（策划副本 ≠ 作者侧）: %s" % d8_msg)
     if d5_drift:
         drift_reasons.append("冲突→详解版静态声明缺失")
     if d6_drift:

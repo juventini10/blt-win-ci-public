@@ -17,6 +17,11 @@ tsl_tree_hook.py — TSL 树强制产出件（WB 端 Stop 链·v1.4）
   ★ change6 联动证据：hook 真跑即写 tsl_tree_hook_ran.json（closeout 认「hook 当回合真跑」·⛔假红）。
 stdout：JSON 单行（宿主兼容·不阻断）；exit 2 = 阻止停止+stderr 注入对话。
 LRN-20260929-01 根治件。
+v1.6（2026-10-30·Qoder CN·端根取数面归一）：INJECT_STATE/FIRE_STATE/HOOK_RAN 的默认根由写死
+  ~/.workbuddy 改吃 declare_guard 同款三段式（DOENGLINGZ_CONFIG_DIR > WORKBUDDY_CONFIG_DIR > WB 根），
+  TSL_* env 仍优先＝夹具隔离缝零损失。病根实证：本端 tsl_closeout_guard 只带 DOENGLINGZ_CONFIG_DIR
+  不带 TSL_*，import 本件后读 WB 根台账 → 本会话 D3 查成 "" → 假红「tier=无档位」；
+  正确性原挂在"每条钩子命令都记得写三个 env"＝靠人记得（违愿景①），本次收进脚本。
 v1.3（2026-10-06·WB 童灵·L5 MISS 根治配套）：--session 透传给 tsl_verify v0.11.5
       （L5 对账口径=守卫台账当轮行·会话锚由本件传入·缺省降级零回归）。
 v1.4（2026-10-09·Qoder CN WB端TSL树时相根治任务卡·六改点全落地）：见上机制段。
@@ -45,13 +50,26 @@ VERIFY_CANDIDATES = (
 )
 VERIFY = next((c for c in VERIFY_CANDIDATES if os.path.exists(c)), VERIFY_CANDIDATES[1])
 
-INJECT_STATE = os.environ.get("TSL_INJECT_STATE") or os.path.join(HOME, ".workbuddy", "doenglingz_inject_state.json")  # env=测试隔离缝（对齐 TSL_VERIFY_CACHE 先例·守卫规范 §3.9 夹具可指向空目录）
+# ── 端根取数面归一（v1.6·2026-10-30·Qoder CN 假红根治）────────────────────────
+# 病根（A/B 实跑，⛔非推测）：本件三处状态路径把默认根**写死在 ~/.workbuddy**，端根只能靠
+#   `TSL_*` 逐个显式声明。同端 `tsl_closeout_guard.py` 走 `from tsl_tree_hook import session_d_tier`
+#   时**没有**任何 TSL_* env（settings 只给 DOENGLINGZ_CONFIG_DIR），于是它读 WB 根的台账找本端
+#   session → 命中 0 行 → 返回 "" → 打印「🔴 TSL 收尾违规：本会话非 D3（tier=无档位）」。
+#   本端真台账里该 session 是 D3，红是假的（PAT-081「读写不同根」同族·PAT-058「仪器假绿」反向）。
+# 更深一层：⛔把正确性挂在"每条钩子命令都记得写三个 env"上=靠人记得（违愿景①）。
+#   修法＝默认根吃 declare_guard 同一套三段式（DOENGLINGZ > WORKBUDDY > ~/.workbuddy），
+#   `TSL_*` 仍优先＝测试隔离缝保留（守卫规范 §3.9 夹具能力零损失）。
+_END_ROOT = (os.environ.get("DOENGLINGZ_CONFIG_DIR")
+             or os.environ.get("WORKBUDDY_CONFIG_DIR")
+             or os.path.join(HOME, ".workbuddy"))
+
+INJECT_STATE = os.environ.get("TSL_INJECT_STATE") or os.path.join(_END_ROOT, "doenglingz_inject_state.json")  # env=测试隔离缝（对齐 TSL_VERIFY_CACHE 先例·守卫规范 §3.9 夹具可指向空目录）
 
 # v1.4（2026-10-09）：fire 状态文件——记录「本轮是否已 kick 过 / 是否降级缺树」
 #   env 可重定向（夹具隔离·⛔污染真状态）
-FIRE_STATE = os.environ.get("TSL_FIRE_STATE") or os.path.join(HOME, ".workbuddy", "tsl_tree_fire_state.json")
+FIRE_STATE = os.environ.get("TSL_FIRE_STATE") or os.path.join(_END_ROOT, "tsl_tree_fire_state.json")
 # v1.4（2026-10-09·change6 联动）：hook 当回合真跑证据（closeout 认「hook 代跑」·⛔假红）
-HOOK_RAN = os.environ.get("TSL_HOOK_RAN") or os.path.join(HOME, ".workbuddy", "tsl_tree_hook_ran.json")
+HOOK_RAN = os.environ.get("TSL_HOOK_RAN") or os.path.join(_END_ROOT, "tsl_tree_hook_ran.json")
 
 # v1.4（2026-10-09）：last_assistant_message 读法——与 level_declare_guard v1.1 同源（⛔另起炉灶=双尺子）
 # 教训：同域已有能跑的件，新建件必须先对齐它的接口（见 level_declare_guard v1.1 注释）。
@@ -170,6 +188,7 @@ def _mark_hook_ran(sid, stamp):
         pass
 
 
+# 取档口径真源=分身/doenglingz_tier_read.py（2026-10-28 方案B）。本处=TSL专用变体：空sid→非D3·60min新鲜窗；与 tier_gate 的「空sid→全局兜底」版语义不同，⛔不可硬并（硬并会改门控语义/碰TSL关键路径）。改取档先改共享件并回归。
 def session_d_tier(sid):
     """v1.2：本会话最新档位（按 session_id 过滤台账）——sid 为空退全局最新行（WB 兼容）。
     TSL 树义务仅 D3（08 §七·与 tsl_echo_hook 门控同源）。
@@ -182,6 +201,11 @@ def session_d_tier(sid):
     try:
         with open(INJECT_STATE, encoding="utf-8") as f:
             lines = [l for l in f if l.strip()]
+        # v1.5-b（2026-10-27 实测补刀）：无 sid 必须在进循环前短路。
+        #   循环首句 `if sid and d.get('session_id') != sid: continue` 在 sid 为空时恒假
+        #   => 第一行档位直接返回，后面那个 return '' 永远走不到（自测实证：sid='' 仍得 D3）。
+        if not sid:
+            return ""
         for line in reversed(lines):
             d = json.loads(line)
             # 🔴 2026-10-08 空值漏洞根治（Hermes 端实证·与 tsl_echo_hook 同源同修）：
@@ -195,13 +219,32 @@ def session_d_tier(sid):
             if sid and d.get("session_id") != sid:
                 continue  # v1.3：只认本会话的注入行（空 sid 行不再放行·根除档位误判）
             if d.get("d_tier"):
+                # ── v1.5-c（2026-10-27 根治·皮叔令「彻底根治」）──────────────────
+                # 病灶二：档位取「该会话历史最新」且**无时间窗** ⇒ 会话曾 D3 过，
+                #   之后所有回合都被判 D3（今日实证：本窗 13:44 升过 D3，15:0x 按 D1
+                #   回复的回合仍被判 D3 并产树）。会话内档位本就逐回合变化，
+                #   「历史最新」不等于「本回合」。
+                # 修法：给档位证据加**新鲜期**——超期视为「本回合无档位证据」，不产树。
+                #   阈值 60min 依据：单回合 UPS→Stop 通常 <30min，取一倍余量；
+                #   属判据参数，⛔不是拍数——改它须同步本注释与自测。
+                try:
+                    _t = datetime.strptime(str(d.get("ts"))[:19], "%Y-%m-%dT%H:%M:%S")
+                    if (datetime.now() - _t).total_seconds() > 60 * 60:
+                        return ""   # 档位证据过期 → 本回合无证据（保守：不产树）
+                except Exception:
+                    pass            # ts 不可解析 → 保持旧行为（不因解析失败改判）
                 return d.get("d_tier")
         if sid:  # 本会话无注入行 → 本会话非 D3（⛔不退全局——那正是串台源）
             return ""
-        for line in reversed(lines):
-            d = json.loads(line)
-            if d.get("d_tier"):
-                return d.get("d_tier")
+        # ── v1.5（2026-10-27 根治·皮叔令「符合愿景根治」）─────────────────────
+        # 病灶：原文此处「无 sid → 遍历全部行取最新档位」＝向后兼容条款，
+        #   在多窗并行下就是串台源。今日实测：本窗 session=task-e3e4c64f 的注入行
+        #   全是 D1（23 笔），却在 Stop 时被判 D3 并产树、exit 2 逼 AI relay；
+        #   而该树文件头写着 session=task-0d93ec7d（第三个窗口）。
+        # 判据改保守（对齐三纪律3·保守判定）：拿不到 sid ⇒ 无法确认档位 ⇒ 返回空，
+        #   不产树。代价=少一棵对账树（留痕可补），收益=不再逼 AI 贴别会话的树（误导不可补）。
+        #   ⛔ 不再「退全局最新行」——那条兼容正是串台源。
+        return ""
     except Exception:
         pass
     return ""

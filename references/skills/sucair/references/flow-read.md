@@ -1,9 +1,33 @@
+---
+name: flow-read
+description: 读书助手执行本体＋蓝图卡分支（SKILL.md 执行流程/自检清单的逐字迁移件·装载纪律见 SKILL.md 熔断器）
+version: v1.0.1
+normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
+---
+
 # 读书助手 · 执行本体（flow-read）
 
 > 本文件是 SKILL.md「执行流程／自检清单」的逐字迁移件（sucair v4.16.0·2026-10-23 架构革命·刀二）。
 > 装载纪律：SKILL.md「执行流程」熔断器要求先跑 `python3 scripts/flow_read_gate.py` exit 0，再 Read 本文件**全文**后执行。
 > 效力：本文件条款与主文件同等效力；⛔不得因在附件而降级为参考建议。
 > 呈现模板：5分钟精华与 Step 4 确认模板住 SKILL.md `## 📦 蒸馏输出模板`（L2 在场律·输出前最后读到）。
+## 📘 蓝图卡分支（source_type=blueprint-design · 2026-10-27 批次1 并入 · 与读书主线并列互不替代）
+
+> 入口判据：源为 `记忆蓝图/04_系统文件设计/**` 下设计文档，或用户明示「做蓝图卡」。命中即走本分支，⛔不入下方读书 Step1-4（不出精华/不出题/不落 05-知识池）。
+> 复用主线四样的方式：C1 穷举（对象=设计判断）、去重门（dedup_recall --type blueprint-card）、C3 批判三问（措辞按切分判据换轴）、机检（note_validator blueprint-card 派发）。
+
+**B1 · C1 判断穷举**：大文件（>60KB）⛔整读——先跑 `python3 scripts/bp_c1_scan.py <源.md> --gap` 取候选与分片计划，按片定点 Read（每片≤40KB）；小文件直接通读。穷举源文档，按蓝图卡schema §四穷举「可独立引用的设计判断」清单——切分粒度⛔不用字数定，用「这条能不能单独贴进一次对话当依据」测验；能=出一张，不能=并进相邻判断。碎片项（纯背景/纯流程步骤/需前后文的半句）单列不产卡。清单落盘 `10-蓝图索引卡/蓝图卡-{源名}-C1清单.md`（无 frontmatter 纯文档，机检自动跳过）。
+
+**B2 · 去重门**（§四十三-2 起为强制门：不跑=出厂判红，⛔「应跑」）：产卡前 `python3 scripts/dedup_recall.py <10-蓝图索引卡目录> --category <domain> --tags "关键词1,关键词2" --type blueprint-card` → 候选非空逐张三选一（ADD/MERGE/SKIP）+ 计数，⛔静默 SKIP；跑完自动写凭证 `<目录>/.b2_dedup_evidence.json`（bp_factory --ship 查存在+≤24h 新鲜度，无/过期=判红——依据 §四十 根因：跳门致同判断双卡入库）。产卡后出厂闸：`bp_semantic_dedup.py`（bge 余弦 ≥0.87 同文件对自动拦，§四十二标定；判红对写抽检单第三节，判罪权在人工 MERGE）。近似卡防爆仍是每批验收三项之一。
+
+**B3 · 生成**：frontmatter ✅DO 走 `build_blueprint_card_frontmatter(...)` + `dump_frontmatter(...)`，⛔手写（与读书卡同规）。三处检索面硬判据（依据=检索面实况 text=类目+承重字段+正文前300）：title 写设计判断⛔章节名；core_principles 每条「断言+理由」；source_files 精确到 `文件#节`。⛔不设 retrieval_queries（T6 判负）。**边界须进承重字段**：`scope` 不在检索面 text 内（实况=title+文件名+source_files+core_principles+summary+正文），所以「本卡不适用于 X」⛔只写进 scope——须在 core_principles 末条以断言形写出，否则卡在自己不适用的语境里照样被召回并挤掉正主（规则依据=检索面 text 实况不含 scope，与「卡是否挤位」无关；2026-10-27 曾以 F-Q12 掉名次为据，经反事实复测该归因不成立——去我方卡与去母卡名次均为 6，已撤此证据、规则保留）。card_id 领 B 族号：B 族暂无专用号器（assign_kb_no 只管 Z 族），✅DO 先扫落点目录取现有 `蓝图卡#BC` 最大号+1 顺延（一条 grep/ls 实取，⛔凭记忆编号），同批多张连续分配并留痕于 C1 清单尾部，唯一性由 B5 机检+目录实扫兜底复核。正文四段（判断/依据/边界/关联）≤600 字软对齐 CARD_BODY_MAX。多窗口并行产卡时 ✅DO 先 `bp_factory.py --reserve N` 领号并写台账，⛔两窗同扫 max+1（会撞号）。
+
+**B4 · 写入**：落点 `{{OBSIDIAN_VAULT}}/2-知识库/10-蓝图索引卡/蓝图卡-{domain}-{主题}.md`，⛔写 05-知识池、⛔动读书 INDEX.md（蓝图卡检索走 search_kb 目录扫描，无 master 行）。写后 Read 验证文件存在。
+
+**B5 · 机检+判据复测**：出厂首选一条命令 `python3 scripts/bp_factory.py --ship`（内置下列各闸+覆盖度台账，rc=0 才算过）；手工等价路径（越位同现监控含在 --ship 内，判红依据是同现计数；**因果层⛔用同现替代**——须跑 `python3 scripts/bp_causal_ab.py`，每批边界至少一次，还原复验不过则该轮读数作废；该件同时自动生成「蓝图卡挤位待勾队列.md」⇒ 真尺退化时闸为三态（⚠️ 阻塞批次交付、**不阻塞继续产卡**；⛔无待勾台账则判红并阻塞生产），队列由你勾、⛔分身代勾）：`python3 scripts/note_validator.py <10-蓝图索引卡目录>` 零违规，**且** `python3 scripts/bp_quote_verify.py <10-蓝图索引卡目录>` exit 0（引文逐条回源 + source_files 节锚逐条可达——批次1 实测这张门抓出「自造组合节名」与「概括词入引号冒充原文」两类缺陷，⛔未过此门不得升 `trust: machine-confirmed`）；用你真实问句复测本批验收题（如批1「检索设计哲学怎么定的」），结果进任务卡四要素汇报。缓存注意：改 search_kb 消费面须同步升缓存 schema 版本，否则 doc_corpus.json 命中旧缓存=改了等于没改（坑2）。
+
+---
+
 ## 🛡️ 自检清单
 
 每次执行完成后强制自检：

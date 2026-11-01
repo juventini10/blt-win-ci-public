@@ -921,6 +921,61 @@ def check_venv_platform_form(pkg: Path) -> list:
     return issues
 
 
+def check_launchd_arg_form(pkg: Path) -> list:
+    """检查⑮（2026-10-28·awaken-patrol exit127 死腿两月案·条文7 mac 变体）：
+    *.plist(.template) 的 ProgramArguments 禁「带空格命令整串塞单 string」——
+    launchd 直 exec 不解析引号，整串被当单个可执行文件名 ⇒ 每次触发必死、零症状。
+    判据（确定性 XML 正则零 LLM）：数组元素以 / 开头且含空格且非 shell 串位（前元素非 -c/-lc）⇒ FAIL；
+    元素字面 = -lc 或 -c 且后续元素含空格且无 ;/|/$ 多命令信号 ⇒ FAIL（单命令整串形态；多命令串在 bash -c 内合法·slice-watch 案；⛔launchd 直 exec 位无 bash 包裹时同形态必死）。
+    """
+    issues = []
+    for f in list(pkg.rglob("*.plist")) + list(pkg.rglob("*.plist.template")):
+        if not f.is_file() or ".git" in f.parts:
+            continue
+        try:
+            txt = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for arr in re.findall(r"<key>ProgramArguments</key>\s*<array>(.*?)</array>", txt, re.S):
+            strs = re.findall(r"<string>(.*?)</string>", arr, re.S)
+            for i, s in enumerate(strs):
+                s = s.strip()
+                _prev = strs[i - 1].strip() if i > 0 else ""
+                if s.startswith("/") and " " in s and _prev not in ("-c", "-lc"):
+                    issues.append(f"launchd整串形态(单arg含空格=exit127死腿): {f.relative_to(pkg)}: {s[:70]}")
+                if s in ("-lc", "-c") and i + 1 < len(strs) and (" " in strs[i + 1] and not strs[i + 1].strip().startswith(("-", "/"))) and "|" not in strs[i + 1] and ";" not in strs[i + 1] and "$" not in strs[i + 1]:
+                    # 纯可执行+空格路径的 -c 单命令串（多命令/管道/变量归合法包裹）只报最典型形态
+                    issues.append(f"launchd -c/-lc 整串形态: {f.relative_to(pkg)}: {strs[i+1].strip()[:70]}")
+    return issues
+
+
+_PS1_NOISE_ANCHOR = re.compile(r"-notmatch[^\n]*(log|tmp|ds_store)", re.I)
+
+
+def check_twin_semantic_parity(pkg: Path) -> list:
+    """检查⑯（2026-10-28·琥珀备份风暴案·条文68语义层延伸）：成对守护件 *.sh↔*.ps1（同目录同词根），
+    .ps1 含噪音排除/机制锚信号（notmatch .log 族）而 .sh 无对应信号（grep -vE / 白名单派生）⇒ FAIL。
+    病根：Win amber-watch.ps1 已验收的「白名单监听+噪音排除」语义，mac wrapper 未吸收→风暴存活两月。
+    保守防假红：仅对能机械配对的守护件族生效；新对加登记不改判据。
+    """
+    issues = []
+    noise_sh = re.compile(r"grep -vE|WHITELIST|whitelist|白名单", re.I)
+    for ps1 in pkg.rglob("*.ps1"):
+        if not ps1.is_file() or ".git" in ps1.parts:
+            continue
+        shp = Path(str(ps1).rsplit(".", 1)[0] + ".sh")
+        if not shp.is_file():
+            continue
+        try:
+            ptxt = ps1.read_text(encoding="utf-8", errors="replace")
+            stxt = shp.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if _PS1_NOISE_ANCHOR.search(ptxt) and not noise_sh.search(stxt):
+            issues.append(f"双端语义同构缺失(.ps1有噪音排除锚·.sh无对应机制信号): {ps1.relative_to(pkg).name}↔{shp.name}")
+    return issues
+
+
 def check_twin_section_parity(pkg: Path) -> list:
     """检查⑬（2026-10-21·verify双端同构缺腿反哺·安装包哲学条文68孪生同构律）：
     .sh↔.ps1 孪生文件「文件在位但检查段内容单侧演化」的盲区补腿。
@@ -1036,6 +1091,8 @@ def main():
         ("stdin编码对等(L2)", check_stdin_encoding(pkg)),
         ("占位符路径形态卫生(L3)", check_placeholder_shape_hygiene(pkg)),
         ("venv解释器形态平台派生(L4·Win反馈A族反哺)", check_venv_platform_form(pkg)),
+        ("launchd载体执行形态(检查⑮·条文7 mac变体·exit127案)", check_launchd_arg_form(pkg)),
+        ("双端语义同构(检查⑯·条文68延伸·amber风暴案)", check_twin_semantic_parity(pkg)),
         ("孪生件形状对账(检查⑬·条文68)", check_twin_section_parity(pkg)),
     ]
 

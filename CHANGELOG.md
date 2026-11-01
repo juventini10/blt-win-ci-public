@@ -33,9 +33,72 @@
 > 曾出现的 `version.md = 2.0.0-dev` 属自造状态后缀：一个号同时存在两种宣称串，
 > 实测一处后缀制造 5 处门禁红＋归档名污染（`V2.0.0-dev.zip`），已于 2026-10-01 废除并上门禁。
 
-<!-- LAST-PUBLISHED: 2.2.10 (GitHub release v2.2.10 · 2026-10-23 · 判据源=分发仓 Five-layer-memory-system 的 GitHub release 列表（Latest 标记为准·发布侧实查 `gh release list --repo <分发仓>`）。仓名此前未写进本行，2026-10-23 补入——实证：只写「GitHub 分发仓」会让发布侧查错仓、把「查不到 release」误判成分布缺失。⛔ 本行不得写账户名（隐私门禁按个人标识判红）。本行由发布侧每次对外发布时上移（写发布 Loop 封口清单·G 路径报告必核与 GitHub 实况一致，不一致=红）。消费方=INSTALL Step -0.9 第6点「本次更新了什么」抽取区间：本行版本段(不含)→顶段(含)。） -->
+<!-- LAST-PUBLISHED: 2.2.10 (GitHub release v2.2.10 · 2026-10-23 · 判据源=GitHub 分发仓 release 列表（发布侧实查）。本行由发布侧在每次对外发布时上移（写发布 Loop 的封口清单·G 路径报告必核该行与 GitHub 实况一致，不一致=红）。消费方=INSTALL Step -0.9 第6点「本次更新了什么」抽取区间：本行版本段(不含)→顶段(含)。2026-10-27 补记：v2.2.10 发布时本行漏上移（停 2.2.9）＝issue#8 实证的版本漂移一环，本批追认上移。） -->
+
+## [2.2.13] — 2026-11-01
+
+- **MiniMax Code 端装机链三处缺陷根治（装机链根治·2026-11-01·MiniMax Code 端）**——起因＝用户问「相关你的东西，要让用户通过安装包能正常安装使用」⇒ 沙箱**全新安装实跑**（非 dry-run·隔离 cfg-root）暴露三处断链（此前无人跑过全新机链路·作者机因 `~/.minimax/skills` 早已存在而掩盖 D3）：
+  - **D1 隔离链断（判据面≠落点面）**：`adapters/minimaxcode/setup.sh` 只认 `MINIMAX_CONFIG_DIR`/`MINIMAX_DATA_DIR`，⛔不认安装器委派时唯一透传的 `DOENGLINGZ_CONFIG_DIR`（hermes 同款认它·本端抄错取值入口）⇒ **隔离装写真机**（`--cfg-root` 形同虚设）。修法＝取值优先级补 `DOENGLINGZ_CONFIG_DIR` 首位（真机安装时其值＝capability `config_root`＝`~/.minimax` ⇒ 行为零变化）。
+  - **D2 半装（异常未捕获崩全局）**：`install_scripts.py` 的 `write_hook_fingerprints` 向 `<cfg>/plugins/bulutuo-guards/hooks/` 写 tmp 文件，而该目录**仅由端 setup 创建**；端 setup 缺席时 `FileNotFoundError` 未捕获 ⇒ **整个安装中止＝半装**（脚本中心 303 件已落·端注册面/自检/回执全无）。修法＝写前 `os.makedirs(..., exist_ok=True)`（幂等）＋写失败降级不崩（与本安装器既有「降级不阻塞·公共资产继续部署」风格一致·⛔不静默吞·显形告警）；`write_guard_baseline` 同形同修。
+  - **D3 通用 Skill 静默全失败＋自验证假绿（本批最重）**：`setup.sh` [4/6] 只在「整目录软链归一」分支里 `mkdir` skills 目录 ⇒ **全新机器上目录不存在**，`ln -s` 因父目录缺失全失败；而 `link_skill_dir` 失败后仍无条件 `return 0` ⇒ 计数照报「90/90」，自验证再照报 ✅「通用软链 0/2 件」＝**双重假绿** ⇒ 用户装完 **0 个通用 Skill**（只剩 2 个端专属实体）。修法三件＝建目录幂等（dry-run 不建）＋`ln` 失败回传失败（⛔失败不再计入成功）＋自验证改三态分账（通用软链 0 件且真源有件 ⇒ 🔴必红／真源无件 ⇒ ⏳待办／dry-run ⇒ 不判红）。
+  - **D4 端委派起不来即崩全局（同族·Windows 面）**：端 setup 以 `bash <setup.sh>` 委派，目标机无 bash 时（Windows 无 git-bash/WSL）`subprocess` 抛 `FileNotFoundError` 未捕获 ⇒ **整个安装中止＝半装**（公共资产也没落）。修法＝起不来即按「端接入未完成」降级不阻塞（沿用本段既有 rc≠0 语义·⛔不谎称端接入已完成·显形告警）。实证：`FileNotFoundError` 属 `OSError` 子类 ⇒ `except OSError` 可接住。
+  - **沙箱全新安装实跑读数（2026-11-01·修复后·隔离 cfg-root）**：安装器 exit **0**；三腿全绿＝有源（AGENTS.md 7137B / memory/user.md 2599B / agents/mavis/memory/MEMORY.md 3665B）＋被注册（插件 hooks.json **18 条**＝UPS 6＋Stop 8 全裹适配器＋SessionStart 4·插件 manifest 在位）＋被自检（**通用软链 90/90**＋端专属实体 2＋顶层普通目录）；升级参照系 `hook_fingerprints.json` 8405B 落位；`hook_baseline.json` 未写＝本端未声明 `guard_baseline_seed: py`·设计内；体检面 5 个 ❌（脚本中心/知识联邦引擎/数字分身套件/已造芯/记忆规则）＝**安装前体检时点读数**（装后实测 MC 内脚本中心 303 件、数字分身 10 项在位）＋造芯为用户引导项 ⇒ ⏳待办非失败。
+  - **真机零污染复核**：安装前后 `~/.minimax` 关键件 mtime 逐字未变（AGENTS.md 1792906258 / memory/user.md 1792720313 / hooks.json 1792933044）＋ skills 仍 92 项 90 软链 ⇒ 隔离装未写真机。
+  - **同族断链（traecn 端·同批已根治）**：`adapters/traecn/setup.sh` 原硬编码 `CFG="$HOME/.trae-cn"`（同样不认隔离变量）⇒ 同批已修（见下条「traecn 同款断链一并修」·⛔本段无未代改的他人 adapter）。
+  - ⚠️本批**版本号已进位 2.2.13**（修复级变更·《版本命名规范》§1 X.Y.Z 口径）。
+- **全端装机链隔离化 + 端注册面补齐（零版本变更·2026-11-01·MiniMax Code 端·续上条）**——起因＝用户追问「那你需要更新安装包吗？相关你的东西，要让用户通过安装包能正常安装使用」⇒ 把「遗留」全部转成「我做」：11 端逐一沙箱全新安装实跑（隔离 cfg-root＋独立 MC·非 dry-run），逐个把断链挖出来修掉。
+  - **D5 装机面注册面形态表缺 `openclaw_plugins`（硬中止型）**：安装器有**两条注册面分派**——核验面（L1858 `plugin_form`）认 3 种，装机面 `_REG_FACE_MAP` 只认 2 种 ⇒ autoclaw/lobsterai 一进来就「未知 hooks_registration_face」`return 1` ⇒ **装包当场中止·cfg 落点 0 文件**（沙箱实跑 autoclaw exit=1 实锤）。修法＝补第 3 种形态（路径与核验面 L1862 同源）＋插件承载型端的 ③ 注册改由端 setup 单点写（⛔否则会往宿主 openclaw.json 塞错面的 `hooks` 键）。
+  - **D6 装机链自证标志只有 1/8 端认**：安装器 C30 裁定「装机链内 MC 未成型＝⏳中途态不是失败」并注入 `BLT_INSTALL_CHAIN=1`，但**只有 qodercn 实现**⇒ 其余端（doubaowork/lobsterai/zcode）在**首次装机**（MC 目录树还没建）必被 MC 指纹硬拒 ⇒ 端接入面装不上。修法＝三端照抄 qodercn 同款范式放行。
+  - **D7 端 setup 委派早于公共资产部署（结构级）**：委派时 MC 还没成型 ⇒ 端指纹自检/分身核组装/模板取件落空 ⇒ 端面半残。修法＝公共资产与② 钩子部署落完后**二次委派**（端 setup 均幂等·二次跑只补 MC 依赖件）；二次 rc=0 ⇒ 撤销首次的「端接入未完成」判定。
+  - **D8 委派时端上钩子副本尚未部署 ⇒ 注册面命令指向错面**：端 setup 写注册面时路径择优查「①<CFG>/hooks/（端上副本）②<MC>/脚本中心/**（作者态）」⇒ 委派时 ① 还空 ⇒ 择优**回落 MC 路径** ⇒ 注册面命令与安装器部署面不一致 ⇒ 升级三态/内容指纹基线对不上。修法＝委派前先部署钩子副本（幂等）＋`MC_PATH` 全局提前落（⛔原在 argparse 之后才赋值⇒前置调用会 NameError）。
+  - **D9 全新机读宿主配置未防护（autoclaw）**：宿主 `openclaw.json` 是宿主自己生成的（安装器不写）⇒ 全新机上不存在 ⇒ `json.load` 抛 FileNotFoundError ＋ `set -e` ⇒ **整个端 setup 崩**（作者机有该文件⇒此病隐形）。修法＝存在性防护（读不到＝按「无可注入 workspace」继续·显形告警）。
+  - **D10 指纹判据引用作者态资产（跨端族）**：`核心层/CORE.md`、`情境层/动态状态快照.md`、`潜意识层/SHADOW.md` 是**作者机档案库才有**的目录，安装器装给用户的 MC **不装这三个目录**（真装件＝脚本中心/数字分身/知识库/记忆规则/记忆蓝图/记忆蒸馏）⇒ 拿它们当硬指纹 ⇒ **新用户必缺 ⇒ 该端装包必然端接入失败**（doubaowork/lobsterai/zcode 三端）。修法＝硬指纹只认安装器真装件；作者态件降为 ⏳待办（不判红）。
+  - **全端端根隔离化（6 端）**：各端 setup.sh 的端根变量一律以 `DOENGLINGZ_CONFIG_DIR`（安装器委派唯一透传键＝唯一隔离真源）为**首优先级**，自有 HOME 变量降为用户覆盖第二位——traecn（`$HOME/.trae-cn` 硬编码）、qodercn（`QODERCN_HOME`）、zcode（`ZCODE_HOME`＋3 处写死 `$HOME/.zcode` 的注册 env）、lobsterai（`LOBSTERAI_HOME`）、autoclaw（`DEFAULT_ROOT`）、zwork（`PI_AGENT_DIR` 覆盖口）＋doubaowork 的 launchd 面（`~/Library/LaunchAgents`）在隔离装时显形跳过（⛔隔离装不写真机 LaunchAgents）。
+  - **traecn 同款断链一并修**：D1 同族（不认隔离变量）＋D3 弱族（`ln -s` 失败仍无条件 `return 0` ⇒ 计数假绿）＋自验证补「通用 Skill 软链」腿（三态分账）＋dry-run 不写盘（原写法 dry-run 照样建 90 条软链＝看着像演练实际写盘）。
+  - **发版前置门禁面同族防护**：`verify.sh` 的 `bash` 调用无护 ⇒ Windows 无 bash 时 `FileNotFoundError` 未捕获 ⇒ 门禁自身崩 ⇒ 改为显形判失败（⛔门禁缺失不能装作通过）。
+  - ⚠️本批**版本号已进位 2.2.13**＋**重打包**（V2.2.13.zip 归档 _release/·含 .sha256 与 release-manifest）——发版读数（件数/字节/校验和）以同目录 `release-manifest-V2.2.13.json` 与 `布洛陀-全平台安装包-V2.2.13.zip.sha256` 为准（⛔不把 zip 自身校验和写进包内·自指循环）。
+- **发版闸自纠两处（2026-11-01·MiniMax Code 端·打包门禁实跑逮出）**——本批首次正式跑 `generate_release.py` 打包 ⇒ **门禁自身报红 6 项**，逐项分诊后判定其中 2 项是**本批引入的自引入缺陷**（不是存量债），已当场根治：
+  - **D15 `_reg_face` 未绑定 ⇒ 整个安装中止（最重·workbuddy 平台全断）**：`install_scripts.py` 的 `_reg_face` 原只在 `if platform != "workbuddy"` 分支内赋值（读 capability），却被下游**共享路径**引用（`_hook_reg_mode == "setup" or _reg_face == "openclaw_plugins"`）⇒ workbuddy 平台走 WB 分支（不读 capability）⇒ 该名未绑定 ⇒ `UnboundLocalError` ⇒ **整个安装中止** ⇒ 钩子 0 件落盘 ⇒ 端到端实装门禁 ①②③④⑤ 五项全红。病根＝把分支内局部名当共享名用（与「装机链自证标志只有 1/8 端认」同族）。修法＝与 `_hook_reg_mode` 同级**分支前预置默认值**（workbuddy 走默认注册面·⛔行为与修复前逐字一致）。**暴露面之因＝本批多端沙箱扫描只覆盖 11 个 adapter 端·漏了 workbuddy 平台分支**（WB 端无独立 setup 入口·装机面与 adapter 面不是同一条路）⇒ 补扫 workbuddy 平台分支（端到端门禁即该面的实跑）。
+  - **D14 bash 变量名紧跟全角标点 ⇒ `unbound variable`**：`adapters/zcode/setup.sh` 的 `$_ap（作者态资产…）`——bash 在 UTF-8 locale 下把全角首字节并入变量名 ⇒ 实际引用的是另一个未定义变量名 ⇒ `set -u` 下端 setup 在 [1/8] 指纹检测处直接崩（沙箱实跑 zcode exit=1 实锤）。修法＝凡「变量后紧跟非 ASCII」一律改花括号 `${VAR}`。同族**全包机械扫描**（正则 `\$\{?([A-Za-z_]\w*)\}?([^\x00-\x7f])`·排除注释）⇒ 另逮到 `references/记忆琥珀/scripts/amber_fswatch_wrapper.sh`（白名单缺失分支·`set -u` 下必崩）⇒ 修真源 `~/.openclaw/scripts/` 后经镜像链推到包内，并同步修 win-ci-workspace 与两个发布面副本。
+  - **其余 4 项为版本宣称位/文档洁净度**：`rollback.ps1` 头未随 `rollback.sh` 进位到 2.2.13、`references/twin-sections.json` 残留旧版本号字面量、CHANGELOG 本段含作者口语称谓（脱敏后重写）——均已逐项修齐。
+  - **D16 发布面门禁「只打 stdout 尾巴」⇒ 崩因不可见 + 抗瞬态**：安装器安装前的「发布面内容级门禁」失败时**只打印子进程 stdout 末 1500 字符**，**stderr 完全不打印** ⇒ 判据崩在哪一处无从查证（本轮两次据此把「瞬态」误判成「真缺陷」）。同时实测到该门禁**会飘**：11 端沙箱全新安装串行跑里 1 端（lobsterai）被判「包内容有缺陷」而**拒装**，而同包直跑 0 缺陷。根因＝镜像同步守护（launchd `com.qclaw.mirror-sync`）在门禁**扫描期间**改写包内文件 ⇒ 判据遍历中途遇文件消失 ⇒ 子进程崩 ⇒ 非 0 退出。修法＝①失败时打印子进程 **stderr**（可诊断）②**有界重试 1 次**（包树稳定后必过；仍红才拒装·⛔不无限重试·⛔不静默吞·两次结果都显形）。
+  - **发版读数（2026-11-01·本段包自述）**：正式打包门禁全绿＝端到端实装门禁通过（隔离 HOME + 空记忆中心）＋Loop 判据集 4 项通过（源包一致/隐私/冒烟/跨平台）＋守卫 9b/9 通过＋三方一致性门禁（three_way_gate）PASS；发版期间**镜像同步守护已临时停用**（发版需确定性·事毕原样恢复）⇒ 门禁读数不受并发改写干扰。
+- **12 端装机链实跑结论（沙箱全新安装·隔离面·非 dry-run·2026-11-01）**：✅ exit=0 七端＝autoclaw / doubaowork / minimaxcode / qodercn / traecn / zcode / zwork ＋ workbuddy 平台分支（隔离 HOME·52 件钩子落盘）；⏳ exit=1 两端＝hermes（沙箱无宿主运行环境·`[7/8] 运行态验证未过`＋事件面探针异常）、lobsterai（宿主应用未就绪·`未找到 openclaw.json`）⇒ **宿主起来后需在真机复核**；🚫 exit=2 两端＝qwen / teleagent（`adapters/` 下仅 README.md·无 capability.yaml⇒安装器明确拒绝·**设计内占位端**）。Windows 装机链：**无 Windows 环境⇒未实跑**（物理边界·非推诿）。
+
+## [2.2.12] — 2026-10-29
+
+- **知识检索：下钻通道接通**——注入锚点新增「源文件」行：蓝图卡给 `source_files`（含锚点）、概念卡把 `source_cards` 的「系统日志/日记感悟 YYYY-MM-DD」解析成真实文件路径（实测 505 条源 0 缺失）；立场/技能/读书卡自足或源为 PDF，不注入（防假下钻）。
+- **CE 精排（cross-encoder）定性为可选工具·默认关**：实测价值真实（模糊题 Hit@5 5→9·NDCG 0.172→0.405·moved_top5 4~5），但单次 5~7s 不可降（候选 15→10 效果退光已回滚、max_len 256 伤精确题）⇒ 默认关，`KB_RERANK=1` 或 `--rerank` 显式启用。
+- **注入链路**：fallback（意图门未命中→语义兜底）显式免 CE 慢代价；serve 启动加 CE 后台预热（开时立即可用）。
+- **门0 验收口径根治**：基线重定 `v0.4.1-gate0-exact-split`（精确 62%/NDCG 0.519·模糊另计·带池容 4835 与数据截止日），消除「跨题集比较」造成的假退化告警；Q1/C3-Q4/F-Q1 三题改 ALL 口径。
+- 休眠件清点：真休眠 3 件（feedback_suggest / gap_damage_observer / kb_copy_fingerprint_guard），未删待裁。
+- **WB端成长箱反哺收口批（2026-11-01·10 条逐条实查后按类落地：4 根治+2 半修收口+2 随批归位+2 已在位）**——
+  ① **A1 `init_distillation_center.py` 缺件根治**：脚本自 `记忆蒸馏/` 归位 `脚本中心/`（脚本家·单一副本），mirror-sync 新条目随包投递（装机全量面自动落 `[记忆共享中心]/脚本中心/`）；system-logger D4 / daily-buddy 月报第7步 / growth-box C6 三处活引用同步改指。此前引用面在包而件不在＝新装兜底分支执行不存在的脚本（WB 全包 find 0 命中实证）。
+  ② **A2 `log_kb_feedback.py` 缺件根治**：检索反馈 P0 写入器 mirror-sync 新条目随包（deident 后落 `[记忆共享中心]/脚本中心/`，`feedback_detect` 三候选域即接住）。此前端上检出反馈必报「未落账」，闭环断在最后一环。
+  ③ **B3 蒸馏结论枚举语义过载根治**：`growth_box_schema_check.py` v2.4.0 结论枚举按门禁分支——E3.5 保持反哺三值，C3.5 新增蒸馏四值（晋升/合并/保持/进知识层·flow-C §C3.5 官方词表）＋联动腿「C3.5 成行=三子步骤已过·签名须✅」。此前 C3.5 无值可填，WB 实测四轮才过闸、报告留 6 行反语义「❌不可反哺」。self-test 17→19 夹具全绿。
+  ④ **B1 NONE 语义过载半修收口**：`awaken_distill_due_check.py` v8.5.4「0 可解析行」stderr 显形 `NO_ROWS`（stdout 契约不动·防炸 patrol 消费链），patrol.md §2 补输出语义段——schema 漂移不再伪装"无待办"静默（WB 实测逾期 23 天全程无告警）。
+  ⑤ **C1 stats 口径随输出自报**：`stats.py` v1.3.0 输出头部打印计数口径行（记录块计1/类比豁免语法/扫描根），口径声明与实现同面可质证（WB 实证 PAT-050 机械 4+ 实为独立 2 次须人工拆解）。
+  ⑥ **D1 周蒸馏节律定义**：定机制不替无主类型编造归属——patrol.md §2 / 蒸馏中心两骨架（安装器骨架规则4·init 脚本 v1.2 规则6）/ system-logger D4 显式声明「自定义蒸馏类型合法·『下次』填 YYYY-MM-DD 即纳入三级到期检测（周蒸馏建议节律=完成日+7天）」；`distill_due_core` 对任意类型+日期天然支持。
+  ⑦ **实查已在位**：A3（changelog_guard 路径·V2.2.10 代 B4 根治）/A4（骨架 --out 防错句·daily-buddy v3.12.1）/C2（扫描根已同 `成长箱/learnings`）不重复修；**B2（extract_concepts skipped_sources 同码）包源未复现**——现行两语义已分通道（ingest skip 独立文案族／skipped_sources=AI 显式声明+系统日志禁跳强校验），待 WB 端附行号+版本号回溯。
+- **安全词收窄同步（零版本变更·2026-11-01·ZCode 端·用户裁「现在就只有安静模式」）**——四端模板安全词面与机制脚本对齐：①`adapters/zcode/templates/AGENTS.md`＋`adapters/qodercn/templates/AGENTS.md` 安全词表删「闭眼执行/忽略原则」两行，安静模式行改写为新定义（只有真真正正的指令＝明确启动指令/Skill 事件腿才能启动 D3·保留 10-19 定稿的穿透/不受影响语义）；②`adapters/zwork/templates/SOUL.md`＋`adapters/doubaowork/templates/SOUL.md` 回复模板条件句「闭眼执行或没分歧时跳过」→「安静模式或没分歧时跳过」（失效引用修正）；③机制面=注入器 v1.39 QUIET 词表收窄已随同步链入包（references/hooks|scripts|digital-twin-devtools 三副本实查 v1.39·回归 30/30＋24/24）；④归属补登=mirror-manifest package_only_files_v2 补 zcode/zwork/doubaowork 三模板条目（49→52·改前先验镜像归属·entries 858 条零映射实证直写合法）。⚠️本批未重打 zip——V2.2.12.zip 保持 2026-11-01 15:26 构建态，重打包待发版闸。
 
 ## [2.2.11] — 2026-10-26
+- **记忆琥珀监听面收窄根治（守护风暴·作者机实证 2026-10-28 单日 10,881 条 .bak）**：macOS wrapper（`references/记忆琥珀/scripts/amber_fswatch_wrapper.sh`）旧版整目录监听端配置根（~/.workbuddy 等），把守护/工具高频自写文件（automation.log/心跳/cache）算成变化→备份风暴；Win amber-watch.ps1 早已用「白名单文件级监听+噪音排除」（2026-10-08/2026-10-27 双实现），mac 未吸收=平台不对称病根。本批向 Win 语义对齐：①监听面自动从白名单派生（amber-whitelist.txt 单一真源，含 `[端配置根]` 端映射/尾斜杠归一/防递归排除/`[ -e ]` 存在性过滤）②白名单缺失回退旧目录级+显形告警（兼容旧装机）③模式B轮询补 .log/__pycache__/.tmp 噪音排除④候选/最终双清单显形（差值=漂移面可审）。配套：amber-whitelist.txt.template 头部加「监听真源」口径注记；step6.5d 整节重写（废除人肉改 PATHS 旧语义）。沙箱验收 9/9（端映射/收窄/防递归/尾斜杠/回退/噪音各腿）；作者机本机同步止损已落地（kickstart 后 75 秒 .bak delta=0 实证）。真源=~/.openclaw/scripts/amber_fswatch_wrapper.sh 经 mirror-sync 推送包面（非直改）。
+- 同批（发布门禁检出·2026-10-26/27 存量缺陷本轮由 generate_release 拦截暴露后根治）：①awaken-patrol macOS 载体 plist 模板 `/bin/bash -lc "整串"` 形态修——launchd 直 exec 把带空格命令当单文件名，每次触发必死 exit127、用户端静默零成功痕迹（作者机 err.log 双条实证）；改 env 逐 arg 直 exec，真机跑绿（stdout 现「[完成] 巡检结束」）；配套执行体 finish() 补 stdout 收口标记（双轨痕迹：自有日志人类可读+stdout 给 verify 机器判据），verify.sh 4.8 patrol 腿补自有痕兼容+未装 PEND 态。②sucair bp_factory/bp_causal_ab/bp_semantic_dedup 三件 `.venv-st` 解释器路径补平台分支（`_venv_py()`：unix=bin/python，Win=Scripts\python.exe，跨平台门禁判据）+ bp_causal_ab 工架目录 `qoder-cn-work` 写死中性化；沙盒 py_compile+CLI 冒烟全绿。
+- **成就链 Windows 必炸根治（用户实测反馈·2026-10-27）**：`update_diary_achievement.py` 原守卫判据「`scripts/achievement_tracker.py` 必须是指向真源的软链，否则 SystemExit」在发布包形态下必然触发——发布包构建时该文件本就复制为普通文件（同族共享组件·见 daily-buddy CHANGELOG 软链归属声明），且安装器从不创建该软链，故**任何平台干净安装后成就模块都无法由脚本渲染**（Windows 只是额外断掉了 `rm + ln -s` 自救路径，非 Windows 专属缺陷）。沙箱三态实证：实体副本 exit=1 拦截 / 软链 exit=0 放行 / 0 字节 exit=1 拦截。
+  改造为「内容仲裁 + 真源自愈」：①软链指向非真源仍拦（防护不削弱）②副本与真源内容不一致 → 告警并回退真源 ③副本缺失 / 0 字节 → 自动回退真源。新增四态回归 `references/skills/daily-buddy/tests/test_achievement_chain.py`（含软链指错负例）。**版本号未进位**——按作者 2026-10-27 裁定，本次改动并入 2.2.11 未发布内容，发版窗口统一处理。
+- **GitHub issues #1-#8 外部用户反馈根治批（tiger5325·2026-10-26 报·Windows 11 真机·八连报全采纳）**：qodercn_config_guard v0.28 + doenglingz_level_declare_guard v1.12 + skill_write_gate_guard v0.11 + edit_heading_guard v0.3（各三副本同 blob 同改·md5 一致性复核通过）——
+  ① #1 Windows 判活全红根治（6/6 实挂全报 NEVER_RAN 而产品回执 hits=1007）：`_needle_of` 认不出带引号脚本 token + 回执 display_text 转义未还原（两处叠加）⇒ 去引号再判后缀 + `_unescape_echo`/`_echo_norm` 回执侧归一 + 四处 `_match` 收口前归一 + 同族引号免疫五处补齐（_who/_hook_chain_mtime/_extract_script/mount_args_smoke/_direct_exec_missing_x——同病不漏修）。
+  ② #2 查⑥ Windows 结构性失明根治（「红的是夹具、瞎的是判据」）：`SCRIPT_RE` 补盘符分支 `[A-Za-z]:[\/]`（旧式丢盘符⇒exists 恒假⇒untracked/outside 恒空）+ git pathspec 的 relpath 统一正斜杠（git 里 `\` 是转义符）；自测 15/16 在 Windows 恒失败同根。
+  ③ #3 GUI 回执源平台感知：非 darwin 且未显式配置 ⇒ 按 N/A 静默（显式配错照报）——Windows 每轮「GUI hooks.log 未找到」+ report 恒 exit1 的不可行动噪音归零。
+  ④ #4 形态感知 check/liveness：内置 LIGHT_BASELINE（6 针·只用脚本名不带参数——带参针子会被引号切断假报缺失，参数合法性归 mount_args_smoke）+ LIGHT_MAX_MOUNTS=8 + FORM 显形——「部署形态不同」不再报成「欠账 62 条」（诱导用户把不属于自己形态的钩子灌进活跃产品端=真风险）；判据强度不降：轻装丢针照报 MISSING、冒新针照报 EXTRA；空机/陌生小集合仍按全装（⛔不掩盖·自定义形态正道=absorb 三证收编）；liveness 同源防轻装端多出 56 条假 NEVER_RAN。
+  ⑤ #5 git_backing 豁免 settings 所在配置目录内适配件（~/.qoder-cn/.adapter/ 等——不可行动告警归零，检测范围不变）。
+  ⑥ #6 OUTPUT_LEVEL 判据源缺失显形（判据空转根治·假绿同族）：LEVEL_SRC 可 env `DOENGLINGZ_LEVEL_SRC` 覆盖；源缺失 ⇒ 台账 level_src_missing + 本回合真需要判（童灵在场且提 TSL/声明 D3）时显式报警，⛔静默全灭不复发。
+  ⑦ #7 skill_write_gate_guard `--selftest` 空桩假绿根治：注释宣称「负例夹具 8/8」实为 pass 零断言（三副本同病）——补真实自测（负例 8＋正例 5＋变异自证·全临时目录隔离不碰真管辖目录）。
+  ⑧ #8 版本单源：doenglingz_level_declare_guard 自测横幅手写 v1.9 vs 文件头 v1.11 两本账 ⇒ `__version__` 常量唯一真源（横幅/输出一律引用，⛔手写数字）；edit_heading_guard `re.split` 位置 maxsplit → `maxsplit=1`（Python 3.13 起 DeprecationWarning·报告制守卫的告警混入产品回执证据近邻·全版本行为不变）。
+- 自测基线（Mac 作者态实跑）：qodercn 95/0（+11）· level_declare 22/22（+T22）· skill_write_gate 14/14（8+5+MUT）· edit_heading 6/6；Windows 形状模拟（盘符正反斜杠/带引号命令/转义回执）函数面单测通过。
+- 版本传承欠账同批追认：[2.2.10] 段补录（下节）+ LAST-PUBLISHED 锚行上移 2.2.10 + 仓库 description 对齐（v2.2.4→实发布版）。
+
 ### 系统文件同步（零版本变更·2026-10-26·Zwork 端·作者令「改包不升版本号·只记更新文件」）
 
 - **5.5 检索与卡号纪律补齐 ×5**：autoclaw/doubaowork（09-22 版）/qodercn（10-01 版）/traecn（09-22 版）/lobsterai templates 缺上游 2026-10-07 新增段（zwork 10-08 版已在）——按 zwork v1.0-generic 脱敏措辞补插于第 5 条后；各文件 frontmatter 版本随手随动（包版本号不动）。

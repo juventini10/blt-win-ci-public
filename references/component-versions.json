@@ -1,35 +1,35 @@
 {
- "package_version": "2.2.11",
- "as_of": "2026-10-27",
+ "package_version": "2.2.13",
+ "as_of": "2026-11-01",
  "components": {
-  "system_rules": "v8.45",
+  "system_rules": "v8.52",
   "skills": {
-   "awaken-memory-system": "8.5.3",
-   "clock-loop": "4.21.11",
-   "daily-buddy": "3.54.1",
-   "good-good-study": "1.2.15",
-   "growth-box": "4.15.6",
+   "awaken-memory-system": "8.5.4",
+   "clock-loop": "4.21.13",
+   "daily-buddy": "3.54.4",
+   "good-good-study": "1.2.16",
+   "growth-box": "4.16.0",
    "meta-aletheia": "3.11.1",
    "shall-we-talk": "1.7.9",
-   "sucair": "4.17.0",
-   "system-logger": "3.19.9",
-   "triwich": "4.12.17"
+   "sucair": "4.20.0",
+   "system-logger": "3.19.10",
+   "triwich": "4.12.26"
   },
   "script_system": {
-   "files": 298,
+   "files": 301,
    "version": "1.0.0"
   },
   "digital_twin": {
    "as_of": "2026-10-08",
    "scope": "运行件白名单（09-19 融包终裁·09-20 方案A：运行件随包·本体内容件禁）",
    "files": {
-    "devtools": 264,
+    "devtools": 265,
     "scripts": 16,
     "gates": 5,
     "k2-slice-generator": 3,
     "hexaco": 7,
     "guards": 4,
-    "onboarding": 3
+    "onboarding": 4
    },
    "hooks_by_platform": {
     "settings_json_ends": "UPS doenglingz_inject_prompt + Stop twin_verdict_ledger + Stop twin_changelog_guard（install_scripts 注册）",

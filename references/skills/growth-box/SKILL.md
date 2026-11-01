@@ -14,7 +14,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/growth-box/
 modifiable: true
-version: "4.15.6"
+version: "4.16.0"
 license: MIT
 complies_with: 文件格式规范 v2.0.0
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"

@@ -30,7 +30,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/sucair/
 modifiable: true
-version: "4.17.0"
+version: "4.20.0"
 license: MIT
 complies_with: 文件格式规范(⛔不写版本号·以源 frontmatter 为唯一真相源=#142)
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
@@ -277,6 +277,10 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 | `flow-read.md` | 执行本体（Step1-4+自检清单·SKILL.md 逐字迁移件） | 每次执行前（熔断器放行后） |
 | `academic-sources.md` | 学术来源与参考映射表（7条） | 设计溯源时 |
 | scripts/note_validator.py | 合规「规则单源」：笔记/卡片 frontmatter 校验 + 卡片正文≤600字（check_body_length）+ 题库校验（validate_quizbank）+ 产物机检（lint）+ 条件必填（source_type 驱动）+ INDEX 一致性校验（--index-check） | 写入前自检/写后机检 |
+| scripts/bp_quote_verify.py | 蓝图卡真值机检：引文逐条回源 + source_files 节锚逐条可达（2026-10-27 批次1 建·flow-read B5 门禁消费·空集判红防假绿） |
+| scripts/bp_factory.py | 蓝图卡出厂流水线：一条命令跑完 lint+真值机检+覆盖度台账（口径唯一声明处）+（--ship）向量/serve/真尺+越位同现监控；--reserve 申请连续 BC 号防多窗撞号 |
+| scripts/bp_c1_scan.py | 蓝图卡 C1 候选预筛：从大文件机械抽候选判断锚并按字节预算分片，AI 定点读不整读；--gap 报「有候选无卡覆盖」的节 |
+| scripts/bp_causal_ab.py | 蓝图卡因果实验（真反事实）：物理摘除本生产线卡片→重建缓存→跑 gate0 真值题→还原并三重复验；批边界跑一次，出「挤位/增益」因果数（⛔后处理近似冒充反事实） |
 | scripts/dedup_recall.py | Step 2.0 确定性召回：category+tags 交集检索（G4实体归一内置） | Step2.0写卡前 |
 | scripts/assign_kb_no.py | kb_no 机器编号发号与台账同步（--allocate 领号 / --sync 补漏+刷账+对账） | Step2.2领号 / Step3写入后 |
 | scripts/fetch_source.py | Step 1 格式归一化：URL抓取(crawl4ai本地)+文件转MD(markitdown)，⛔不走云服务 | Step1源为URL/非MD格式时 |

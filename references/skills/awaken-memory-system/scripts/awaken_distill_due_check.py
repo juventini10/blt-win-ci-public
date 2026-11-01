@@ -4,6 +4,8 @@
 
 输入：蒸馏中心.md 路径（默认 [记忆共享中心]/记忆蒸馏/蒸馏中心.md·可用位置参数覆盖）
 输出：每行一条待办 DUE|<级别>|<蒸馏类型>|<预期下次>|<说明>；无待办输出 NONE
+      v8.5.4：0 可解析行（格式漂移/空文件）≠ 无待办——stdout 契约仍为 NONE（消费者
+      patrol.py/SKILL V3 只认该字面），但 stderr 显形 NO_ROWS 警告，静默假绿通道关闭。
 退出码：0=检测成功（含无待办）；1=文件缺失/读取失败
 设计约束：⛔不硬编码蒸馏类型（动态解析·未来新增类型自动支持·patrol.md §2）；
           ⛔只读不写（检测不越界写入·跨 Skill 边界）。
@@ -139,6 +141,15 @@ def main():
     rows = parse_center(path)
     if rows is None:
         sys.exit(1)
+    if not rows:
+        # v8.5.4（WB反哺 FB-20260924-003 半修收口）：「0 可解析行」与「有行但无到期」
+        # 旧实现同出 NONE ⇒ schema 漂移伪装成"无待办"静默（WB 实测一条逾期 23 天的
+        # 蒸馏全程无告警）。stdout 契约不动（patrol.py check_distill 只认 "NONE" 字面·
+        # SKILL V3 同契约），漂移显形走 stderr——人跑当场可见，patrol 落日志可查。
+        print("⚠️ NO_ROWS: 蒸馏中心解析出 0 条账行（格式漂移或空文件？须人工查表头/列序）: %s" % path,
+              file=sys.stderr)
+        print("NONE")
+        return
     due = []
     for typ, (_month, nxt) in latest_expected(rows).items():  # v8.5.2：取数随 rows 走，位置参数生效
         level, detail = classify(nxt)

@@ -3,7 +3,7 @@ author: 皮叔
 title: Skill 模板与来源
 type: reference
 status: active
-version: "v6.2.5"
+version: "v6.2.6"
 date: 2026-10-23
 summary: Skill结构模板与理论来源参考
 source: 记忆蓝图/03_开发规范/Skill架构规范/Skill模板与来源.md

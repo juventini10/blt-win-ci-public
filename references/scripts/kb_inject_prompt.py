@@ -29,7 +29,7 @@ try:
     import sys as _v9sys; _v9sys.stdout.reconfigure(encoding="utf-8"); _v9sys.stderr.reconfigure(encoding="utf-8"); _v9sys.stdin.reconfigure(encoding="utf-8")
 except Exception: pass
 import sys
-import os
+import os, re
 import json
 import time
 import signal
@@ -164,7 +164,7 @@ def is_kb_scene(task):
     return hits
 
 
-def _serve_search(task):
+def _serve_search(task, rerank=None):
     """快通道：问常驻引擎 kb_serve.py（含意图门+检索）。成功返回 (scores元组列表, 桶名列表)；
     未命中知识场景返回 ([], [])；引擎不可达/任何异常返回 None → 回退本地冷跑。"""
     try:
@@ -183,7 +183,7 @@ def _serve_search(task):
         except Exception:
             pass
         s.connect(_sock)
-        s.sendall((json.dumps({"task": task, "k": INJECT_TOPN}) + "\n").encode("utf-8"))
+        s.sendall((json.dumps({"task": task, "k": INJECT_TOPN, "rerank": rerank}) + "\n").encode("utf-8"))
         buf = b""
         while not buf.endswith(b"\n"):
             chunk = s.recv(65536)
@@ -196,7 +196,7 @@ def _serve_search(task):
             return None
         scores = [(h["score"], h["path"],
                    {"src": h.get("src", ""), "title": h.get("title", ""),
-                    "summary": h.get("summary", "")}, h.get("matched", []))
+                    "summary": h.get("summary", ""), "usage": h.get("usage", "")}, h.get("matched", []))
                   for h in resp.get("hits", [])]
         return scores, resp.get("buckets", []), resp.get("nat")  # A4b inject通道补录(2026-10-17 漏检审计)
     except Exception:
@@ -229,6 +229,24 @@ def main():
     _inject(task)
 
 
+_FB_STAT = {}
+
+
+def _log_gate_miss(task):
+    """门未命中留痕：只写哈希/长度/时间，⛔不落原文（隐私）。"""
+    try:
+        import hashlib, json as _j, os as _o, datetime as _d
+        rec = {"ts": _d.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+               "h": hashlib.sha1(task.encode("utf-8")).hexdigest()[:12],
+               "len": len(task),
+               "fb": _FB_STAT.get("score")}
+        _p = _o.path.expanduser("[记忆共享中心]/脚本中心/知识联邦引擎/logs/kb_gate.jsonl")
+        with open(_p, "a", encoding="utf-8") as f:
+            f.write(_j.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
 def _inject(task):
     if not task or not task.strip():
         return
@@ -240,6 +258,18 @@ def _inject(task):
         #    未命中知识场景直接放行——引擎语义兜底不得越过本地关键词门。
         hits = is_kb_scene(task)
         if not hits:
+            # 2026-10-29（任务卡§五十/FU-234）：门未命中留痕（只记哈希，不存原文）+ 可选保底
+            if os.environ.get("KB_GATE_FALLBACK", "1") == "1":
+                _sv = _serve_search(task, rerank=False)   # 门未命中的 fallback：语义兜底，⛔不付 CE 慢代价（§九十七）
+                if _sv is not None and _sv[0]:
+                    _top = _sv[0][0]
+                    _sc = _top[0] if isinstance(_top, tuple) else 0
+                    _FB_STAT["score"] = round(float(_sc), 4)
+                    if _sc >= float(os.environ.get("KB_GATE_MIN_SCORE", "0.09")):
+                        _emit(_sv[0][:1], [])   # 只给 1 张，防噪声
+                        _log_gate_miss(task)
+                        return
+            _log_gate_miss(task)
             return
         # ② 快通道：常驻引擎检索（毫秒级）；not None 即采纳
         served = _serve_search(task)
@@ -297,6 +327,43 @@ def _hp_emit(ctx):
     return "text"
 
 
+def _card_source_files(path, limit=3):
+    """读蓝图/索引卡 frontmatter 的 source_files（下钻指针·2026-10-29 任务卡§八十三）。
+    只认卡自己登记的源文件清单；读不到返回 []，⛔不影响主注入。"""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            head = f.read(4000)
+    except Exception:
+        return []
+    if not head.startswith("---"):
+        return []
+    m = re.search(r"(?ms)^source_files:\s*\n((?:\s*-\s*.+\n)+)", head)
+    if not m:
+        # 概念卡分支（2026-10-29 阶段二）：source_cards 形如「系统日志 YYYY-MM-DD/小节」「日记感悟 YYYY-MM-DD」
+        # → 解析成真实文件路径（实测 505 条源 0 缺失）；解析不到就⛔不给，防指空。
+        m2 = re.findall(r'^\s*-\s*"?(系统日志|日记感悟)\s+(\d{4}-\d{2}-\d{2})', head, re.M)
+        if not m2:
+            return []
+        _logs = os.path.expanduser("[记忆共享中心]/工作日志/系统日志")
+        _diary = os.path.expanduser("~/[日记仓库]/1-每日计划/01-日记")
+        _out = []
+        for _kind, _dt in m2[:limit]:
+            _p = (os.path.join(_logs, "系统日志_%s.md" % _dt) if _kind == "系统日志"
+                  else os.path.join(_diary, _dt[:7], "%s.md" % _dt))
+            if os.path.exists(_p):
+                _rel = os.path.relpath(_p, os.path.expanduser("~"))
+                if _rel not in _out:   # 同一天源可能被多条 source_cards 重复指向 → 去重（保持原序）
+                    _out.append(_rel)
+        return _out
+    out = []
+    for ln in m.group(1).splitlines():
+        v = ln.strip().lstrip("-").strip().strip('"').strip("'")
+        # 只收真文件指针（.md / 路径 / 锚），滤掉正则顺带抓到的下一字段名
+        if v and (".md" in v or ("/" in v and not v.startswith("#"))):
+            out.append(v)
+    return out[:limit]
+
+
 def _emit(scores, bucket_names):
     """格式化注入文本：锚点层（title+path+summary+理由）·字符预算截断·端感知输出"""
     used = 0
@@ -308,7 +375,10 @@ def _emit(scores, bucket_names):
         sc = f"{s:.4f}" if s < 1 else f"{s:.1f}"
         entry = ("[%d] %s | %s\n    路径: %s\n    命中: %s | %s"
                  % (i, d.get("src", ""), d.get("title", ""), rel,
-                    ", ".join(matched[:6]), d.get("summary", "")[:60]))
+                    ", ".join(matched[:6]), (d.get("usage") or d.get("summary", ""))[:90]))
+        _srcs = _card_source_files(p)
+        if _srcs:
+            entry += "\n    源文件: " + ", ".join(_srcs) + "（可直读或 --drill 下钻）"
         if used + len(entry) > CHAR_BUDGET:
             break
         used += len(entry)

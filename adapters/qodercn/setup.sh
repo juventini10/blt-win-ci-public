@@ -20,7 +20,10 @@ set -uo pipefail
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 PKG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 AD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-QODERCN_HOME="${QODERCN_HOME:-$HOME/.qoder-cn}"
+# ⚠️ 2026-11-01 隔离链根治（全端统一口径）：安装器委派时唯一透传 DOENGLINGZ_CONFIG_DIR
+#   （＝本端配置根·隔离装时被 --cfg-root 覆盖）⇒ 各端端根变量一律以它为首优先级，
+#    自有 HOME 变量降为用户覆盖第二位（⛔否则隔离装写真机·验证失真）。
+QODERCN_HOME="${DOENGLINGZ_CONFIG_DIR:-${QODERCN_HOME:-$HOME/.qoder-cn}}"
 DRY="${DRY:-0}"
 FAIL=0
 

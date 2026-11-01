@@ -48,6 +48,8 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
   - ✅DO `python3 "${BULUO_PKG_ROOT:-[记忆共享中心]/发布库/五层记忆系统/布洛陀-全平台安装包}/references/scripts/platform_compat.py" "${BULUO_PKG_ROOT:-[记忆共享中心]/发布库/五层记忆系统/布洛陀-全平台安装包}"`
     L1 静态检查:必含文件(INSTALL.md/CHANGELOG/步骤文件)+无 `~/` 之外的绝对路径残留+skills(白名单9)/templates(记忆蓝图)/步骤结构完整 → `0 fail`。含检查⑩单平台路径假设(硬编码 /tmp/ 无平台声明→FAIL·源自 awaken v7.16→v7.20 心跳路径五版误报)、检查⑪发布者工具泄漏(用户端运行指令引用 buluotuo-release-sync/changelog_guard/知识联邦引擎等发布者专属工具而无 N/A 降级声明→FAIL·源自 mirror-sync 守护判定第二次复发，准入标准=确定性grep+零LLM裁决+有复发史，1.5.3新增)与检查⑫共享中心目录名硬编码(安装脚本默认值写死单一目录名如 `${MEMORY_CENTER:-$HOME/个人AI档案}` 且无候选列表/探测逻辑→FAIL·源自 DSH 加强包 v0.1.1→v0.1.2 目录名通用化改造：不同用户共享目录名不同(个人AI档案/共享中心/记忆中心…)，写死单一默认值=其他用户不设环境变量直接跑=误报"未装布洛陀"；隐私检查只管绝对路径泄漏、没管"默认值写死单一目录名"的适配性死角——Loop 首轮未发现，1.5.4新增)。
     > 已知局限(检查⑪):现靠黑名单枚举工具名,清单外新工具漏报;治本=路径特征法(抓 `/开发工具/` 子路径而非工具名),第三次复发或重构 platform_compat 时上。详见脚本 docstring。
+> **豁免声明窗口方向（2026-11-01 B1.5o 实证两拦）**：承诺路径判据的降级声明窗=**命中行或其后 20 行**（向后窗·声明写命中行**前**一行无效）——包内文档写含 `脚本中心/` 路径的行时，声明（作者侧/未随包分发/发布者侧）✅DO 落同行尾或其后 20 行内。
+    > 2026-10-28 琥珀收窄轮反哺新增两尺（同脚本已实装·变异夹具先红后绿六例全过）：检查⑮ launchd 载体执行形态（plist 单 arg 含空格整串/-c整串=exit127死腿·多命令串豁免）＋检查⑯ 双端语义同构（成对 *.sh↔*.ps1 一端含噪音排除/白名单机制锚另一端无对应信号=FAIL·条文68语义层延伸·amber 风暴案）——判据本体见安装包哲学条文7 mac 变体段。
 - Step B1.5：包隐藏态件扫描（2026-10-07 包清洁案新增·判据即时生效不依赖脚本改造）
   - ✅DO `find "<包根>" -name ".*" -type f ! -name ".gitignore" ! -name ".gitattributes"` → **计数必须=0**；非0→🔴输出清单逐项出包（tracked走 git rm·untracked移琥珀存证）+补 manifest 对应条目 exclude+dry-run 验不回灌
   - 豁免面（合法资产⛔误伤）：包内不存在合法点前缀运行件为常态——若未来出现需先过归属判定再入豁免表（先例：triwich `.landing_baseline*`/`.seal_fingerprint` 5件混入=intersection_only 对包内已存在残留的回灌通道，文件名 bak/tmp/log 扫描全漏网）
@@ -135,6 +137,70 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
   - ⛔DO NOT 以「Mac 侧 bash -n／pwsh Parser／py_compile 已绿」替代行为层证据——五雷皆语法合法态，真机才现形（条文69 判据③「机制⛔靠自觉」的证据面延伸）。
   - 🔌 熔断器（gh 不可达/仓不可读）：记 ⚠️「行为层证据未核（gh 不可达）」判黄不判绿——⛔把仪器失明当本项绿（承 B1.5g 取证腿四自证精神）。
   - 来源：`[来源: 2026-10-21-Win安装体验根治-任务卡 R7-R9 批 | 日期: 2026-10-22 | 反哺标题: 装机链改动必须有 runner success 背书·Loop每轮自动对账]`
+- Step B1.5m：Skill 入包完整性（源有包无缺件·2026-10-27·安装包哲学条文 77 落地）
+  - ✅DO `python3 [记忆共享中心]/脚本中心/skill_pack_completeness.py` rc=0
+    判据＝对每个包内 Skill：`源文件集 − 包文件集 − 运行态噪声 − author-qa-exclude 登记` 必须为空。
+  - 缘起（实测·Qoder CN）：`triwich/pages/` 在包面是**空目录**，而源有 5 页、SKILL.md 引用 8 处
+    ⇒ 用户装机后页面链接全断，**漏了三个月无人知晓**。根因不是谁手滑，是规则盲区：
+    Skill 走 `intersection_only`（两边都有才同步）⇒ 源**新增**永远进不来；而没有任何门禁在查「源有包无」。
+  - 三类处置口径（⛔ 只判红不给路）：
+    ①**真缺口** ⇒ 进包（走 mirror-sync 变换，⛔ 裸 cp——见 内部记录）
+    ②**有意裁剪**（作者侧 QA 件：run.sh／orchestration_check.sh／回归夹具／单轮决策留痕）⇒ 登记 `author-qa-exclude.json` 带 reason，⛔ 靠"包里没有"默认排除
+    ③**运行态噪声**（.git/ .pytest_cache/ logs/ *.log *.jsonl *_last_run.json）⇒ 判据侧排除，⛔ 计为缺件
+  - ⚠️ **两张嘴检查**：SKILL.md 声明"不分发"而裁剪表没登记＝表与声明打架（本批实证 good-good-study 两件）。认声明也认表，缺一即红。
+  - 🔌 熔断器（脚本不可读/包根缺失）：跳过并⚠️显形「Skill 入包完整性腿未跑」，⛔ 不假绿。
+  - 来源：`[来源: 用户质询「为什么会有这种低级错误？其他入包 Skill 有没有？」| 日期: 2026-10-27 | 反哺标题: 交集模式对「包面目录为空」结构性失明——缺件必须显形]`
+
+- Step B1.5n：生成型派生量归一化（2026-10-27·安装包哲学条文 78 落地·D2 连跑 0/1/1 案）
+  - ✅DO 比对类判据（源≡包 / drift / parity）在**生成型文件**上须先归一化派生量：
+    `generated_at / generated / updated_at / *fingerprint* / bytes / size / sha* / hash`，JSON 与 YAML frontmatter 两形态都覆盖。
+  - 为什么：包面做了脱敏（`~/个人AI档案` → `[记忆共享中心]`），字符数变 ⇒ 指纹与字节数**必然跟着变**
+    ⇒ 判据恒报「同步后仍有 N 文件不一致（假报已同步）」⇒ 同一份盘连跑三次得 0/1/1（实测）。
+  - ⛔ **归一化须自限域**：仅当文本自带生成物标志（含 `generated_at` 或 `page_fingerprint`）时才归一化派生量，
+    ⛔ 全局无差别剥（普通文件真需要比字节数）。真差异归一化后仍差 ⇒ 照报红（⛔ 借归一化放宽内容比对）。
+  - ⛔ **判据与同步规则必须同向**：同步遇「源脏」会跳过（C37 保护），比对也必须跳过——一边跳一边比必然假红。
+  - 实证：`技能配置/triwich/pages/manifest.json` 的 `"bytes"` 因占位符比作者机路径长短不同而差 7-9 字节 ⇒ D2 恒红。
+  - 来源：`[来源: D2 时红时绿排查 | 日期: 2026-10-27 | 反哺标题: 派生量不是内容——指纹/字节数/生成时间随脱敏必变]`
+
+- Step B1.5o：策展快照新鲜度对账（2026-11-01·V2.2.12 发布前清障实证·检查⑪拦出的第二层·条文 44 ①同族第二型）
+  - 缘起：规则三模板（铁律/摘要/详解）的包内投影 src=`buluotuo-release-sync/assets/rules-curation/` **策展快照**（非 记忆规则/ 原件直投）。2026-11-01 实证：源侧已 v8.51 而快照停 v8.50——若只改源侧，**现有全部门禁绿**（三层自洽查包内三件互一致、检查⑪查承诺可达，快照层无人看）＝结构性旁路；当时靠安装器内容门禁「承诺路径可达性」实拦（快照旧版带不可达承诺）才暴露——纯记账型源侧变更（不带路径）将全绿放行。
+  - ✅DO 三对件版本行逐一相同（不同=快照滞后·🔴阻断发布）：
+    `for n in 铁律版 摘要版; do diff <(grep -m1 "版本：v8" [记忆共享中心]/记忆规则/用户基本规则-$n.md) <(grep -m1 "版本：v8" [记忆共享中心]/脚本中心/assets/rules-curation/用户基本规则-$n.md) >/dev/null || echo "🔴快照滞后:$n"; done; diff <(grep -m1 "版本：v8" [记忆共享中心]/记忆规则/用户基本规则-详解存档版.md) <(grep -m1 "版本：v8" [记忆共享中心]/脚本中心/assets/rules-curation/用户基本规则-详解存档.md) >/dev/null || echo "🔴快照滞后:详解"`——发布者侧对账腿·端用户 N/A（快照层住发布者工具链 assets/rules-curation·端机无此对象·检查⑪声明位）
+  - ✅DO 源侧规则三层变更**同轮义务**：改 记忆规则/ 三件时，assets/rules-curation 快照同轮同款落（铁律-036 登记同轮全本律）；策展差异（包专属增写·如「号位策略」节）只增不删。
+  - ⛔DO NOT 以「sync 报无变化」当快照新鲜——sync 比较的是快照↔包（两者都旧=假绿），快照↔**源侧**这一段无任何闸，本腿是唯一观察窗；修复走 `mirror-sync --force --only template-rules-*`（快路径假一致实证·本日三犯同源）。
+  - 来源：`[来源: 发布前清障实证 | 日期: 2026-11-01 | 反哺标题: 策展快照旁路——规则三模板 src 走 assets 快照层，源侧更新无闸传导]`
+- Step B1.5p：Skill 记账自洽（SKILL version ≡ CHANGELOG 顶条·2026-11-01·daily-buddy 3.54.4 案）
+  - 缘起：daily-buddy 源侧 SKILL.md=3.54.1 而 CHANGELOG 顶条=v3.54.4（实装已落·记账未抬）＋v3.54.1 段重复登记两回＋段序乱（3.54.2 排在 3.54.3 前）——awaken CHANGELOG 头部声明「最新条目=当前版本，与 SKILL.md frontmatter 对齐」有声明无机械；包门禁全绿放行（skill_version_check.py 是装机端对比工具，不管包内自洽）。
+  - ✅DO 逐 Skill 三判据（version≡顶条／同版本段唯一／段号降序）：
+    `python3 - <<'PY'`
+    ```
+    import re, pathlib, collections
+    pkg = pathlib.Path("[记忆共享中心]/发布库/五层记忆系统/布洛陀-全平台安装包/references/skills").expanduser()
+    CONT = ("其二", "其三", "补丁", "追加", "复审", "补 —", "补 ")  # 续记段豁免：同号续记（v3.16.0 其二/v4.4.21 补丁 C4 型）=合法形态·triwich 先例
+    bad = []
+    for sk in sorted(pkg.iterdir()):
+        sm = sk / "SKILL.md"
+        if not sm.exists(): continue
+        m = re.search(r'^version:\s*"?([^"\n]+)"?', sm.read_text(encoding="utf-8"), re.M)
+        cl = next((c.read_text(encoding="utf-8") for c in (sk/"references"/"CHANGELOG.md", sk/"CHANGELOG.md") if c.exists()), None)
+        if not (m and cl): bad.append(f"{sk.name}: 缺SKILL version或CHANGELOG"); continue
+        heads = [l for l in cl.splitlines() if l.startswith("### v")]
+        main = [l for l in heads if not any(mk in l for mk in CONT)]
+        if not main: bad.append(f"{sk.name}: 无主版本段"); continue
+        topv = re.match(r'### (v[\d.]+)', main[0]).group(1)
+        if topv[1:] != m.group(1): bad.append(f"{sk.name}: SKILL={m.group(1)} ≠ 顶条={topv}")
+        keys = [re.match(r'### (v[\d.]+)', l).group(1) for l in main]
+        dup = [k for k, c in collections.Counter(keys).items() if c > 1]
+        if dup: bad.append(f"{sk.name}: 主段重复 {dup}")
+        nums = [([int(x) for x in k[1:].split('.')] + [0]*4)[:4] for k in keys]  # 补零定长：防 v3.3 vs v3.3.1 前缀错序
+        if any(nums[i] < nums[i+1] for i in range(len(nums)-1)): bad.append(f"{sk.name}: 主段序非降序")
+    print("\n".join(bad) if bad else "✅ 全部 Skill 记账自洽")
+    ```
+    输出非空=🔴记账欠账，同轮抬齐（SKILL 抬版或 CHANGELOG 补条·按实装真相定方向）。首跑实录（2026-11-01·11 skill）：clock-loop/growth-box/system-logger/triwich 四件有重复段+段序欠账——**判据有牙的证词=首跑即抓存量**。
+  - ⛔DO NOT 以「CHANGELOG 顶条比 SKILL 新=别人 WIP」当常态豁免——归属轮要抬就同轮抬齐；发布时包内必须自洽（投影面全等·2026-11-01 本案即此形态带病进发布窗口被清障拦下）。
+  - ✅DO **清史操作纪律（2026-11-01 清史轮两坑反哺）**：①双登合并时**段头行⛔入「独有行」集**——dup 段标题行会被当独有账目粘回基底段尾=段中段复活（本轮三件同病·B1.5p 复跑自捕后精确删除修复）；②版本号比较/排序**补零定长**（v3.3 vs v3.3.1 前缀比较错序实证·判据脚本已内置）；③同号不同批次=合法续记形态（加「其二/补丁 N/追加」后缀沿 triwich 惯例），⛔DO NOT 改历史版本号（伪造历史）也⛔DO NOT 双登置之（判据红）。
+  - 来源：`[来源: 发布前清障实证 | 日期: 2026-11-01 | 反哺标题: Skill 记账自洽——SKILL frontmatter 与 CHANGELOG 顶条对账入尺]`
+
 - Step B2：衍生加强包巡检（防静默死守卫·2026-08-11 反哺）
   - ✅DO 遍历 `[记忆共享中心]/发布库/五层记忆系统/` 下所有 `*加强包*` 目录（如 千问办公加强包 / Qoder系加强包(Desktop+QoderWork)），对每个衍生包执行：
     - `bash "<衍生包>/_sync-check.sh" --check`（资产漂移自检：手动副本 vs 权威源指纹比对，`0 FAIL` = 同步健康）

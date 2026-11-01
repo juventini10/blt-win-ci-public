@@ -83,7 +83,7 @@ class TestRuleSingleSource(unittest.TestCase):
         self.assertIn("≤600字", cfg, "config 投影与常量必须同数（#8改数两处同步）")
 
     def test_t8_source_type_fixed(self):
-        self.assertEqual(nv._SOURCE_TYPE_SET, ("book", "paper", "article-long", "article-short", "thread"))
+        self.assertEqual(nv._SOURCE_TYPE_SET, ("book", "paper", "article-long", "article-short", "thread", "blueprint-design"))  # 2026-10-27 蓝图卡重造扩集（与 config.yaml 分档表同步）
 
     def test_t9_schema_anchor(self):
         self.assertEqual(nv.CARD_SCHEMA_VERSION, "读书卡片schema v1.3.4", "v1.3.4 card_id 全池统一+严格机检（2026-10-15 D3根治批·负例证过#S243）")

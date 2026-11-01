@@ -57,7 +57,7 @@ GUARD_STATE = os.path.join(os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.exp
                            "doenglingz_guard_state.json")
 CACHE = os.environ.get("TSL_VERIFY_CACHE") or os.path.expanduser("~/.cache/tsl_verify")   # env=测试隔离缝（对齐 closeout 同名先例·守卫规范 §3.9）
 W3_LEDGER = os.path.join(BASE, "脚本中心/logs/runtime/w3_inject_ledger.jsonl")  # 2026-10-07 W3根治：读侧对齐写侧(doenglingz_inject_prompt L489)——写读分根即假红
-__version__ = "v0.11.10"
+__version__ = "v0.11.11"  # v0.11.11(2026-11-01·WB 童灵·7fd9a04d 凭证未落账案)：stamps.log/树档写入的 except 静默吞改 Fail-Loud（写入失败显形告警·治「凭证链断而无人知→守卫误判伪造级」·§3.5 崩溃即静默同族·self-test 17/17 无回归）。上版 v0.11.10：since 校验/树渲染不变。
 #   v0.11.10（2026-10-24·Qoder Desktop·L3 声明台账读写同源根治）：
 #     写端：Qoder Stop 补挂 doenglingz_level_declare_guard.py（配置根=$HOME/.qoder）；
 #     读端：_declare_src_match 加 qoderdesktop→{qoder,qoderdesktop} 别名——旧等值比较
@@ -758,8 +758,10 @@ def main():
             # ⛔ 历史行无此字段，解析侧须容忍（按 tab 位取用，勿假设固定列序）。
             _f.write("%s\tsrc=%s\t%s\t%d\t%s\twindow=%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                                               a.src, stamp, len(tree), tsha, a.since))
-    except Exception:
-        pass
+    except Exception as _e:
+        # v0.11.11（2026-11-01·WB 童灵·7fd9a04d 凭证未落账案根治）：⛔静默吞=凭证链断而无人知
+        #   （守卫按 stamps.log 判 relay ⇒ 静默失败被升级成「伪造凭证级」假告警·§3.5 崩溃即静默同族）。
+        print("⚠️ [tsl_verify] 凭证落账失败（stamps.log/树档写入异常·本 stamp 将不在册·守卫判 relay 不可对账）：%r" % _e)
     return 1 if ng else 0
 
 def _self_test():

@@ -2,14 +2,36 @@
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 ---
 
+### v3.54.4 — 2026-10-29（跨午夜复盘根治·业务日期 AS_OF_DATE 与系统时刻显式分离）
+
+- **背景**：2026-10-29 凌晨复盘 2026-10-28，成就数据 `last_updated` 被打成 2026-10-29，`verify_achievement_seal.py --date 2026-10-28` 判 `VERIFY:STALE` 假阴性（真实 RC=1；一度被管道吞码误显 0）。属**跨午夜复盘的通用结构性缺陷**，非偶发。
+- **根因（两处写入路径 + 一处闸口格式）**：①`achievement_tracker.py` 把 `last_updated` 写死 `datetime.now()`，且 `--all` 正式写入路径不接受日期；②**真凶**——`update_diary_achievement.py` 以 subprocess 调 tracker（`[script, "--all", "--json"]`）**不透传 `--date`**，子进程按系统 today 运行，反向把 tracker 刚写好的业务日期覆盖成次日；③`finalize_diary.py` 署名 emoji 正则仅认 `U+1F000-1FAFF`，标准署名 ⚡(U+26A1) 落在 Misc Symbols 区 → 必被否。
+- **修法（第一性原理：业务日期 ≠ 系统时刻，二者必须显式分离）**：①tracker 增模块级常量 `AS_OF_DATE`，落 5 处锚点（证据文件名 L354／证据正文达成日期 L364／`last_updated` L463／定义与注释 L48·54），main 先于模式分支解析 `--date`（使 `--all --date X` 组合生效）；②`run_achievement_check(as_of_date=None)` 新增形参并透传 `_cmd += ["--date", str(as_of_date)]`，主流程唯一调用点传 `target_date`；③finalize 正则扩为 `[\u2600-\u27BF\u2B00-\u2BFF\U0001F000-\U0001FAFF]`（改闸不改署名库）。
+- **验证**：端到端 `update_diary_achievement.py --date 2026-10-28` RC=0（tracker 打印「业务日期（复盘日）= 2026-10-28」）+ `verify_achievement_seal.py --date 2026-10-28` → `VERIFY:PASS` RC=0；隔离压测 5 断言全过（含「不传日期时命令不变」零回归用例），真实数据零触碰（铁律-014）；Skill 目录与真源 4 文件 inode 全同（父目录级软链，无双本账）。
+- **副作用修复**：成就证据文件误归属 `2026-10-29-late_125t.md` → 改回 `2026-10-28-late_125t.md`（原件走 trash 入废纸篓，⛔非 rm）；日记成就模块「今日无新成就解锁」→ 由证据目录归因自动改写为「💉 血条见底-累计熬夜125天」（⛔未手改，脚本自动改）。
+- **判级**：patch 3.54.3→3.54.4（三脚本逻辑修正，无数据结构/模板/工作流节名变更）。
+
+### v3.54.3 — 2026-10-28（finalize 概念卡数据驱动下发 + 工作流C 模块6 澄清·漏洞2/3/4/5 根治）
+
+- **背景**：2026-10-27 封口实战，finalize 旧逻辑取末条误报"新增0概念"（漏洞1·v3.54.2 已修），叠加 4 处漏洞致概念卡呈现缺失。
+- **漏洞3 修复**：重写 `read_concept_cards(ingest_date)`——简易 frontmatter 解析支持多行 `source_cards` 列表（旧逻辑只取首行→source 恒空），并下发 `definition` / `derived_date`；main() 把 `concept_cards` + `concept_module_required` 写入 result JSON（供 AI 数据驱动呈现，压缩场景不再丢）。
+- **漏洞2 修正（设计纠正）**：经核查日记文件无概念卡 SECTION（sections 仅 GOALS/ACHIEVEMENTS/SLEEP/MILESTONES/MOOD_ENERGY/INSIGHTS/BEST_DECISION/CONSISTENCY_REVIEW/SUSPENSION/SUMMARY/TOMORROW/BUDDY_ADVICE），「🧠 今日新增概念卡」模块6 与 5.5e「🧬 概念抽取结果」均为**对话输出层**要求（由 AI 的 §9.4 校验锁保证），文件层无对应 section。故②**不采用错误文件门禁**（会在日记文件上造永久 false-positive 阻断），改以「数据驱动契约」根治：finalize 返回 `concept_module_required:true` + 真实卡清单 + stderr 强提醒「模块6 必做·不可省略」；工作流C §9.4 校验锁补「`concept_module_required:true` 时模块6 不可省且须含真实 `**C-XXX 概念名**` 行」。
+- **漏洞4 修复**：工作流C 新增 §9.15「概念卡模块双呈现铁律」——5.5e 块与 §9.1 模块6 是两个**独立且都必做**的呈现（抽取 commit 后立即呈现 / 封口总结呈现），模块6 内容**复用 5.5e 数据（单一真相源）**绝不凭记忆重写；`concept_module_required` 为 true 时模块6 不可省略（压缩/截断场景也不得丢弃）。
+- **漏洞5 修复**：工作流C §9.15 新增「跨日补录归属」规则——`--ingest-date ≠ 日记日` 时模块6 卡片按 `derived_date == ingest_date` 筛选（实际抽取日）；某卡 `source` 标注日期 ≠ 日记日，须在卡摘要后补注「（补录·source X-XX-XX）」，避免跨日来源被误算为当日产出；仅 source 真落日记日的卡计入"今日新增"。
+- **验证**：隔离单测全过（ingest 聚合=新增4合并4；cards=4 张含多行 source/definition/derived_date）；`finalize_diary.py` py_compile 通过。
+- **判级**：patch 3.54.2→3.54.3（finalize_diary 函数修正 + 工作流C 文档澄清，无数据结构/模板变更）。
+
+### v3.54.2 — 2026-10-28（finalize_diary 概念ingest聚合修复·漏洞1根治）
+
+- **背景**：`read_concept_ingest` 取 `hits[-1]`，同日期多条 ingest 时取末条→误报。实证 2026-10-28 先"新增4概念"后"新增0概念 合并4"，旧逻辑取末条报"新增0概念"，掩盖真实新增，直接导致封口计数误显、AI 据此合法省略 §9.1 模块6「今日新增概念卡」。
+- **修正**：改为按日期聚合全部 ingest 行的新增/合并/拒收/去重计数（正则解析各行），末条取记录时间；>1 行追加"（N次 ingest 已聚合）"标注。补录 `--ingest-date` 仍正常附加"（补录·ingest 记于 X）"。
+- **验证**：复现 `read_concept_ingest(2026-10-27, ingest_date=2026-10-28)` → 现正确返回"新增4概念 合并4"，断言（含"新增4概念"且不含"新增0概念"）全过。
+- **判级**：patch 3.54.1→3.54.2（finalize_diary 单函数逻辑修正，无数据结构/模板变更）。
+
 ### v3.54.1 — 2026-10-26 15:53（机检件归属声明批·皮叔令「改补就补·充分授权」）
 
 - 包面已按 `author-qa-exclude.json` 剔除作者侧 QA 机检件（不随安装包分发），本件「修改后自检」节同步补**归属声明**一行，防端用户照文档敲不存在的命令。
 - 仅加行与抬版本，⛔不改节名集合；依赖 pin 未动（上一步脚本误抬依赖版本已回滚重做）。
-
-### v3.54.1 — 2026-10-26 15:51（机检件归属声明批·皮叔令「改补就补·充分授权」）
-
-- 包面已按 `author-qa-exclude.json` 剔除作者侧 QA 机检件（不随安装包分发），本件「修改后自检」节同步补**归属声明**一行，防端用户照文档敲不存在的命令。
 - 判据联动：platform_compat 承诺路径可达性该项零红；结构闸/引用闸不受影响（仅加行，⛔不改节名集合）。
 
 ### v3.54.0 — 2026-10-24（整套沙箱根治批·P2×3+P3×3 全落地·D3 上岗回合）

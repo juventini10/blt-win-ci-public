@@ -14,7 +14,7 @@ source: self-built
 upstream: [记忆共享中心]/技能配置/good-good-study/
 modifiable: true
 requires_twin_on_duty: true
-version: "1.2.15"
+version: "1.2.16"
 license: MIT
 complies_with: 文件格式规范 v2.7.1
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"

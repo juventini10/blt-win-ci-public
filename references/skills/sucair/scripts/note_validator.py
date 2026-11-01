@@ -65,7 +65,8 @@ _STATUS_SET = ("active", "draft", "deprecated")
 _READING_STATUS_SET = ("L1", "L2", "L3", "L4")
 _TEMPLATE_TYPE_SET = ("A", "B")
 _CARD_TYPE_SET = ("概念", "方法", "模式", "反直觉", "数据")
-_SOURCE_TYPE_SET = ("book", "paper", "article-long", "article-short", "thread")
+_SOURCE_TYPE_SET = ("book", "paper", "article-long", "article-short", "thread",
+                    "blueprint-design")  # blueprint-design=2026-10-27 蓝图卡重造新增（走 blueprint-card 分支，不走读书卡判据）
 
 # --- 正文字数上限（2026-08-17 · 定值式防错·防超限事故复发）---
 # 真源=本常量·config.yaml「永久卡片·每张卡片正文 ≤600字（含原文依据/AI理解/应用场景三段）」为人类可读投影（#8反转·改数两处同步）
@@ -97,6 +98,77 @@ QUIZ_FIELDS = [
     ("source_type", True, lambda v: v in _SOURCE_TYPE_SET),
     ("complies_with", True, lambda v: v == QUIZ_SCHEMA_VERSION),
     ("question_count", True, lambda v: isinstance(v, int) or str(v).strip().isdigit()),
+]
+
+# --- 蓝图卡 schema 版本单源（2026-10-27 · 蓝图卡重造批次1）---
+# 人读真源=记忆蓝图/03_开发规范/schemas/蓝图卡schema.md v1.0.0；本常量=机器侧投影，
+# 改数两处同步（#8 真源反转同款口径）。
+BLUEPRINT_CARD_SCHEMA_VERSION = "蓝图卡schema v1.0.1"
+_BLUEPRINT_STATUS_SET = ("active", "superseded", "archived")
+_BLUEPRINT_TRUST_SET = ("machine-confirmed", "human-reviewed", "unverified")
+_BC_ID_RE = re.compile(r"^蓝图卡#BC\d{4}$")
+
+
+def _bc_files_ok(v):
+    """source_files 合规：非空列表/元组，每项精确到 `文件#节`。
+
+    ⛔只写文件名不写节（schema §二：下钻锚+溯源凭证要求节级定位）。
+    """
+    if not isinstance(v, (list, tuple)) or not v:
+        return False
+    return all("#" in str(x) and str(x).strip("#").strip() and "#" != str(x)[0]
+               for x in v)
+
+
+def _bc_verified_ok(v):
+    """verified 合规：读书卡字符串口径，或引擎可读的 machine:/human: 列表口径。"""
+    if isinstance(v, (list, tuple)):
+        return bool(v) and all(str(x).strip() for x in v)
+    return str(v).strip() in ("unverified", "verified")
+
+
+def _bc_principles_ok(v):
+    """core_principles 合规：非空列表/元组，每条为带实质内容的字符串（断言+理由写法在人读面把关）。"""
+    if not isinstance(v, (list, tuple)) or not v:
+        return False
+    return all(len(str(x).strip()) >= 8 for x in v)
+
+
+USAGE_CUTOFF = "2026-10-29"  # 蓝图卡 usage 新卡必填生效日（此日及之后产卡须带 usage；存量卡豁免·schema v1.0.2）
+
+
+def _bc_usage_ok(v):
+    """usage 值合规：空=待条件必填判（不在此红）；非空须 ≤80 字。"""
+    s = str(v or "").strip()
+    return len(s) == 0 or len(s) <= 80
+
+
+# 蓝图卡字段表（type=blueprint-card·与 reading-card 并列互不替代·⛔不设 retrieval_queries[T6判负]）
+BLUEPRINT_CARD_FIELDS = [
+    ("card_id", True, lambda v: bool(_BC_ID_RE.match(str(v)))),   # B 族独立号段，⛔与 Y 族混号
+    ("title", True, lambda v: 0 < len(str(v).strip()) <= 40),      # 设计判断表述，⛔章节名
+    ("type", True, lambda v: v == "blueprint-card"),
+    ("status", True, lambda v: v in _BLUEPRINT_STATUS_SET),
+    ("version", True, lambda v: bool(str(v).strip())),
+    ("date", True, lambda v: bool(_DATE_RE.match(str(v)))),
+    ("summary", True, lambda v: 0 < len(str(v).strip()) <= 40),
+    ("domain", True, lambda v: bool(str(v).strip())),              # 所属设计域（去重门检索键）
+    ("source_path", True, lambda v: bool(str(v).strip())),
+    ("source_files", True, _bc_files_ok),                          # 列表·精确到 文件#节
+    ("core_principles", True, _bc_principles_ok),                  # 列表·断言+理由（检索主力字段）
+    ("scope", True, lambda v: bool(str(v).strip())),
+    ("trust", True, lambda v: v in _BLUEPRINT_TRUST_SET),
+    ("generated_by", True, lambda v: bool(str(v).strip())),
+    ("generated_at", True, lambda v: bool(str(v).strip())),
+    ("supersedes", False, lambda v: bool(_BC_ID_RE.match(str(v)))),
+    ("superseded_by", False, lambda v: bool(_BC_ID_RE.match(str(v)))),
+    # verified 双形态（2026-10-27 接通信任加权消费面）：
+    #   ① 读书卡口径 "unverified"/"verified"；② 引擎口径=search_kb.trust_of() 读 verified
+    #   列表，含 human: 前缀→human-reviewed，存在非 human→machine-confirmed。
+    #   蓝图卡只写 trust 时检索面按 unverified×1.0（字段在、没人消费），故双写。
+    ("verified", False, _bc_verified_ok),
+    # usage（用途·2026-10-29 起新卡必填·存量豁免·≤80字·条件必填在 validate_blueprint_card 按日期判）
+    ("usage", False, _bc_usage_ok),
 ]
 
 # 笔记：通用7必填 + 笔记schema 扩展（author=维护者，book_author=书作者）
@@ -166,6 +238,8 @@ CARD_FIELDS = [
     # ⛔DO NOT 降回选填——原因是去重门的可靠性直接依赖这两个字段存在。
     ("category", True, lambda v: bool(str(v).strip())),
     ("tags", True, lambda v: bool(v) if isinstance(v, list) else bool(str(v).strip())),
+    # usage（用途·2026-10-29 起新读书卡必填·存量豁免·≤80字·条件必填在 validate_card 按日期判）
+    ("usage", False, _bc_usage_ok),
 ]
 
 # 立场扩展字段（全部 optional，v1.1.0 · 单态渐进模型）
@@ -283,7 +357,7 @@ def build_card_frontmatter(book_name, book_info, card_n, title, topic,
                            source_type="book", category=None, tags=None,
                            source_title=None, source_author=None,
                            source_url=None, source_date=None, trigger_scene=None,
-                           related=None, kb_no=None):
+                           related=None, kb_no=None, usage=None):
     """从 CARD_FIELDS 单源构建卡片 frontmatter（schema v1.3.0 全字段）。
 
     v4.2.0 修复（H2）：原实现停在 schema v1.1.0 且不产 source_type/category/tags，
@@ -343,11 +417,61 @@ def build_card_frontmatter(book_name, book_info, card_n, title, topic,
     if related:
         links = list(related) if isinstance(related, (list, tuple)) else [related]
         fm["related"] = " ".join(str(x) for x in links)
+    # usage（2026-10-29 起新读书卡条件必填·USAGE_CUTOFF）：必须在本函数自校验
+    # (validate_card) 之前写入 fm，否则 date≥cutoff 的合法调用必抛「缺 usage」
+    # ——形参已在、字典未落，是本函数的自锁半截修复。空值不写键（保持旧行为）。
+    if usage:
+        fm["usage"] = usage
 
     issues = validate_card(fm)
     if issues:
         raise ValueError(
             "build_card_frontmatter 产出不合规（生成器与校验器不同源即为 bug）：\n  - "
+            + "\n  - ".join(issues)
+        )
+    return fm
+
+
+def build_blueprint_card_frontmatter(card_id, title, domain, source_path,
+                                     source_files, core_principles, scope,
+                                     today, usage=None, summary=None, trust="unverified",
+                                     generated_by="sucair-blueprint v1.0.0",
+                                     generated_at=None, status="active",
+                                     supersedes=None, superseded_by=None,
+                                     verified=None):
+    """从 BLUEPRINT_CARD_FIELDS 单源构建蓝图卡 frontmatter。
+
+    ⛔手写蓝图卡 frontmatter（与读书卡同规·接触法防误层）：builder 返回前自校验，
+    不合规直接抛 ValueError。source_files 每项须精确到 `文件#节`。
+    """
+    fm = {
+        "card_id": card_id,
+        "title": title,
+        "type": "blueprint-card",
+        "status": status,
+        "version": "v1.0.0",
+        "date": today,
+        "summary": (summary or title)[:40],
+        "domain": domain,
+        "source_path": source_path,
+        "source_files": list(source_files),
+        "core_principles": list(core_principles),
+        "scope": scope,
+        "usage": (usage or ""),
+        "trust": trust,
+        "generated_by": generated_by,
+        "generated_at": generated_at or today,
+    }
+    if supersedes:
+        fm["supersedes"] = supersedes
+    if superseded_by:
+        fm["superseded_by"] = superseded_by
+    if verified:
+        fm["verified"] = list(verified) if isinstance(verified, (list, tuple)) else verified
+    issues = validate_blueprint_card(fm)
+    if issues:
+        raise ValueError(
+            "build_blueprint_card_frontmatter 产出不合规（生成器与校验器不同源即为 bug）：\n  - "
             + "\n  - ".join(issues)
         )
     return fm
@@ -457,7 +581,14 @@ def dump_frontmatter(fm):
         elif k == "related" and isinstance(v, str) and "[[" in v and "]]" in v:
             out.append('%s: "%s"' % (k, v.replace('"', '\\"')))  # 值内引号转义（2026-09-01 复核N2）
         elif isinstance(v, list):
-            out.append(f"{k}: [{', '.join(str(x) for x in v)}]")
+            if v and all("\\n" not in str(x) for x in v) and (sum(len(str(x)) for x in v) > 40 or any((",", "," in str(x)) for x in v)):
+                # 长条目列表（如 source_files/core_principles）→ 多行 YAML 数组，逐项引号包裹：
+                # 防条目内逗号/超长单行破坏行内解析；parse 端 `- "x"` strip 引号还原。
+                out.append(f"{k}:")
+                for x in v:
+                    out.append('  - "%s"' % str(x).replace('"', '\\\"'))
+            else:
+                out.append(f"{k}: [{', '.join(str(x) for x in v)}]")
         elif v is None:
             out.append(f"{k}: null")
         else:
@@ -550,7 +681,12 @@ def validate_quizbank(fm, body=""):
 
 
 def validate_card(fm):
-    issues = _validate(fm, CARD_FIELDS, "card")    # --- 条件必填（Wave 0.2 · source_type 驱动的动态规则）---
+    issues = _validate(fm, CARD_FIELDS, "card")
+    # usage 条件必填（2026-10-29 起新读书卡·存量豁免）：date≥CUTOFF 且空=红
+    _u = str(fm.get("usage") or "").strip()
+    _d = str(fm.get("date") or "")
+    if _d >= USAGE_CUTOFF and not _u:
+        issues.append("[card] 新读书卡缺 usage（≥%s 起必填·存量豁免）" % USAGE_CUTOFF)    # --- 条件必填（Wave 0.2 · source_type 驱动的动态规则）---
     source_type = str(fm.get("source_type", "")).strip()
     if source_type == "" or source_type == "book":
         # 书卡规则（存量兼容）：book/book_author 必填
@@ -573,6 +709,25 @@ def validate_card(fm):
             and not (isinstance(rel, str) and not str(rel).strip())
         if not rel_ok:
             issues.append("[card] 宣称立场矛盾(stance_main_contradiction)但缺 related 指针（须指向被矛盾卡 card_id）")
+    return issues
+
+
+def validate_blueprint_card(fm, body=""):
+    """蓝图卡合规校验（frontmatter 字段表 + body 四段完整性）。
+
+    body 段判据来自蓝图卡schema §三：## 判断 / ## 依据 / ## 边界 / ## 关联。
+    """
+    issues = _validate(fm, BLUEPRINT_CARD_FIELDS, "blueprint-card")
+    # usage 条件必填（2026-10-29 起新卡·存量豁免·schema v1.0.2）：date≥CUTOFF 且空=红
+    _u = str(fm.get("usage") or "").strip()
+    _d = str(fm.get("date") or "")
+    if _d >= USAGE_CUTOFF and not _u:
+        issues.append("[blueprint-card] 新卡缺 usage（≥%s 起必填·存量豁免·schema v1.0.2）" % USAGE_CUTOFF)
+    # 正文四段仅当传入 body 时校验（builder 的 frontmatter-only 自检不查正文；
+    # 正文完整性由 lint_path/validate_card_full 同款调用位兜底）
+    for sec in tuple(("判断", "依据", "边界", "关联")) if body else ():
+        if not re.search(r"^##\s+" + sec, body or "", re.M):
+            issues.append(f"[blueprint-card] 正文缺 ## {sec} 段（schema §三 四段必填）")
     return issues
 
 
@@ -636,6 +791,7 @@ def lint_path(path, verbose=True):
 
     report = {}
     total = 0
+    bcard_ids = {}   # 目录级 card_id 唯一性账（并行产卡的最后一环防撞：2026-10-27 四窗实测出 3 个跨窗重号）
     for fp in files:
         try:
             with open(fp, "r", encoding="utf-8") as f:
@@ -659,6 +815,9 @@ def lint_path(path, verbose=True):
                 issues.append(body_issue)
         elif t == "quiz-bank":
             issues = validate_quizbank(fm, body)
+        elif t == "blueprint-card":
+            issues = validate_blueprint_card(fm, body)
+            bcard_ids.setdefault(str(fm.get("card_id")), []).append(fp)
         else:
             # 其他类型不在本 Skill 字段校验范围，但硬 YAML 闸仍适用
             issues = []
@@ -667,6 +826,13 @@ def lint_path(path, verbose=True):
         total += 1
         if issues:
             report[fp] = issues
+
+    for cid, fps in bcard_ids.items():
+        if len(fps) > 1:
+            for fp in fps:
+                others = [os.path.basename(x) for x in fps if x != fp]
+                report.setdefault(fp, []).append(
+                    "[blueprint-card] card_id 重号（目录内须唯一）：%s 与 %s 相同" % (cid, "/".join(others)))
 
     if verbose:
         if not report:

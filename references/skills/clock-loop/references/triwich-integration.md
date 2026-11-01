@@ -1,5 +1,5 @@
 ---
-version: "4.12.17"
+version: "4.12.26"
 source_skill: triwich
 source_path: [记忆共享中心]/技能配置/triwich/SKILL.md
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"

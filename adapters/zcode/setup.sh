@@ -36,16 +36,27 @@ _buluotuo_mc() {
 MC="$(_buluotuo_mc)"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 PKG_DIR="$(cd "$(dirname "$0")" && pwd)"
-MEMORY_CENTER="${MEMORY_CENTER:-}"
+MEMORY_CENTER="${1:-${MEMORY_CENTER:-}}"
 if [ -z "$MEMORY_CENTER" ]; then
+  # ⚠️ 2026-11-01 D13 判据面＝落点面 + 委派契约根治（2026-11-01 沙箱实跑 zcode exit=1 实锤）：
+  #   ① 安装器委派时 **MC 是第一个位置参数**（qodercn/doubaowork/zwork 同款）⇒ 本端原不接 $1
+  #      ⇒ MEMORY_CENTER 只能靠 $HOME 探测 ⇒ 探测失败后兜底拼 "$HOME/${MC}"（MC 是绝对路径
+  #      ⇒ 拼出 "/Users/x//tmp/.../mc" 非法路径）⇒ 端 setup 在 [1/8] 指纹检测处直接崩。
+  #      修法①＝接 $1（安装器委派契约）＋兜底改 "$MC"（⛔不再拼 ${HOME}）。
+  #   ② 探测判据用「有 核心层/CORE.md」⇒ 那是**作者态资产·安装器不装**（D10 同族）
+  #      ⇒ 新用户恒探测不到 ⇒ 改判**安装器真装件**（记忆规则/ 或 脚本中心/）。
   for _c in "$HOME/共享中心" "$HOME/记忆中心" "$HOME/记忆库" "$HOME/记忆" "$MC"; do
-    if [ -f "$_c/核心层/CORE.md" ]; then MEMORY_CENTER="$_c"; break; fi
+    [ -n "$_c" ] || continue
+    if [ -f "$_c/记忆规则/用户基本规则-铁律版.md" ] || [ -d "$_c/脚本中心" ]; then MEMORY_CENTER="$_c"; break; fi
   done
-  MEMORY_CENTER="${MEMORY_CENTER:-$HOME/${MC}}"
+  MEMORY_CENTER="${MEMORY_CENTER:-$MC}"
 fi
+[ -n "$MEMORY_CENTER" ] || { echo -e "${RED}❌ 记忆中心未定位（请传绝对路径作第一个参数：bash setup.sh <记忆中心绝对路径>）${NC}"; exit 2; }
 FAIL=0
 TOOL_NAME="ZCode"; TOOL_EMOJI="🧩"
-ZCODE_HOME="${ZCODE_HOME:-$HOME/.zcode}"
+# ⚠️ 2026-11-01 隔离链根治（全端统一口径）：端根以 DOENGLINGZ_CONFIG_DIR 为首优先级
+#   （安装器委派唯一透传键＝唯一隔离真源）⇒ 隔离装不写真机 ~/.zcode。
+ZCODE_HOME="${DOENGLINGZ_CONFIG_DIR:-${ZCODE_HOME:-$HOME/.zcode}}"
 SKILLS_DIR="$ZCODE_HOME/skills"; HOOKS_DIR="$ZCODE_HOME/hooks"; CONFIG="$ZCODE_HOME/cli/config.json"
 # 记忆 Skill 清单(10个=布洛陀 v2.0 全平台包发布口径·2026-09-30 by ZCode 增 good-good-study 对齐包内 references/skills)
 # 发布版读书助手 Skill 为 sucair;旧版安装包为 reading-assistant——源缺失时自动回退(见 step4)
@@ -89,17 +100,33 @@ fp_file() { # <相对路径> <层说明> [关键词]
   if [ -n "$kw" ] && ! grep -q "$kw" "$f"; then echo -e "${RED}  [疑] $2: $1 存在但无\"$kw\"关键词(疑似非布洛陀文件)${NC}"; FP_FAIL=$((FP_FAIL+1)); return; fi
   echo -e "${GREEN}  [OK] $2: $1${NC}"
 }
-fp_file "核心层/CORE.md"             "L1核心层"
-fp_file "情境层/动态状态快照.md"     "L4情境层"
-fp_file "潜意识层/SHADOW.md"         "L5潜意识层"
+# ⚠️ 2026-11-01 D10 判据面＝落点面根治：`核心层/`、`情境层/`、`潜意识层/` 是**作者态资产**
+#    （作者机的档案库里有），安装器装给用户的 MC **不装这三个目录**（真装件＝脚本中心/数字分身/
+#    知识库/记忆规则/记忆蓝图/记忆蒸馏）⇒ 拿它们当硬指纹 ⇒ **新用户必缺 ⇒ 端接入必然失败**。
+#    修法=硬指纹只认安装器真装件；作者态件降为 ⏳待办（不判红）。
+for _ap in "核心层/CORE.md" "情境层/动态状态快照.md" "潜意识层/SHADOW.md"; do
+  # ⚠️ 2026-11-01 D14 bash 变量名绑定修复（自引入缺陷·D10 引入）：_ap 变量名后紧跟全角括号
+  #    ⇒ bash 在 UTF-8 locale 下把全角首字节并入变量名 ⇒ `set -u` 下报 `_ap（: unbound variable`
+  #    ⇒ 端 setup 在 [1/8] 指纹检测处直接崩（沙箱实跑 zcode exit=1 实锤）。
+  #    修法＝凡「变量后紧跟非 ASCII」一律改花括号 `${VAR}`（⛔`$VAR `空格/`${VAR}` 才安全）。
+  if [ -f "$MEMORY_CENTER/${_ap}" ]; then echo -e "  [OK] 作者态资产: ${_ap}（本机在位）"; else echo -e "  [⏳] 作者态资产: ${_ap}（新用户机无·不判红）"; fi
+done
 fp_file "记忆规则/用户基本规则-铁律版.md" "行为规则" "铁律"
+# ⚠️ 2026-11-01 D6 补实现（装机链自证标志 BLT_INSTALL_CHAIN=1·C30 裁定）：MC 尚未成型是
+#    **装机中途态**不是失败（判据源＝qodercn/setup.sh 同款范式）。此前本端硬拒 ⇒
+#    首次装机（公共资产尚未落盘）端接入面必然装不上。
+BLT_EMPTY_MC=0
+if [ "${BLT_INSTALL_CHAIN:-}" = "1" ] && { [ ! -d "$MEMORY_CENTER" ] || [ ! -d "$MEMORY_CENTER/核心层" ]; }; then
+  BLT_EMPTY_MC=1
+  echo -e "${YELLOW}  [⏳] 记忆中心尚未成型（装机链内·指纹件稍后由公共资产腿落齐·本行≠失败）${NC}"
+fi
 FP_SK=0
 for s in "${FP_SKILLS[@]}"; do
   [ -f "$MEMORY_CENTER/技能配置/$s/SKILL.md" ] && FP_SK=$((FP_SK+1))
 done
 if [ "$FP_SK" -ge 8 ]; then echo -e "${GREEN}  [OK] 记忆Skill: $FP_SK/9${NC}"
 else echo -e "${RED}  [缺] 记忆Skill仅 $FP_SK/9 (期望>=8)${NC}"; FP_FAIL=$((FP_FAIL+1)); fi
-if [ "$FP_FAIL" -gt 0 ]; then
+if [ "$FP_FAIL" -gt 0 ] && [ "$BLT_EMPTY_MC" -eq 0 ]; then
   echo -e "${RED}[X] $MEMORY_CENTER 存在,但不是完整的布洛陀五层记忆系统($FP_FAIL 项指纹缺失,见上)${NC}"
   echo -e "    可能只是通用目录。请先完成布洛陀初始化,再跑本脚本。"; exit 1
 fi
@@ -305,7 +332,7 @@ for evt, names in plan.items():
             print(f"SKIPPED:{evt}:{nm}")
         else:
             # 2026-10-06 SSOT归一·端根显式（06 §2.2.9-补 (C)(D)）：doenglingz_ 族注册命令带 env 双键端根（防静默写 WB 根）
-            _env = "DOENGLINGZ_CONFIG_DIR=$HOME/.zcode WORKBUDDY_CONFIG_DIR=$HOME/.zcode " if nm.split(" ")[0].startswith("doenglingz_") else ""
+            _env = "DOENGLINGZ_CONFIG_DIR=$ZCODE_HOME WORKBUDDY_CONFIG_DIR=$ZCODE_HOME " if nm.split(" ")[0].startswith("doenglingz_") else ""
             lst.append({"hooks": [{"type": "command", "command": f"{_env}python3 {os.path.join(dt_dev, nm)}"}]})
             print(f"APPENDED:{evt}:{nm}")
 with open(p, "w", encoding="utf-8") as f:
@@ -369,10 +396,10 @@ PLAN = {
         ("route_miss_feeder.py", "", ""),
         ("kb_inject_prompt.py", "UserPromptSubmit", ""),
         ("rule_fragment_inject.py", "UserPromptSubmit", ""),
-        ("session_tail_inject.py", "UserPromptSubmit", "WORKBUDDY_CONFIG_DIR=$HOME/.zcode"),
+        ("session_tail_inject.py", "UserPromptSubmit", "WORKBUDDY_CONFIG_DIR=$ZCODE_HOME"),
         ("zcode_title_namer.py", "UserPromptSubmit", ""),
         ("secret_key_guard.py", "UserPromptSubmit", ""),
-        ("ttl_expiry_guard.py", "UserPromptSubmit", "WORKBUDDY_CONFIG_DIR=$HOME/.zcode"),
+        ("ttl_expiry_guard.py", "UserPromptSubmit", "WORKBUDDY_CONFIG_DIR=$ZCODE_HOME"),
     ],
     "Stop": [
         ("audit_search_kb.py", "", ""),

@@ -13,7 +13,9 @@ fi
 MARK="buluotuo:execution-guidelines-v1"
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC="$SRC_DIR/rules/execution-guidelines.md"
-DEFAULT_ROOT="${HOME}/.openclaw-autoclaw"
+# ⚠️ 2026-11-01 隔离链根治（全端统一口径）：端根以 DOENGLINGZ_CONFIG_DIR 为首优先级
+#   （安装器委派唯一透传键＝唯一隔离真源）⇒ 隔离装不写真机 ~/.openclaw-autoclaw。
+DEFAULT_ROOT="${DOENGLINGZ_CONFIG_DIR:-${HOME}/.openclaw-autoclaw}"
 
 # 从通用版提取注入正文：去 frontmatter、去「本端注入说明」节，保留 # 标题至第 9 条
 extract_body() {
@@ -55,7 +57,13 @@ main() {
 
   # --all：读 openclaw.json agents.list[].workspace + defaults.workspace 逐个注入
   local wss
-  wss="$(python3 -c "
+  # ⚠️ 2026-11-01 D9 全新机崩溃根治：宿主 openclaw.json 是**宿主自己生成的配置**（安装器不写）
+  #   ⇒ 全新机器上该文件不存在 ⇒ json.load 抛 FileNotFoundError + set -e ⇒ 整个端 setup 崩
+  #   （exit 1·端接入未完成）。实锤：2026-11-01 沙箱全新安装实跑 autoclaw exit=1
+  #   （作者机有该文件⇒此病隐形）。修法=存在性防护：读不到就按「无可注入 workspace」继续
+  #   （⛔不静默崩·显形告警）。
+  if [ -f "$DEFAULT_ROOT/openclaw.json" ]; then
+    wss="$(python3 -c "
 import json, os
 d = json.load(open(os.path.expanduser('$DEFAULT_ROOT/openclaw.json')))
 ag = d.get('agents', {})
@@ -67,6 +75,10 @@ for a in ag.get('list', []):
     if w: ws.append(os.path.expanduser(w))
 print('\n'.join(sorted(set(ws))))
 ")"
+  else
+    wss=""
+    echo "  ⚠️ 未找到宿主配置 $DEFAULT_ROOT/openclaw.json（全新机·宿主尚未生成）——workspace 探测跳过（⛔不崩）"
+  fi
   echo "注入面清单："
   echo "$wss" | sed 's/^/  - /'
   while IFS= read -r ws; do

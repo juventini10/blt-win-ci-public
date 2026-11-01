@@ -89,7 +89,9 @@ if [ -f "$TS" ]; then say "  ✅ W2 心跳文件在场（末次: $(cat "$TS" 2>/
 
 say "${CYAN}[4/4] 装载通道（AGENTS.md 桥+技能根+审批·v0.2 起·全部幂等）${NC}"
 # [4a] AGENTS.md 机械桥：~/.pi/agent/AGENTS.md → 端真源（dist 实证 pi-user priority1 每 Run 自动装配）
-PI_DIR="$HOME/.pi/agent"
+# ⚠️ 2026-11-01 隔离链根治：pi 客户端固定读 ~/.pi/agent ⇒ 该面是**端真机专属面**，
+#    但隔离装（DOENGLINGZ_CONFIG_DIR 已设）不得写真机 ⇒ 加 PI_AGENT_DIR 覆盖口供隔离验证用。
+PI_DIR="${PI_AGENT_DIR:-$HOME/.pi/agent}"
 BRIDGE="$PI_DIR/AGENTS.md"
 if [ -f "$ZW_DIR/AGENTS.md" ]; then
   if [ -L "$BRIDGE" ]; then
@@ -114,7 +116,7 @@ if [ -d "$R1" ] && [ -d "$R2" ]; then
   if [ "$DRY" = "1" ]; then
     say "  ${CYAN}[dry]${NC} python3 合并 settings.json skills += [$R1, $R2]"
   else
-    OUT=$(python3 - "$HOME/.pi/agent/settings.json" "$R1" "$R2" <<'PYSET'
+    OUT=$(python3 - "$PI_DIR/settings.json" "$R1" "$R2" <<'PYSET'
 import json, sys, os, io
 p, r1, r2 = sys.argv[1], sys.argv[2], sys.argv[3]
 os.makedirs(os.path.dirname(p), exist_ok=True)

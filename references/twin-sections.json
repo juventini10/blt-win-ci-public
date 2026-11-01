@@ -34,7 +34,7 @@
       "sh_only": [
         {
           "section": "4.8",
-          "reason": "守护服务成功痕迹三态分账（launchd 专属：LaunchAgents plist/launchctl/日志库判痕迹·zhangyan#4·v2.2.11 轮新增）",
+          "reason": "守护服务成功痕迹三态分账（launchd 专属：LaunchAgents plist/launchctl/日志库判痕迹·zhangyan#4·沿用旧版判定）",
           "basis": "2026-10-26 登记（Zwork 端·装机完整性轮门禁解阻塞）：Windows 无 launchd 守护形态·verify.sh §4.8 段内 Darwin/else 分支已自处（非 mac=pend 跳过不算故障）⇒ ps1 侧无对应物可补；后续 Windows 守护形态若建立再立新段"
         }
       ],

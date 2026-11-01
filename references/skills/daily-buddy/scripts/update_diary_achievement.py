@@ -111,29 +111,50 @@ def update_diary_achievement(diary_file, achievement_names):
     return True
 
 
-def run_achievement_check():
-    """运行成就检测刷新数据；失败不阻塞主流程。返回 (成功与否, stdout文本)"""
+def run_achievement_check(as_of_date=None):
+    """运行成就检测刷新数据；失败不阻塞主流程。返回 (成功与否, stdout文本)
+
+    跨午夜根治（2026-10-29）：as_of_date = 业务日期（复盘日），必须透传给 tracker
+    子进程（--date）。若不透传，子进程按系统 today 运行 → 凌晨复盘昨日时，子进程
+    会把 tracker 刚写好的业务日期覆盖成次日数据，verify_achievement_seal 随即判
+    STALE 假阴性。业务日期 ≠ 系统时刻，二者必须显式分离。
+    """
     import subprocess
     script_path = Path(__file__).parent / "achievement_tracker.py"
-    # 🔒 防漂移校验：achievement_tracker.py 必须是指向成就系统真源的软链
-    # 单源架构：真源 = [记忆共享中心]/成就系统/scripts/achievement_tracker.py，daily-buddy 侧仅软链
-    # 若被编辑器物化成实体副本 / 改指别处 → 立即报错退出，杜绝静默漂移（2026-08-02 修复）
     _REAL_SRC = (Path.home() / "[记忆共享中心]/成就系统/scripts/achievement_tracker.py").resolve()
-    if not script_path.is_symlink():
-        raise SystemExit(
-            f"❌ 漂移告警：{script_path} 已物化为实体副本（非软链）。\n"
-            f"   修复：rm {script_path} && ln -s {_REAL_SRC} {script_path}"
-        )
-    if script_path.resolve() != _REAL_SRC:
+    # 🔒 一致性校验（P0 改造·2026-10-27）：形态不再是判据，改为「内容仲裁 + 真源自愈」
+    # 旧判据「必须是指向真源的软链」在 Windows 默认权限下不可能满足（SymbolicLink 需
+    # 管理员/开发者模式），且发布包构建时本就复制为普通文件 → 干净安装必炸。
+    # 新判据：①软链指错仍拦 ②副本与真源内容不一致→告警并回退真源 ③副本缺失/0字节→自动回退真源
+    def _digest(p):
+        try:
+            return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+        except OSError:
+            return ""
+
+    if script_path.is_symlink() and script_path.resolve() != _REAL_SRC:
         raise SystemExit(
             f"❌ 漂移告警：软链指向 {script_path.resolve()} 而非真源 {_REAL_SRC}。\n"
             f"   修复：rm {script_path} && ln -s {_REAL_SRC} {script_path}"
         )
+    if not script_path.exists() or script_path.stat().st_size == 0:
+        if _REAL_SRC.exists() and _REAL_SRC.stat().st_size > 0:
+            print(f"⚠️ 成就脚本副本缺失或为空，已自动回退真源：{_REAL_SRC}")
+            script_path = _REAL_SRC
+        else:
+            raise SystemExit(f"❌ 成就脚本缺失：{script_path} 与真源 {_REAL_SRC} 均不可用。")
+    elif not script_path.is_symlink() and _digest(script_path) != _digest(_REAL_SRC):
+        print("⚠️ 副本与真源内容不一致（双本账迹象），按单一真源原则改用真源继续。")
+        if _REAL_SRC.exists():
+            script_path = _REAL_SRC
     py = VENV_PYTHON if os.path.exists(VENV_PYTHON) else dbenv.REAL_PYTHON
     try:
         # 用真实 python3 + --json 结构化输出（dbenv.run_real 杜绝沙箱假 binary 空跑）
+        _cmd = [str(script_path), "--all", "--json"]
+        if as_of_date:
+            _cmd += ["--date", str(as_of_date)]
         result = dbenv.run_real(
-            [str(script_path), "--all", "--json"],
+            _cmd,
             capture_output=True,
             text=True,
             timeout=60,
@@ -266,7 +287,9 @@ def main():
     print(f"📅 处理日期：{target_date}")
 
     print("🔍 运行成就检测（刷新数据）...")
-    _, check_stdout, tracker_names = run_achievement_check()  # 失败不阻塞
+    # 跨午夜根治（2026-10-29）：业务日期必须透传给 tracker 子进程，
+    # 否则子进程按系统 today 运行，会把 tracker 刚写好的业务日期覆盖成次日。
+    _, check_stdout, tracker_names = run_achievement_check(as_of_date=target_date)  # 失败不阻塞
 
     # 第一性原理根治·成就名以「证据目录按日期归属」为准（幂等·不依赖 tracker 瞬态）
     # tracker JSON 仅作兜底（证据目录缺失时）

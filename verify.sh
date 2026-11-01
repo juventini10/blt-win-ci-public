@@ -908,7 +908,15 @@ if [ "$(uname)" = "Darwin" ]; then
     fi
   }
   _svc_check "com.doenglingz.slice-watch"      "slice-watch.out.log"        "$MC/脚本中心/logs/slice-watch.out.log" ""
-  _svc_check "com.buluotuo.awaken-patrol"      "awaken_patrol_launchd.out.log" "$MC/脚本中心/logs/awaken_patrol_launchd.out.log" ""
+  # patrol 痕迹专用腿（2026-10-28 根治双盲）：执行体只写自有日志且完成标记固定（[完成] 巡检结束）——
+  # stdout 恒空是设计态非故障；旧判据(非零体积)在此永远够不到=仪器瞎。自有痕或 stdout 任一有完成标记即真成功。
+  _patrol_trail=0
+  if [ -f "$HOME/Library/LaunchAgents/com.buluotuo.awaken-patrol.plist" ] || launchctl list com.buluotuo.awaken-patrol >/dev/null 2>&1; then
+  for _pl in "$HOME/buluotuo_bin/log/awaken_patrol.log" "$_lc_log/awaken_patrol_launchd.out.log" "$MC/脚本中心/logs/awaken_patrol_launchd.out.log"; do
+    [ -f "$_pl" ] && grep -q "巡检结束" "$_pl" 2>/dev/null && { _patrol_trail=1; break; }
+  done
+  if [ "$_patrol_trail" = 1 ]; then ok "守护 com.buluotuo.awaken-patrol 已注册且有成功痕迹（[完成] 巡检结束·自有痕兼容）"; else no "守护 com.buluotuo.awaken-patrol 已注册但零成功痕迹（真失败·查 ~/buluotuo_bin/log/ 与 [日志中心]）"; fi
+  else pend "守护 com.buluotuo.awaken-patrol 未安装（不算故障·安装守护后重跑 verify）"; fi
   _svc_check "com.buluotuo.distill-scheduler"  "distill-scheduler.out.log"  "$MC/脚本中心/logs/distill-scheduler.out.log" ""
   _svc_check "com.memoryamber.backup"          "amber-fswatch.out.log"      "$MC/记忆琥珀/engine/logs/amber.log" "记忆琥珀备份结束"
   # 附（zhangyan#8）：超 5MB 守护日志报告（信息性·轮转由 amber_backup/wrapper 启动截断承担）

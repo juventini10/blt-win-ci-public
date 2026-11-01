@@ -35,7 +35,7 @@ except Exception:
 FRESH_WINDOW_SEC = 600  # stamp 时间戳落在此窗口内 = 本回合产物（非 D3 档树义务为零 ⇒ 只可能是 AI 自跑）
 CACHE = os.environ.get("TSL_VERIFY_CACHE") or os.path.expanduser("~/.cache/tsl_verify")
    # ^ 2026-09-26 补测试缝：自测/探针须可整根重定向缓存根，否则夹具会往真 stamps.log/eight_check.log 里写条目（本轮实测污染过 1 条假 stamp，已删）。
-__version__ = "v1.1"   # 版本机械载体（2026-09-26 与注入器同律：⛔版本只活在文档手写号里）· v1.0 腿1 档位门控（2026-10-05 童灵代行）· v1.1 change⑥联动 tree_hook 当回合真跑证据（2026-10-09 Qoder 任务卡：⛔把 hook 代跑判成假红）
+__version__ = "v1.2"   # 版本机械载体（2026-09-26 与注入器同律：⛔版本只活在文档手写号里）· v1.0 腿1 档位门控（2026-10-05 童灵代行）· v1.1 change⑥联动 tree_hook 当回合真跑证据（2026-10-09 Qoder 任务卡：⛔把 hook 代跑判成假红）· v1.2(2026-10-30 Qoder CN·假红「tier=无档位」根治配套)：档位腿原先靠每条钩子命令各写 TSL_INJECT_STATE 才对，本端只写了 DOENGLINGZ_CONFIG_DIR ⇒ 子件读 WB 根 ⇒ 本会话 D3 查成空 ⇒ 每次 Stop 一条假红；tsl_tree_hook v1.6 已把默认根归一到三段式，本件加 T-CFG 代码面用例（端根 env 穿透＋TSL_夹具缝优先·自测 17/17）。⚠️ 施工自曝：T-CFG 首两跑皆红，两次都是**夹具自己错**（先把台账文件名写成 inj.jsonl，再拿 12 小时前的旧 ts 撞 session_d_tier 的 60min 新鲜期）——判据没坏，仪器先坏，见 PAT-058。
 def _narration_vs_tree(text, tree_text):
     """v0.7 口径来源判据（2026-09-26 皮叔令「我一定要根治」）。
 
@@ -305,6 +305,37 @@ def _selftest():
         ok += bool(good)
         n_cases += 1
         print("  %s %s" % ("✅" if good else "❌", name))
+    # v1.2 代码面用例 T-CFG（2026-10-30·Qoder CN·假红「tier=无档位」根治配套）：
+    #   本件档位腿的正确性原先挂在"每条钩子命令都记得写 TSL_INJECT_STATE"上——本端 settings 只给了
+    #   DOENGLINGZ_CONFIG_DIR（与 declare_guard 同款），tsl_tree_hook 默认根却写死 ~/.workbuddy ⇒
+    #   子件 import 后读错根 → 本会话 D3 查成 "" → 每次 Stop 假红。断言两件事：端根 env 能穿透子件、
+    #   TSL_* 夹具缝仍优先（⛔修根时把守卫规范 §3.9 的隔离能力修没）。
+    try:
+        import subprocess
+        _cfg = subprocess.run(
+            [sys.executable, "-c",
+             "import os,sys,json,tempfile,datetime;"
+             "td=tempfile.mkdtemp();"
+             "p=os.path.join(td,'doenglingz_inject_state.json');"
+             "_now=datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S');"
+             "open(p,'w').write(json.dumps({'ts':_now,'session_id':'S9','d_tier':'D3'})+chr(10));"
+             "os.environ['DOENGLINGZ_CONFIG_DIR']=td;"
+             "sys.path.insert(0,sys.argv[1]);import tsl_tree_hook as t;"
+             "print(t.INJECT_STATE==p, t.session_d_tier('S9'), t.FIRE_STATE.startswith(td))",
+             os.path.dirname(os.path.abspath(__file__))],
+            capture_output=True, text=True, timeout=30,
+            env={k: v for k, v in os.environ.items()
+                 if k not in ("DOENGLINGZ_CONFIG_DIR", "WORKBUDDY_CONFIG_DIR",
+                              "TSL_INJECT_STATE", "TSL_FIRE_STATE")})
+        _out = (_cfg.stdout or "").strip()
+        cfg_ok = _out.startswith("True D3 True")
+        ok += 1 if cfg_ok else 0
+        n_cases += 1
+        print("  %s T-CFG 端根 env 穿透子件＋档位可读＋TSL_缝可覆盖（实得=%s）"
+              % ("✅" if cfg_ok else "❌", _out or (_cfg.stderr or "")[-120:]))
+    except Exception as _e:
+        n_cases += 1
+        print("  ❌ T-CFG 自检自身异常：%s: %s" % (type(_e).__name__, _e))
     # v0.9 端到端回归：自测原样只调判定函数，**从不进 main()**——于是 main() 里的
     #   UnboundLocalError 让守卫每次 Stop 都 rc=1，而自测照样 10/10 全绿（判据没被任何用例走一遍）。
     #   本例用真实子进程跑 main()（隔离 WORKBUDDY_CONFIG_DIR·喂无 TSL 的最小载荷），
@@ -357,6 +388,12 @@ def main():
     #   立法改向：档位只分形态（评估类全量表/其余一行简版），⛔不分做不做——每轮必输出
     #   `🧪 8要素|①..⑧|结论` 固定前缀行，缺痕=留痕。）
     #   ↑ v1.0 位置上移：本判据属"TSL 轮必做"，不随档位免除，故置于档位门控之前。
+    # v1.5-d（2026-10-27·你全权授权落地）：验证类三动作痕行检查（留痕不阻断）。
+    #   依据：当日 26 条成长箱记录里验证类 15 条、PAT-058 已晋升仍犯 10 次——
+    #   规则文本拦不住，只有留下"跑了什么"的痕才能事后对账。
+    #   ⛔不阻断：缺痕只留台账（与 8要素痕同机制、不同强度），避免误伤纯问答回合。
+    if "🧪 三动作" not in text and "🧪三动作" not in text:
+        _v("缺🧪三动作痕（改判据/改代码/拿回执类回合须留痕·执行准则第13条）")
     if "🧪 8要素" not in text and "🧪8要素" not in text:
         _v("TSL轮缺🧪8要素痕（每轮必做·档位只分形态不分做不做·08 L5-1 v1.4.2）")
         _oklog("MISS")

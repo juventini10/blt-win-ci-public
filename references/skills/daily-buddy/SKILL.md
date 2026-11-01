@@ -11,7 +11,7 @@ author: 皮叔
 source: self-built
 upstream: [记忆共享中心]/技能配置/daily-buddy/
 modifiable: true
-version: "3.54.1"
+version: "3.54.4"
 license: MIT
 complies_with: 文件格式规范 v2.0.0
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"

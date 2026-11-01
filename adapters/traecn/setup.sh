@@ -20,7 +20,11 @@ G='\033[0;32m'; Y='\033[1;33m'; R='\033[0;31m'; C='\033[0;36m'; N='\033[0m'
 MC=""
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 RULE_SRC="$SRC_DIR/rules"
-CFG="$HOME/.trae-cn"
+# ⚠️ 2026-11-01 隔离链根治（与 minimaxcode 同款缺陷族·本端抄错取值入口）：
+#    安装器委派时唯一透传 DOENGLINGZ_CONFIG_DIR（＝本端配置根·隔离装时被 --cfg-root 覆盖），
+#    本脚本原先硬编码 $HOME/.trae-cn ⇒ **隔离装写真机**（验证失真）。
+#    取值优先级：DOENGLINGZ_CONFIG_DIR（安装器委派/隔离装·唯一隔离真源）→ $HOME/.trae-cn。
+CFG="${DOENGLINGZ_CONFIG_DIR:-$HOME/.trae-cn}"
 RULE_DST="$CFG/user_rules"
 HOOKS_DIR="$CFG/hooks"
 HOOKS_JSON="$CFG/hooks.json"
@@ -62,7 +66,9 @@ link_skill_dir() {
         echo -e "  ${Y}SKIP（实体目录已存在·不覆盖）: $(basename "$dst")${N}"
         return 1
     fi
-    ln -s "$src" "$dst"
+    # ⚠️ 2026-11-01 同族假绿根治：ln 失败必须回传失败（⛔旧写法无条件 return 0 ⇒
+    #    失败件仍计入「通用 Skill 软链 SK/TOT」+ 自验证原本不查软链数 ⇒ 静默假绿）。
+    ln -s "$src" "$dst" || return 1
     return 0
 }
 
@@ -131,7 +137,8 @@ TRAE_SKILLS_SRC="$SRC_DIR/skills"
 SKILLS_DST="$CFG/skills"
 echo -e "${C}[3/5] 童灵专属 Skill 直落 ${SKILLS_DST}（⛔不进共享技能配置）${N}"
 if [ -d "$TRAE_SKILLS_SRC" ]; then
-    mkdir -p "$SKILLS_DST"
+    # ⚠️ 2026-11-01 dry-run 纯净性：⛔不许"看着像演练、实际写盘"（dry-run 不建目录）
+    [ -n "$DRY" ] || mkdir -p "$SKILLS_DST"
     for skill in "$TRAE_SKILLS_SRC"/*; do
         [ -d "$skill" ] || continue
         src_name="$(basename "$skill")"
@@ -162,14 +169,20 @@ if [ -d "$TRAE_SKILLS_SRC" ]; then
 else
     echo -e "  ${Y}⚠️ 未找到适配器童灵 Skill: $TRAE_SKILLS_SRC${N}"
 fi
-mkdir -p "$SKILLS_DST"
 SK=0; TOT=0
-for skill in "$MC/技能配置"/*; do
-    [ -d "$skill" ] || continue
-    TOT=$((TOT+1))
-    link_skill_dir "$skill" "$SKILLS_DST/$(basename "$skill")" && SK=$((SK+1))
-done
-echo -e "  ${C}通用 Skill 软链结果: $SK/$TOT${N}"
+if [ -n "$DRY" ]; then
+    # ⚠️ 2026-11-01 dry-run 纯净性：通用 Skill 软链是真写盘动作（90 件）⇒ dry-run 不实跑
+    #    （⛔旧写法 dry-run 照样建 90 条软链＝"看着像演练、实际写盘"）
+    echo -e "  ${C}[dry-run] 通用 Skill 软链未实跑（不写盘）${N}"
+else
+    mkdir -p "$SKILLS_DST"
+    for skill in "$MC/技能配置"/*; do
+        [ -d "$skill" ] || continue
+        TOT=$((TOT+1))
+        link_skill_dir "$skill" "$SKILLS_DST/$(basename "$skill")" && SK=$((SK+1))
+    done
+    echo -e "  ${C}通用 Skill 软链结果: $SK/$TOT${N}"
+fi
 
 # ─── [4/5] hooks.json 注册（本端唯一写点·安装器 ③ 按 capability 跳过）
 #     ⚠️ 与安装器 ② 的分工：② 只把脚本副本落 <CFG>/hooks/；本步只写注册面。
@@ -293,6 +306,27 @@ if [ -f "$DT_CORE" ]; then echo -e "  ${G}✅${N} user_rules/doenglingz-core.md"
 else echo -e "  ${Y}⚠️${N} user_rules/doenglingz-core.md 未生成（K2 slices 缺失·非本步失败）"; fi
 if [ -d "$SKILLS_DST" ]; then
     echo -e "  ${G}✅${N} skills 目录可达（$(ls -1 "$SKILLS_DST" 2>/dev/null | wc -l | tr -d ' ') 项）"
+    # ⚠️ 2026-11-01 判据面＝落点面：通用 Skill 软链 0 件 ⇒ 用户看不到通用 Skill ⇒ 必红
+    #    （⛔旧写法只看目录可达⇒软链全失败也不报·静默假绿）。三态分账：待办/失败/正常不混装。
+    _CS=$("$PY" -c "
+import os,sys
+d=sys.argv[1]
+try: items=os.listdir(d)
+except Exception: items=[]
+ln=[x for x in items if os.path.islink(os.path.join(d,x))]
+print(len(ln), len(items))
+" "$SKILLS_DST" 2>/dev/null)
+    _LNK="${_CS%% *}"; _ALL="${_CS##* }"
+    _LNK="${_LNK:-0}"; _ALL="${_ALL:-0}"
+    if [ -n "$DRY" ]; then
+        echo -e "  ${C}[dry-run] 通用 Skill 软链未实跑（不判红·跑完即消）${N}"
+    elif [ "${_LNK}" -eq 0 ] && [ "${TOT}" -gt 0 ]; then
+        echo -e "  ${R}❌${N} 通用 Skill 软链 0 件（真源 ${TOT} 件·落点 0 件）——用户看不到通用 Skill"; MISS=$((MISS+1))
+    elif [ "${_LNK}" -eq 0 ]; then
+        echo -e "  ${Y}⏳待办${N} 通用 Skill 软链 0 件（记忆中心 技能配置/ 本轮无通用件·非端侧缺陷）${N}"
+    else
+        echo -e "  ${G}✅${N} 通用 Skill 软链 ${_LNK}/${TOT} 件（→ 唯一真源·共 ${_ALL} 项）${N}"
+    fi
 else echo -e "  ${R}❌${N} skills 目录缺失"; MISS=$((MISS+1)); fi
 if [ -f "$HOOKS_JSON" ] && "$PY" -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));assert isinstance(d.get('hooks'),dict)" "$HOOKS_JSON" 2>/dev/null; then
     echo -e "  ${G}✅${N} hooks.json 可解析（$(ls -l "$HOOKS_JSON" | awk '{print $5}') bytes）"
