@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # REG: family=工具|registry=记忆蓝图/04_系统文件设计/布洛陀脚本架构设计哲学/守卫编写规范.md§四|board=记忆蓝图/04_系统文件设计/布洛陀脚本架构设计哲学/03-进度看板.md
-"""conclusion_block_render.py — 三明智结论块确定性渲染器（v1.4·2026-10-30·Qoder CN）
+"""conclusion_block_render.py — 三明智结论块确定性渲染器（v1.5·2026-11-02·WorkBuddy）
+
+v1.5（2026-11-02 皮叔令「不能这样居中，很难看」）：对齐行居中 :-: 全部回退左贴 :---
+  （推翻 v1.2 居中令·单源改判以最新令为准）；T11 断言翻转=锁输出去居中标记、必有左贴行。
 
 v1.4（2026-10-30 用户字面授权「修」·内部记录 落地）：未知未知象限接触法锁——列内容条目拒渲、
   传空表只出占位行且不挂档（四象限地图§现形口径「不进档位体系·⛔永不列清单」的机制承接）。
@@ -100,7 +103,7 @@ def _cognition_block(cog):
     filled = [(q, items) for q, items in filled if q != "未知未知"]
     if len(filled) < 2:
         return ""
-    lines = ["认知格", "", "| 象限 | 本轮条目（档位 ｜ 内容 ｜ 指针） |", "|:-:|:-:|"]
+    lines = ["认知格", "", "| 象限 | 本轮条目（档位 ｜ 内容 ｜ 指针） |", "|:---|:---|"]
     for q, items in filled:
         q_cell = q[:2] + "<br>" + q[2:] if len(q) == 4 else q  # 象限名2字×2行对称（用户硬性要求·仅本模块）
         for it in items:
@@ -124,7 +127,7 @@ def render(f):
     if anchors:
         # v4.12.24 向第三层教科书对齐：真两列分栏，⛔垫字假对齐；正文过长=挤掉名字列的元凶，上限教填法
         out.append("| 追溯项 | 内容 |")
-        out.append("|:-:|:-:|")
+        out.append("|:---|:---|")
         for a in anchors:
             _sp = str(a).split("：", 1)
             if len(_sp) != 2 or not _sp[0].strip() or not _sp[1].strip():
@@ -140,14 +143,14 @@ def render(f):
     out.append("【第二层·关键依据】")
     out.append("")
     out.append("| 证据等级 |")
-    out.append("|:-:|")
+    out.append("|:---|")
     for e in f["evidence"]:
         out.append("| %s ｜ %s |" % (str(e["tier"]).strip(), str(e["text"]).strip()))
     out.append("")
     out.append("【第三层·结果+下一步】")
     out.append("")
     out.append("| 项 | 内容 |")
-    out.append("|:-:|:-:|")
+    out.append("|:---|:---|")
     if lvl == "L3":
         out.append("| Agent B验证 | %s |" % str(f["agent_b"]).strip())
     if lvl in ("L2", "L3"):
@@ -164,7 +167,7 @@ def render(f):
         out.append("下一步·落地步骤")
         out.append("")
         out.append("| 步骤 | 动作 |")
-        out.append("|:-:|:-:|")
+        out.append("|:---|:---|")
         for _i, _s in enumerate(f["landing_steps"], 1):
             out.append("| %d | %s |" % (_i, str(_s).strip()))
     out.append("")
@@ -247,11 +250,14 @@ def _selftest():
         ok = False; print("T10 FAIL 输出残留 **：%s" % _bold_left[:3])
     else:
         print("T10 输出无 ** 残留 OK")
-    # T11（2026-10-29 你令·观感居中）：输出对齐行一律居中，⛔左贴标记（长文本怼右缘）
-    if ":---" in _o or ":--|" in _o:
-        ok = False; print("T11 FAIL 输出含左贴对齐行")
+    # T11（v1.5·2026-11-02 皮叔令「居中很难看」翻转断言）：输出对齐行一律左贴 :---，⛔居中标记 :-:
+    _center_rows = [ln for ln in _o.splitlines() if ln.strip() in ("|:-:|", "|:-:|:-:|")]
+    if _center_rows or ":-:" in _o.replace(":---", ""):
+        ok = False; print("T11 FAIL 输出含居中对齐行：%s" % _center_rows[:3])
+    elif ":---" not in _o:
+        ok = False; print("T11 FAIL 输出缺左贴对齐行")
     else:
-        print("T11 表格全部居中列对齐 OK")
+        print("T11 表格全部左贴列对齐 OK")
     # T12（4.12.21 批·模板条文≡实现修复）：无认知格数据的合法轮必须可渲（自适应区⛔死锁成必出件）
     b = dict(good); b.pop("cognition")
     try:

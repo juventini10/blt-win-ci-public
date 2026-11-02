@@ -484,8 +484,53 @@ def run_self_test():
     return rc
 
 
+def refresh_todo_only() -> int:
+    """立即重算待做区（不写系统日志提醒·幂等·失败不阻断调用方）。
+
+    用法：`python3 distillation_scheduler.py --refresh`
+    调用时机：任一蒸馏 Skill 的 C6/终检**写完 ✅ 账行之后**——让待做区即刻反映
+    「该项已完成」，消除「完成到销账」的窗口（重复派发/重复劳动的来源）。
+
+    ⛔ 与 main() 的差别：main() 每日档会**写系统日志提醒**（含去重签名），
+       本入口**只刷待做区状态**——完成瞬间再刷一条提醒＝噪声面（提醒疲劳的来源）。
+    ⛔ 幂等：同一账本状态重复跑，待做区内容逐字不变。
+    """
+    try:
+        if not DISTILLATION_CENTER.exists():
+            print(f"❌ 蒸馏中心不存在: {DISTILLATION_CENTER}")
+            return 1
+        content = DISTILLATION_CENTER.read_text(encoding="utf-8")
+        expected_dates = parse_latest_expected_dates(content)
+        overdue = check_overdue(expected_dates)
+        today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        todo_section = generate_todo_section(overdue, today_str)
+        new_content = update_distillation_center(content, todo_section)
+        # 幂等护栏：内容无变化则不写盘（避免无谓 mtime 抖动触发他端 watcher）
+        if new_content == content:
+            print(f"✅ 待做区已是最新（{len(overdue)} 项逾期·无变化·未写盘）")
+            return 0
+        DISTILLATION_CENTER.write_text(new_content, encoding="utf-8")
+        print(f"✅ 待做区已重算（{len(overdue)} 项仍逾期·已刷新·未发提醒）")
+        return 0
+    except Exception as e:
+        # ⛔ 失败不阻断调用方：蒸馏本体已完成·待做区同步是辅助面·降级不阻塞销账
+        print(f"⚠️ 待做区重算失败（不阻断销账）: {e}")
+        return 0
+
+
 if __name__ == "__main__":
     import sys
     if "--self-test" in sys.argv:
         exit(run_self_test())
+    if "--refresh" in sys.argv:
+        # ── v1.3（2026-11-02·你「启动月度蒸馏=能做的全做完」根因修复）──────────────
+        # 病根：完成行落账后，待做区要等**次日**调度器跑才清 → 完成到销账之间有窗口，
+        #   窗口内读到的人会以为该项还没做 → 重跑（重复劳动+双本账）。
+        #   实锤（2026-11-02）：10-23 18:38 生成的待做区，到 11-02 22:32 成长箱蒸馏已完成，
+        #   但待做区仍挂「🧠 成长箱蒸馏 ⏳待执行」⇒ 派发清单会重复派发已完成的项。
+        # 修法：给完成方一个**立即重算**入口——Skill 的 C6/终检写完 ✅ 账行后调本入口，
+        #   待做区即刻重算（不写系统日志提醒·只刷状态·幂等）。
+        #   ⛔ 只刷待做区·不产提醒（提醒归每日档·避免"完成后又刷一条提醒"的噪声面）。
+        #   ⛔ 失败不阻断调用方（蒸馏已完成 ≠ 待做区必须同步成功·降级不阻塞销账）。
+        exit(refresh_todo_only())
     exit(main())

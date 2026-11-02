@@ -843,6 +843,118 @@ def _w4_persona(prompt):
 W3_LEDGER = os.path.join(os.path.expanduser("[记忆共享中心]/脚本中心/logs/runtime"), "w3_inject_ledger.jsonl")
 
 
+# ── 蒸馏派发动态清单（2026-11-02·你「启动月度蒸馏=能做的全做完」根因修复）──────
+# 病根：W1 契约⑥把蒸馏类型册**硬编码 3 类**（系统日志/日记月报/成长箱），而调度器
+#   distillation_scheduler.py 的类型册有 **7 类**——资产体检/卡库体检/切片管道复检/
+#   统一蒸馏管道 4 类不在契约里 → AI 读不到 = 无法激活 = 每月必漏跑（2026-11-02 实锤：
+#   昨夜跑完成长箱蒸馏后，其余 4 条无人接，账挂逾期）。
+#   另：契约⑥只写「发现⏳待执行项→说对应触发词」，**无「全部做完」义务**，
+#   派发层是散文提醒不是机制 → L1 发现层 + L3 回写层都在，唯 L2 派发层漏。
+# 修法（不新建管道不新建账本·01-蒸馏规范「复用不新建」）：
+#   ①类型册**实时从调度器读**（调度器才是执行侧真源）→ 类型增减自动同步，不再硬编码漂移；
+#   ②待做清单**实时从蒸馏中心 TODO 区读**（含逾期天数与触发词）→ 契约自带本轮实况清单；
+#   ③加「全部做完」义务 + 逐条销账自检 → 派发从散文变可执行清单。
+# 降级：调度器/蒸馏中心任一不可读 → 回退硬编码 3 类 + 提示（⛔绝不阻断对话·失败默认放行）。
+_DISTILL_SCHEDULER = os.path.expanduser(
+    "[记忆共享中心]/脚本中心/记忆蒸馏/distillation_scheduler.py")
+_DISTILL_CENTER = os.path.expanduser("[记忆共享中心]/记忆蒸馏/蒸馏中心.md")
+_TODO_START = "<!-- DISTILLATION-TODO:START -->"
+_TODO_END = "<!-- DISTILLATION-TODO:END -->"
+_DISTILL_FALLBACK = [
+    ("📊 系统日志蒸馏", "启动系统日志月度蒸馏", "system-logger"),
+    ("📓 日记月报", "启动每日伙伴月报", "daily-buddy"),
+    ("🧠 成长箱蒸馏", "启动成长箱月度蒸馏", "growth-box 流程C"),
+]
+
+
+def _distill_type_registry():
+    """实时读调度器类型册（真源=distillation_scheduler.py DISTILLATION_TYPES）。
+
+    ⛔ 不在本件复制一份类型册（那正是本轮根因：两处硬编码各写各的必然漂移）。
+    读不到 → 返回 (None, None) 让调用方走降级，绝不抛错阻断对话。
+    """
+    try:
+        with open(_DISTILL_SCHEDULER, encoding="utf-8") as f:
+            src = f.read()
+        import ast
+        tree = ast.parse(src)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign):
+                continue
+            tgt = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            if "DISTILLATION_TYPES" not in tgt:
+                continue
+            const = ast.literal_eval(node.value)
+            reg = []
+            for name, cfg in const.items():
+                reg.append((name, cfg.get("trigger", ""), cfg.get("skill", "")))
+            return reg, src
+    except Exception:
+        return None, None
+    return None, None
+
+
+def _distill_todo_rows():
+    """实时读蒸馏中心 TODO 区待执行行 → [(类型, 预期日期, 逾期天数, 触发词)]。
+
+    只取 ⏳待执行 状态的行（已完成行不重复派发·L3 回写层负责销账）。
+    """
+    try:
+        with open(_DISTILL_CENTER, encoding="utf-8") as f:
+            content = f.read()
+        if _TODO_START not in content or _TODO_END not in content:
+            return []
+        region = content.split(_TODO_START, 1)[1].split(_TODO_END, 1)[0]
+        rows = []
+        for line in region.split("\n"):
+            if "⏳待执行" not in line or not line.strip().startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) < 5:
+                continue
+            dtype, expected, days = cells[0], cells[1], cells[2]
+            trigger = ""
+            if "说「" in cells[4] and "」" in cells[4]:
+                trigger = cells[4].split("说「", 1)[1].split("」", 1)[0]
+            rows.append((dtype, expected, days, trigger))
+        return rows
+    except Exception:
+        return []
+
+
+def _distill_dispatch_block():
+    """生成 W1 契约⑥的「本轮待做蒸馏清单」段（动态·含全部可执行项 + 全部做完义务）。
+
+    ⛔ 本段是 L2 派发层的**可执行清单**——清单项 = 必须逐条激活的项（无「可选」档）。
+    """
+    registry, _src = _distill_type_registry()
+    rows = _distill_todo_rows()
+    if not registry:
+        registry = list(_DISTILL_FALLBACK)
+        degraded = True
+    else:
+        degraded = False
+    trig_map = {n: (t, s) for n, t, s in registry}
+    lines = []
+    if rows:
+        lines.append("📋 **本轮待做蒸馏清单（实时读自蒸馏中心待做区·逐条激活·⛔不许挑着做）**：")
+        for dtype, expected, days, trigger in rows:
+            t, s = trig_map.get(dtype, (trigger, ""))
+            t = t or trigger or "(读调度器类型册取触发词)"
+            s = s or "(见调度器类型册)"
+            lines.append("· %s ｜ 预期 %s ｜ 逾期 %s ｜ 说「%s」→ %s" % (dtype, expected, days, t, s))
+    else:
+        lines.append("📋 **本轮待做蒸馏清单（实时读自蒸馏中心待做区）：当前无 ⏳待执行项**。")
+    if degraded:
+        lines.append("⚠️ 调度器类型册不可读·本清单降级为硬编码 3 类（⛔不影响对话·下次调用自动恢复）")
+    lines.append("")
+    lines.append("✅DO **全部做完义务**：清单有几条就必须做几条——每条说完触发词后等该 Skill 走完完整流程"
+                 "（⛔不跳过流程自己代行·PAT-047 授权≠流程豁免），做完即销账；"
+                 "收口时逐条回读蒸馏中心确认对应 ✅ 账行已落账且待做区状态已清，"
+                 "⛔未做完的项必须在收口时显式列出并说明阻塞原因（不许静默跳过·不许只报部分完成）。")
+    return "\n".join(lines)
+
+
 def _inject(prompt: str) -> None:
     if not prompt:
         return
@@ -941,8 +1053,7 @@ def _inject(prompt: str) -> None:
             "每月1号或皮叔问「有什么要蒸馏的/做蒸馏/月度蒸馏」时，✅DO读取 [记忆共享中心]/记忆蒸馏/蒸馏中心.md 的"
             "「🔔待做蒸馏」区域（<!-- DISTILLATION-TODO:START/END --> 之间·由 distillation_scheduler.py 每月1号"
             "launchd 机械生成·⛔禁手改标记间内容），发现⏳待执行项→在对话中说对应触发词激活对应 Skill 执行："
-            "系统日志蒸馏→说「启动系统日志月度蒸馏」→system-logger；日记月报→说「启动每日伙伴月报」→daily-buddy；"
-            "成长箱蒸馏→说「启动成长箱月度蒸馏」→growth-box 流程C。"
+            "%s"
             "⛔DO NOT 跳过 Skill 流程自己代行蒸馏（PAT-047——蒸馏须过 C3.5 三思维复核等完整步序，授权不豁免流程）。"
             "蒸馏完成后✅DO确认蒸馏中心已完成记录已更新且待做项状态已清除。"
             "三层闭环：L1 机械发现（launchd 每月1号扫描逾期项生成待做清单）→ L2 童灵调度（本条）→ L3 自动回写（各 Skill C6/终检更新蒸馏中心）。"
@@ -971,7 +1082,7 @@ def _inject(prompt: str) -> None:
             "L4-2 自律（对齐 08 §三）：域切片加载遵循'一次一域≤2切片'——若本轮 W3 命中切片 >2，TSL 输出须显式标 🟡执行缺口型（注意力稀释风险）并升级完整版，不静默批量全载；"
             "L3-3 域判定须复用 W3 路由的 _match_layers 结果（域切片加载与 L3-3 域判定同源，不另起一套判断，避免 L3-3 与 L4-1 切片列表自相矛盾）。"
             "本清单是上岗仪式一部分，非可选；Stop 守卫 tsl_hits 观察层机械记录各层命中，未输出清单的回合在台账留痕。"
-            % (_identity_line, reflection_end)
+            % (_identity_line, _distill_dispatch_block(), reflection_end)
         )
         # 2026-10-11 皮叔令「签名行不要写死·哪个端自行鉴别」根治：义务①模板的末行签名
         #   原两处硬编码 WB 示例值（2026-09-09 签名串端案设了 _END_EMBLEMS 却漏接模板行——

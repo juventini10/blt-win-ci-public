@@ -1,7 +1,7 @@
 ---
 ---
 
-# 触发测试 — 唤醒记忆 awaken-memory-system v8.5.2（不应触发）
+# 触发测试 — 唤醒记忆 awaken-memory-system v8.5.4（不应触发）
 
 ## 不相关场景（负例）
 

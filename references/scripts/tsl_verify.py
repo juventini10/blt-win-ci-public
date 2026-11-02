@@ -57,7 +57,7 @@ GUARD_STATE = os.path.join(os.environ.get("WORKBUDDY_CONFIG_DIR") or os.path.exp
                            "doenglingz_guard_state.json")
 CACHE = os.environ.get("TSL_VERIFY_CACHE") or os.path.expanduser("~/.cache/tsl_verify")   # env=测试隔离缝（对齐 closeout 同名先例·守卫规范 §3.9）
 W3_LEDGER = os.path.join(BASE, "脚本中心/logs/runtime/w3_inject_ledger.jsonl")  # 2026-10-07 W3根治：读侧对齐写侧(doenglingz_inject_prompt L489)——写读分根即假红
-__version__ = "v0.11.11"  # v0.11.11(2026-11-01·WB 童灵·7fd9a04d 凭证未落账案)：stamps.log/树档写入的 except 静默吞改 Fail-Loud（写入失败显形告警·治「凭证链断而无人知→守卫误判伪造级」·§3.5 崩溃即静默同族·self-test 17/17 无回归）。上版 v0.11.10：since 校验/树渲染不变。
+__version__ = "v0.11.12"  # v0.11.12（2026-11-03·MiniMax Code 端·月度蒸馏轮收口）：L5 守卫台账读面改候选集（_guard_state_files）——旧读端写死 ~/.workbuddy/doenglingz_guard_state.json ⇒ 新端写 ~/.minimax/doenglingz_guard_state_minimaxcode.json ⇒ 本端「守卫当轮行」主判据恒读不到 ⇒ 本端 L5 恒 🔴（读面与写面分根·与 v0.11.6 L3 侧同源、当年只修 L3 侧漏 L5 侧，本次补齐）；实证：修前 env 覆盖探针复跑 L5 由 🔴 转 ✅，修后常规跑法直接 ✅。台账行自带 session_id ⇒ 按会话匹配端无关 ⇒ 只增可见性不造行。上版 v0.11.11：since 校验/树渲染不变（stamps.log/树档写入的 except 静默吞改 Fail-Loud·self-test 17/17 无回归）。
 #   v0.11.10（2026-10-24·Qoder Desktop·L3 声明台账读写同源根治）：
 #     写端：Qoder Stop 补挂 doenglingz_level_declare_guard.py（配置根=$HOME/.qoder）；
 #     读端：_declare_src_match 加 qoderdesktop→{qoder,qoderdesktop} 别名——旧等值比较
@@ -467,6 +467,29 @@ def _norm_sid(sid):
     """会话号归一（对齐共脚本/守卫 v1.2 同款：触发侧带 .session.execution 后缀·Stop 侧不带）"""
     return str(sid or "").replace(".session.execution", "")
 
+def _guard_state_files():
+    """守卫台账候选集（写端按端分文件：<配置根>/doenglingz_guard_state_<src>.json）。
+
+    v0.11.12（2026-11-03·MiniMax Code 端·本端 L5 恒红根治）：旧读端把路径写死
+    `~/.workbuddy/doenglingz_guard_state.json` ⇒ 新端（写 `~/.minimax/doenglingz_guard_state_minimaxcode.json`）
+    永远读不到 ⇒ L5「守卫当轮行」主判据对本端恒失效 ⇒ 回落痕账本 ⇒ 本端 L5 恒 🔴。
+    病灶与本文件 v0.11.6 的 L3 读面根治**同源**（写端按端写、读端只盯 ~/.workbuddy），
+    当年只修了 L3 侧、漏了 L5 侧 ⇒ 本次补齐（不是新发明，是同族补全）。
+    正解＝读端按**候选集**扫（env 覆盖优先 + 家目录各端配置根）；
+    台账行自带 session_id ⇒ 按会话匹配天然端无关 ⇒ 只增加可见性、不可能凭空造行。
+    """
+    out = []
+    env = os.environ.get("WORKBUDDY_CONFIG_DIR")
+    if env:
+        out.append(os.path.join(env, "doenglingz_guard_state.json"))
+    home = os.path.expanduser("~")
+    for p in sorted(_glob.glob(os.path.join(home, ".*", "doenglingz_guard_state*.json"))):
+        if p not in out:
+            out.append(p)
+    if GUARD_STATE not in out:
+        out.append(GUARD_STATE)
+    return out
+
 def _guard_row_l5(session, since_dt):
     """v0.11.5 L5 对账口径＝守卫台账当轮行（2026-10-06 你令·详见 __version__ 注）。
 
@@ -474,7 +497,8 @@ def _guard_row_l5(session, since_dt):
     """
     if not session:
         return None
-    if not os.path.isfile(GUARD_STATE):
+    _gfiles = [f for f in _guard_state_files() if os.path.isfile(f)]
+    if not _gfiles:
         return None
     import json as _json2, time as _time2
     day = since_dt.strftime("%Y-%m-%d")
@@ -485,7 +509,7 @@ def _guard_row_l5(session, since_dt):
     rows = []
     while True:
         rows = []
-        for line in _read(GUARD_STATE).splitlines():
+        for line in "\n".join(_read(f) for f in _gfiles).splitlines():
             line = line.strip()
             if not line:
                 continue

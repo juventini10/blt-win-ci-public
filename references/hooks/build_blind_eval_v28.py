@@ -18,7 +18,7 @@ import build_blind_eval as base
 
 HOME = Path.home()
 MC = HOME / "\u4e2a\u4ebaAI\u6863\u6848"
-SPEC = MC / "\u6570\u5b57\u5206\u8eab" / "\u7eb2\u5e16\u4fa0\u00b7\u4eba\u683c\u89c4\u683c\u4e66.md"
+SPEC = MC / "\u6570\u5b57\u5206\u8eab" / "\u7ae5\u7075\u00b7\u4eba\u683c\u89c4\u683c\u4e66.md"
 
 USED = {4,6,21,22,29,40,52,61,65,66,68,71,73,79,84,85,87,92,95,96,97,99,104,106,
         114,123,124,132,179,183,233,276,297,307,346,369,380,384,385,387,390,391,

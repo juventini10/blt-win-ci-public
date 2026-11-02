@@ -2,7 +2,7 @@
 # TRUTH_OF: 脚本中心/search_kb.py   # 真源声明·派生面须软链指向本件（v1.2.227 副本声明面）
 # -*- coding: utf-8 -*-
 """
-search_kb.py v0.3.22 — 知识沉淀自动检索（v0.3.22·2026-10-28 条件式 cross-encoder 重排接入 search() 出口（默认关·KB_RERANK=1 可开/--rerank 双开关·7s 硬预算·失败回退基线·gate0 18/36 逐位不变·任务卡§十六接线·版本串归正补记本次头串曾滞后 v0.3.19））（v0.3.21·2026-10-27 蓝图卡分支 text 补 title+source_files·区分型字段入检索面）（v0.3.20·2026-10-27 点名卡地板分1e-4强制入池 + type 白名单加 blueprint-card）（v0.3.19·2026-10-27 卡号可检索三刀：title编号token入text·点名并入标题保底通道·点名卡强制入池(地板分1e-4)·schema4→5强制重建·真尺14/21与改前版逐位相同零退化·生产 kb_serve 已重启验证）（v0.3.18·2026-10-22 Win反馈单V2 N-1：目录名形态归一兜底 _norm_layout_walk·候选链全miss后按 normalize(空格→-) 逐段扫描+漂移显形，根治历史空格形态实盘检索源静默不可达·配套实现 --status 真分支（原死接口被当查询词吃·E-1 状态头机检取）·负例夹具N1五测+E1三测·回滚点=记忆琥珀/fbkV2-fix-20261022/）（v0.3.17·2026-10-17 模块C库容治理：C-2 非卡入库排除表(_NONCARD_EXCLUDE)+缓存schema4·C-5 成长箱纯元块结构过滤(_is_meta_block·标题黑名单弃用改物理判据)·gate0 71%/0.638 前后对照零退化·回滚点=记忆琥珀/模块C-白名单-bak-20261017/）（v0.3.16·2026-10-16 门3换参 K_RRF 60→30·NDCG+3.5pp零Recall代价·标题保底floor机理·真尺n=21验证·回滚点=记忆琥珀search_kb_v0.3.15_K60_改前·母卡§八门3节）（v0.3.15·2026-10-13 技能卡专属分支·任务卡T3 判据预注册见工单§8）（v0.3.14·2026-10-07 CLI实跑落trail·原则17机械锚补全）（前值 v0.3.13·2026-10-05 布局+引擎根双自适应·P2 G4 检索面修复）（第二刀·BM25式+路由加权+ bge 向量 RRF 融合；v0.3 实体直通+单一真源）
+search_kb.py v0.3.27 — 知识沉淀自动检索（v0.3.27·2026-11-02 缓存根隔离口（任务卡「压测夹具污染生产缓存」·你令按卡面施工）：新增 _doc_cache_path() 使用处求值＋KB_CACHE_DIR 覆盖缓存根，parts 与 .rebuild.lock 随 dirname 派生，一个口把「主缓存+分片+重建锁」三件一起隔离；判据形态直接承 #C0313（⛔模块级 X = os.environ.get(...) 冻结：import 先于 setenv 令隔离口永远无效⇒夹具静默回到生产缓存）；默认态逐字节不变（env 未设即原路径，schema 仍 10、⛔动检索面，weekly_miss_digest 的字符串替换耦合位保留有效）；配套 test_atomicparts_fixture 改在 tempfile 里从空缓存重建（⛔改名生产缓存⛔os.remove 旧底）并撤掉 GUARD-SKIP 回链内自动跑；同批新增 KB_NO_SERVE=1 隔离閘（实测抓出：CLI 快通道走 kb_serve daemon 不触 build_docs，夹具读者空返回假绿，閘后才是真冷路径并发重建；对 daemon 零影响）；夹具 10 项断言含「生产缓存 mtime+size 零触碰」兼作隔离口回归钉；回滚点=记忆琥珀/压测夹具隔离-20261102/）（v0.3.26·2026-11-02 锁定统一呈现（皮叔令「做」）：新增 card_line() 单一渲染器＋_card_id()／_disp() 取卡内真源字段作编号与展示标题（kb_no/concept_id/card_id＋title/topic/concept_name，⛔文件名抠号），类型词退役（#S384：代号统一后标记字段可退役；实测五字母与目录双射）、路径行退出人读层（对人零增量）、得分/命中转 KB_VERBOSE 调试档；读书卡归属段>12字整段不显、缺全局号显 — 不静默；--drill 新增认 #编号（resolve_id_arg，⛔断旧路径用法）；kb_serve 透传新字段、kb_inject_prompt 改共用同一渲染器（两出口同形）；⛔动 title/text——呈现与检索面解耦，召回零影响（id 也⛔入检索面，守 C-261）；schema 9→10；夹具 test_display_contract 16 条先红（API 不存在）后绿；回滚点=记忆琥珀/文章卡出索-20261102/）（v0.3.25·2026-11-02 入库类型契约（皮叔令「符合愿景、符合检索准确率的最优解执行」）：知识池非卡四族全出索（note 99／source-checklist 47／quiz-bank 16／ledger 4），判据首次采纳 守卫/kb_index_guard.sh 既有的「穷举清单/精华摘要=非卡」定义（之前只有 INDEX 侧采纳＝规范与机制脱钩）；新增 _type_gate 三态＋未知型不静默（知识池未知＝入面＋告警，蓝图未知＝排除＋告警，经 _log_degrade corpus_unknown_type 显形）；蓝图分支改走同一契约消除双写；schema 8→9；题库与归并表在 5629 条历史查询里零命中、穷举清单 88 次命中里 55 次落尾部且前列多为对话碎片带出的噪音（逐条判后出索）；夹具转正 scripts/test_pool_type_contract.py 并首次接入 eval_health_guard 自动跑；gate0 同口径零退化；回滚点=记忆琥珀/文章卡出索-20261102/）（v0.3.24·2026-11-02 精华摘要出索：知识池入库判据加 type:note 跳过（皮叔令「精华摘要不能入检索」），note 99 件含已出索的 8 件、本批净减 91；判据选 type 字段⛔文件名后缀（后缀两套并存=命名不统一实证，且真卡名含「精华」字样会被粗匹配误伤）；承当日 QCN-20261102-002 新律——改入库判据同批升 schema 7→8 强制重建；用例 tmp-note-exclude-test 七条先红后绿（含反误伤/回归钉）；gate0 同口径零退化；回滚点=记忆琥珀/文章卡出索-20261102/）（v0.3.23·2026-11-02 文章卡片目录级出索：新增 _POOL_EXCLUDE_DIRS（判据=知识池下一层目录名，⛔source_type—article 149 张含毛选 128 张，按字段会误伤）+物理文件不动（承 C-2 归属与位置解耦纪律）+同批修 5 条 source 错指针（4 条多插一层 05-知识池/、1 条指 Downloads）并将原文《第 1 集-第一性原理》搬进 03-零碎知识；gate0 语义态同口径对照零退化；回滚点=记忆琥珀/文章卡出索-20261102/（皮叔令「文章卡片里面的卡片没有必要留，作废就是不检索」））（v0.3.22·2026-10-28 条件式 cross-encoder 重排接入 search() 出口（默认关·KB_RERANK=1 可开/--rerank 双开关·7s 硬预算·失败回退基线·gate0 18/36 逐位不变·任务卡§十六接线·版本串归正补记本次头串曾滞后 v0.3.19））（v0.3.21·2026-10-27 蓝图卡分支 text 补 title+source_files·区分型字段入检索面）（v0.3.20·2026-10-27 点名卡地板分1e-4强制入池 + type 白名单加 blueprint-card）（v0.3.19·2026-10-27 卡号可检索三刀：title编号token入text·点名并入标题保底通道·点名卡强制入池(地板分1e-4)·schema4→5强制重建·真尺14/21与改前版逐位相同零退化·生产 kb_serve 已重启验证）（v0.3.18·2026-10-22 Win反馈单V2 N-1：目录名形态归一兜底 _norm_layout_walk·候选链全miss后按 normalize(空格→-) 逐段扫描+漂移显形，根治历史空格形态实盘检索源静默不可达·配套实现 --status 真分支（原死接口被当查询词吃·E-1 状态头机检取）·负例夹具N1五测+E1三测·回滚点=记忆琥珀/fbkV2-fix-20261022/）（v0.3.17·2026-10-17 模块C库容治理：C-2 非卡入库排除表(_NONCARD_EXCLUDE)+缓存schema4·C-5 成长箱纯元块结构过滤(_is_meta_block·标题黑名单弃用改物理判据)·gate0 71%/0.638 前后对照零退化·回滚点=记忆琥珀/模块C-白名单-bak-20261017/）（v0.3.16·2026-10-16 门3换参 K_RRF 60→30·NDCG+3.5pp零Recall代价·标题保底floor机理·真尺n=21验证·回滚点=记忆琥珀search_kb_v0.3.15_K60_改前·母卡§八门3节）（v0.3.15·2026-10-13 技能卡专属分支·任务卡T3 判据预注册见工单§8）（v0.3.14·2026-10-07 CLI实跑落trail·原则17机械锚补全）（前值 v0.3.13·2026-10-05 布局+引擎根双自适应·P2 G4 检索面修复）（第二刀·BM25式+路由加权+ bge 向量 RRF 融合；v0.3 实体直通+单一真源）
 职责: 任务描述 → ①意图路由（5类型查路由表）→ ②检索（路由加权×3 + 词面命中×IDF + 向量余弦）
       → ③Top-K（路径+命中理由+摘要）。输出带纠错标记说明（⛔ 这条没用 → 回写路由表/关键词）。
       数据源: 知识池卡(05-知识池·读书卡唯一真源) + 立场卡(AI学习库) + 概念卡(08-概念层) + Skill。
@@ -889,6 +889,19 @@ def skill_card_view(raw, fm):
 # 指纹失配才全量重建。愿景三问：强化闭环（检索永不断粮）/减少人工（零维护）/越用越好用（重复检索提速）。
 _DOC_CACHE = os.path.join(_ENGINE_DIR, "cache", "doc_corpus.json")
 
+
+def _doc_cache_path():
+    """索引缓存路径——✅DO 使用处动态求值，⛔DO NOT 模块级冻结（#C0313：模块 import 先于
+    测试 setenv，`X = os.environ.get(...)` 一次求值令隔离口永远无效 ⇒ 夹具读真实路径）。
+    KB_CACHE_DIR＝缓存根覆盖口（压测/隔离专用）：parts 目录与 .rebuild.lock 随 dirname 派生，
+    故一个口即把「主缓存+分片+重建锁」三件一起隔离；⛔不参与检索语义，默认态逐字节不变。
+    （本函数返回的默认分支即模块级 _DOC_CACHE，weekly_miss_digest 的字符串替换耦合位仍有效。）"""
+    _c = os.environ.get("KB_CACHE_DIR")
+    if _c:
+        return os.path.join(os.path.abspath(os.path.expanduser(_c)), "doc_corpus.json")
+    return _DOC_CACHE
+
+
 _CHUNK = 200  # 每分片文件数（沙箱文件监视配额实测 ~400-650 漂移·200 留双倍安全余量）
 
 def _glob_patterns():
@@ -917,10 +930,40 @@ _NONCARD_EXCLUDE = {
     "BLUEPRINT_INDEX_DIR": {"00-蓝图索引卡格式规范.md", "蓝图索引卡-.bak-20260923-acregistry.md"},
     "GROWTH_DIR": {"批量归属复核表-2026-09-26.md"},  # C-5 终判（2026-10-17 广授权）：一次性复核交付物=历史档案，非可检经验
 }
+# 目录级出索表（2026-11-02 皮叔令「文章卡片里面的卡片没有必要留，作废，就是不检索」）：
+# 整目录退出检索面，⛔物理文件不动（承上条 C-2「归属与位置解耦」纪律）；回滚=清空本集合。
+# 判据用目录名，⛔用 source_type——实测：source_type=article 共 149 张，其中 128 张住 毛选/
+# （毛选书内篇目按「文」登记），按 source_type 出索会连毛选卡一起误伤。
+_POOL_EXCLUDE_DIRS = {"文章卡片"}
+# ── 类型契约（v0.3.25·2026-11-02 皮叔令「符合愿景、符合检索准确率的最优解执行」）──
+# 判据真源＝守卫/kb_index_guard.sh 的卡片定义（该守卫 v1.3 起已明文认定「C1穷举清单=元文件非卡」
+#   「精华摘要两变体=非卡」），本契约让检索面首次采纳它——是规范与机制脱钩的收口，⛔我新造的规则。
+# ⛔用文件名而✅用 type 字段：后缀形态两套并存（-精华摘要 76 / -精华 23）＝命名纪律已飘，
+#   按名匹配等于把判据绑在纪律上；真卡「芒格智慧箴言-卡片16-书单智慧精华」名含「精华」，
+#   粗匹配必误杀。type 是 sucair 落的结构字段，改名不失效，实测分型互斥（note 中真卡 0）。
+# 方向性纪律：未知型不静默——知识池未知＝入面＋告警（该目录 2682 件全带 type，未知≈新卡型，
+#   宁多检不漏检）；蓝图未知＝排除＋告警（该目录混有工作文件，入面会让 C-2 病灶复发）。
+#   两向不同但都⛔沉默，与「空壳目录静默消失／注入静默失效」同族病的治法。
+_POOL_CARD_TYPES = {"reading-card"}
+_BLUEPRINT_CARD_TYPES = {"blueprint-index", "blueprint-card"}
+_KNOWN_NONCARD_TYPES = {"note", "source-checklist", "quiz-bank", "ledger", "reference"}
+
+
+def _type_gate(t, card_types):
+    """入库类型契约三态：'card' 入面 ｜ 'noncard' 静默出索 ｜ 'unknown' 未知（显形）。"""
+    if t in card_types:
+        return "card"
+    return "noncard" if t in _KNOWN_NONCARD_TYPES else "unknown"
+
+
 def _is_noncard(p_):
     _b = os.path.basename(p_)
+    _d = os.path.normpath(os.path.dirname(p_))
+    if os.path.basename(_d) in _POOL_EXCLUDE_DIRS and \
+            os.path.normpath(os.path.dirname(_d)) == os.path.normpath(POOL_DIR):
+        return True  # 知识池下一层子目录整体出索（成长箱 key 带 #块号不受影响）
     for _dk, _names in _NONCARD_EXCLUDE.items():
-        if _b in _names and os.path.normpath(os.path.dirname(p_)) == os.path.normpath(globals().get(_dk, "")):
+        if _b in _names and _d == os.path.normpath(globals().get(_dk, "")):
             return True
     return False
 
@@ -969,12 +1012,13 @@ def build_docs():
     等锁上限 240s（超时退回直建路径·不悬死调用方）。"""
     paths = _corpus_paths()
     fp = _fingerprint(paths)
+    _cache_file = _doc_cache_path()  # 使用处求值（#C0313：隔离口须跟着运行态走）
 
     def _try_read_cache():
         try:
-            if os.path.isfile(_DOC_CACHE):
-                c = json.load(open(_DOC_CACHE, encoding="utf-8"))
-                if c.get("schema") == 6 and c.get("fingerprint") == fp and isinstance(c.get("docs"), dict):
+            if os.path.isfile(_cache_file):
+                c = json.load(open(_cache_file, encoding="utf-8"))
+                if c.get("schema") == 10 and c.get("fingerprint") == fp and isinstance(c.get("docs"), dict):
                     return c["docs"]
         except Exception:
             pass  # 缓存损坏=视作未命中，走全量重建
@@ -984,7 +1028,7 @@ def build_docs():
     if docs is not None:
         return docs
     # ── 重建走分片子进程：每个子进程只 open ~_CHUNK 个文件（配额内），本进程零源文件 open ──
-    parts_dir = os.path.join(os.path.dirname(_DOC_CACHE), "parts")
+    parts_dir = os.path.join(os.path.dirname(_cache_file), "parts")
     try:
         os.makedirs(parts_dir, exist_ok=True)
         lockf = open(os.path.join(parts_dir, ".rebuild.lock"), "w")
@@ -1024,7 +1068,7 @@ def build_docs():
                     break
                 docs.update(json.load(open(partf, encoding="utf-8")))
             if _ok and docs:
-                _atomic_write_json(_DOC_CACHE, {"schema": 6, "fingerprint": fp, "docs": docs})
+                _atomic_write_json(_cache_file, {"schema": 10, "fingerprint": fp, "docs": docs})
                 for _old in glob.glob(os.path.join(parts_dir, "part_*.json")):
                     _stem = os.path.basename(_old)
                     try:
@@ -1042,8 +1086,8 @@ def build_docs():
         print("⚠️ 分片重建异常 %s（退回当前解释器直建·可能触发读配额）" % _e, file=sys.stderr)
     docs = _build_docs_full()
     try:
-        os.makedirs(os.path.dirname(_DOC_CACHE), exist_ok=True)
-        _atomic_write_json(_DOC_CACHE, {"schema": 6, "fingerprint": fp, "docs": docs})
+        os.makedirs(os.path.dirname(_cache_file), exist_ok=True)
+        _atomic_write_json(_cache_file, {"schema": 10, "fingerprint": fp, "docs": docs})
     except Exception:
         pass  # 缓存写失败不阻断检索主流程（下次重建即可）
     return docs
@@ -1066,6 +1110,7 @@ def _build_docs_chunk(k):
 def _build_docs_full():
     """全库扫描建索引：{path: {"title","text","cat","src","summary"}}（v0.3.5 起由 build_docs 缓存包装调用）"""
     docs = {}
+    _unknown = set()  # 类型契约显形集（未知型·收尾落 kb_degrade，⛔静默）
 
     # 知识池卡片（含文章卡片）：frontmatter category/tags + 标题 + summary + 正文前缀
     for p in glob.glob(os.path.join(POOL_DIR, "*", "*.md")):
@@ -1074,13 +1119,22 @@ def _build_docs_full():
             continue
         raw = open(p, encoding="utf-8").read()
         fm = parse_fm(raw)
+        # 知识池类型契约（v0.3.25 扩族；上批 v0.3.24 只排 note 一族）
+        #   实盘依据（kb_query_trail.jsonl 5629 条历史留痕逐条判）：精华摘要曾作命中 165 次（已出索）；
+        #   穷举清单 88 次——其中 55 次落在 #8-#10 尾部，前列查询词多为「还有要做的吗」类对话碎片
+        #   被「清单」二字带出（噪音非需求）；题库 0 次；归并表 0 次——后两族纯占位，出索零风险。
+        _g = _type_gate(fm.get("type", [""])[0], _POOL_CARD_TYPES)
+        if _g == "noncard":
+            continue
+        if _g == "unknown":
+            _unknown.add("知识池:" + (fm.get("type", [""])[0] or "(缺type)"))
         cat = fm.get("category", []) + fm.get("tags", [])
         summary = fm.get("summary", [""])[0]
         title = base.replace(".md", "")
         body = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.S)[:500]
         _use = fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else str(fm.get("usage") or "")
         docs[p] = {"title": title, "text": " ".join(cat) + " " + title + " " + summary + " " + body,
-                   "cat": " ".join(cat), "src": "知识池", "summary": summary or title, "trust": trust_of(fm), "usage": str(_use or "")}
+                   "cat": " ".join(cat), "src": "知识池", "summary": summary or title, "trust": trust_of(fm), "usage": str(_use or ""), **_disp(fm, "知识池", base)}
 
     # ⛔ 2026-10-30 你令（第二次重申）：01-读书笔记 是**老版**、不可检索；读书卡唯一真源＝05-知识池。
     #   原块把老笔记以 src="读书笔记" 混进召回 ⇒ 制造"读书卡检索命中了别的东西"的假象。
@@ -1105,7 +1159,7 @@ def _build_docs_full():
             # v0.3.19：技能卡 view 同不含 title ⇒ 编号 token 在外层拼（⛔不改 skill_card_view 返回值形态）
             _kid = " ".join(dict.fromkeys(re.findall(r"[SKC]-?\d{3,}", title)))
             docs[p] = {"title": title, "text": (skill_card_view(raw, fm) + " " + _kid).strip(),
-                       "cat": " ".join(cat), "src": "立场卡", "summary": _sk, "trust": trust_of(fm), "usage": (fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else "")}
+                       "cat": " ".join(cat), "src": "立场卡", "summary": _sk, "trust": trust_of(fm), "usage": (fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else ""), **_disp(fm, "立场卡", os.path.basename(p))}
             continue
         sec = {k: extract_section(body_full, k) for k in LOAD_BEARING}
         segs = [s for s in sec.values() if s]  # 承重字段优先
@@ -1118,7 +1172,7 @@ def _build_docs_full():
         summary = fm.get("summary", [""])[0] or brief(sec.get("主要矛盾") or sec.get("立场")) or title
         docs[p] = {"title": title,
                    "text": " ".join(cat) + " " + _idtok + " " + " ".join(segs) + " " + body_full[:300],
-                   "cat": " ".join(cat), "src": "立场卡", "summary": summary, "trust": trust_of(fm), "usage": (fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else "")}
+                   "cat": " ".join(cat), "src": "立场卡", "summary": summary, "trust": trust_of(fm), "usage": (fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else ""), **_disp(fm, "立场卡", os.path.basename(p))}
 
     # 概念卡：标题 + 正文前缀
     for p in glob.glob(os.path.join(CONCEPT_DIR, "*.md")):
@@ -1132,7 +1186,7 @@ def _build_docs_full():
         _tg = " ".join(str(x) for x in _tags)
         _use = fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else ""
         docs[p] = {"title": title, "text": title + " " + body,
-                   "cat": _tg, "src": "概念卡", "summary": title, "usage": str(_use or ""), "trust": trust_of(fm)}
+                   "cat": _tg, "src": "概念卡", "summary": title, "usage": str(_use or ""), "trust": trust_of(fm), **_disp(fm, "概念卡", os.path.basename(p))}
 
     # 成长箱 learnings：错误模式与实证记录（2026-08-29 扩·GROWTH 源）
     # 依据：分身判据层的证据应"可达"——此前成长箱 45 条模式 + 59 条记录完全检索不到，
@@ -1173,7 +1227,14 @@ def _build_docs_full():
         # v0.3.20（2026-10-27 蓝图卡重造）：白名单加 blueprint-card——
         #   新卡与索引卡同目录存放（同目录省了"加源"），但 type 不同必须同批放行，
         #   否则新卡落在目录里却一张都进不了索引（症状更隐蔽：文件在、搜不到）。
-        if fm.get("type", [""])[0] not in ("blueprint-index", "blueprint-card"):
+        # v0.3.25：改走同一份 _type_gate（非卡族与知识池共用定义，消除双写漂移）；蓝图目录
+        #   混有工作文件（00-规范/抽检单），未知型保持排除但计数显形——sucair 若改 type 名，
+        #   「文件在、搜不到」不再静默。当前该目录未知型＝0 件（18 件非白名单恰为
+        #   reference1＋source-checklist12＋ledger5，全属已知族）。
+        _g = _type_gate(fm.get("type", [""])[0], _BLUEPRINT_CARD_TYPES)
+        if _g != "card":
+            if _g == "unknown":
+                _unknown.add("蓝图:" + (fm.get("type", [""])[0] or "(缺type)"))
             continue
         title = fm.get("title", [base.replace(".md", "")])[0]
         core_principles = fm.get("core_principles", [])
@@ -1192,7 +1253,7 @@ def _build_docs_full():
         _use = fm.get("usage", [""])[0] if isinstance(fm.get("usage"), list) else ""
         docs[p] = {"title": title, "text": text,
                    "cat": " ".join(tags), "src": "蓝图索引卡",
-                   "summary": summary or title, "usage": str(_use or ""), "trust": trust_of(fm)}
+                   "summary": summary or title, "usage": str(_use or ""), "trust": trust_of(fm), **_disp(fm, "蓝图索引卡", base)}
 
     # Skill 一手 SKILL.md：工程类第一优先级知识源（方案 v3 §3.1）
     for p in glob.glob(os.path.join(_MC, "技能配置", "*", "SKILL.md")):
@@ -1241,6 +1302,12 @@ def _build_docs_full():
         docs.pop(k)
     if _ex and os.environ.get("KB_DEBUG"):
         print("🧹 C-2 排除非卡 %d 条: %s" % (len(_ex), ", ".join(sorted(os.path.basename(x) for x in _ex))), file=sys.stderr)
+    # 类型契约显形（v0.3.25）：未知型不静默——复用 _log_degrade 既有观测通道，失败不阻断
+    if _unknown:
+        try:
+            _log_degrade("corpus_unknown_type", ",".join(sorted(_unknown)))
+        except Exception:
+            pass
     return docs
 
 
@@ -1473,6 +1540,128 @@ def search(task, k=K, rerank=None):
     return scores[:k], buckets
 
 
+def _card_id(fm):
+    """编号归一：#字母+数字。字母与卡种实测双射（S1086/K9/C263/Y408/Z2496 各对应单一目录），
+       故类型词不上屏不丢信息。⛔从文件名抠号（文件名把编号/标题/出处拼成一坨且与路径行重复）；
+       读书卡优先全局号 kb_no，缺号返 ""（渲染显 —，⛔静默拿书内序号冒充全局身份）。"""
+    def _f(k):
+        v = fm.get(k) or [""]
+        return (v[0] if isinstance(v, list) else str(v)).strip().strip('"\'')
+    raw = _f("kb_no") or _f("concept_id") or _f("card_id")
+    m = re.search(r"([A-Z])-?(\d{1,5})", raw)
+    return "#" + m.group(1) + m.group(2) if m else ""
+
+
+def _book_form(s):
+    """书名归一：只处理首尾包裹，⛔strip("《》")——它会剥掉首尾所有书名号，遇到
+       《工程控制论》下册 这种书名内嵌号的书（实测存在）会拼出《工程控制论》下册》的残号。"""
+    s = (s or "").strip()
+    if s.startswith("《") and s.endswith("》") and s.count("》") == 1:
+        s = s[1:-1]
+    return s
+
+
+def _disp(fm, src, base=""):
+    """人读三要素（编号/展示标题/出处段）——只加字段，⛔不动 title/text：呈现与检索面解耦，
+       本批改动对召回零影响（编号也⛔入检索面，守 C-261：只加区分型字段进面，本批连这个都不加）。
+       标题取源（2026-11-02 皮叔令「⛔又长又臭，简明扼要就行」）：立场卡 topic 字段实测
+       54.8% 超 30 字（中位 33、碰撞卡最长 165 字），而文件名短尾 100% 在位、中位 14 字、
+       超 30 仅 7.6%；正文 H1 只有 1.8% 能用（⛔真源）。故立场/技能卡优先卡内 title，
+       缺则取文件名短尾（只作展示标签回落，⛔用它推身份——编号仍只认卡内字段）。"""
+    def _f(k):
+        v = fm.get(k) or [""]
+        return (v[0] if isinstance(v, list) else str(v)).strip()
+    out = {"id": _card_id(fm)}
+    _tail = ""
+    if "-" in base:
+        _t = base[:-3].split("-", 1)[1].strip()
+        _tail = _t.lstrip("#-")
+    if src == "知识池":
+        _t = _f("title") or _f("topic")
+        _o = _book_form(_f("book") or _f("source_title"))
+        if _o:
+            out["origin"] = _o
+        m = re.search(r"卡片(\d+)", _f("card_id"))
+        if m:
+            out["seq"] = m.group(1)
+    elif src == "概念卡":
+        _t = _f("concept_name")
+    elif src == "立场卡":
+        _t = _f("title") or _tail or _f("topic")      # 碰撞卡无 title → 短尾优先，⛔拿 165 字 topic 上屏
+    else:
+        _t = _f("title") or _f("topic") or _f("concept_name") or _tail
+    _t = _t.strip('"\' ')
+    if _t:
+        out["dtitle"] = _t          # 缺则 card_line 回落 title（=旧行为，不静默丢卡）
+    return out
+
+
+_CARD_SOURCES = ("知识池", "立场卡", "概念卡", "蓝图索引卡")   # 五类卡牌（Skill/成长箱不属卡）
+
+# 人读字段清单（单一真源）：serve 按此白名单透传、注入层按命中全量透传、card_line 按此渲染。
+#   病根（2026-11-02 实测抓出）：注入层把 serve 命中重拼成只含 src/title/summary/usage 的 dict，
+#   新加字段全部丢失→编号返 «—»、标题回退成含类型词的文件名（同一张卡在 CLI 与注入两种形态）。
+#   收成一处是为了：下次加展示字段只改本元组，不必再修三个文件。
+DISPLAY_FIELDS = ("src", "title", "summary", "usage",
+                  "id", "dtitle", "origin", "seq", "first_line")
+
+# 标题段封顶（只封标题，⛔封整行——整行封顶会把读书卡《书名》·卡片N 后面刚要显示的标题砍掉）：
+# 实测各源短题长度：概念卡最长 26、技能卡最长 14、立场卡文件名尾 p90=29、读书卡 title p90=16。
+# 定 26 可让概念卡零截断（最长就是 26）；超出者属数据侧长尾，展示层截一下就过。
+TITLE_CAP = 26
+
+
+def _cap_title(t):
+    """标题段封顶（卡与工具行同一条规则，⛔只封卡不封工具）：展示层截，⛔改卡内原文。"""
+    return t if len(t) <= TITLE_CAP else t[:TITLE_CAP - 1] + "…"
+
+
+def card_line(i, d, verbose=False):
+    """一条锚点的人读形态（两行）：编号 [·《书名》· 卡片N] · 标题 ／ 内容句。
+       退役三项及理由：类型词（src 标签与文件名前缀双写、实测还互相打架——注入块
+         src=立场卡 而 title=「技能卡#K005」，即 #S384 说的「标记指向漂移」）；
+         路径行（对人零增量：目录义=src、文件名=标题逐字重复，它只服务机器下钻，
+         现改由编号承担）；得分与命中词（RRF 与 BM25 双尺度不可比、命中词属调试面）。
+       ⛔改写源串：标题里的破折号等原样保留，展示层只做截断不做同义替换（皮叔 2026-11-02 裁「保留」）。
+       归属段>12 字整段不显（你裁「不显」，⛔截半截）。"""
+    _body = (d.get("usage") or d.get("summary") or "").strip()
+    if d.get("src") not in _CARD_SOURCES:
+        _ttl = _cap_title((d.get("dtitle") or d.get("title") or "").strip())
+        # 工具条目⛔复读名字：Skill 的 summary 恒等于自身名，直接拿会让第二行把名字再念一遍；
+        #   只在与标题不同时才上（无用途描述则宁缺勿滥，一行更干净）。
+        _b2 = _body if _body and _body != _ttl else ""
+        out = "[%d] ⚙ %s%s" % (i, _ttl, (("\n    " + _b2[:70]) if _b2 else ""))
+    else:
+        segs = [d.get("id") or "—"]
+        _org = (d.get("origin") or "").strip()
+        if _org and len(_org) <= 12:
+            segs.append(_org if _org.startswith("《") else "《%s》" % _org)
+        if d.get("seq"):
+            segs.append("卡片" + str(d["seq"]))
+        _ttl = _cap_title((d.get("dtitle") or d.get("title") or "").strip())
+        segs.append(_ttl)
+        out = "[%d] %s\n    %s" % (i, " · ".join(segs), _body[:58])
+    if verbose:
+        out += "\n    调试: 得分%s | 命中 %s | 路径 %s" % (
+            d.get("score", ""), ", ".join(d.get("matched") or []),
+            os.path.relpath(d.get("path") or "", os.path.expanduser("~")))
+    return out
+
+
+def _id_map():
+    """编号→路径映射（与索引加 id 字段是同一件事的两面：id 已在，下钻入口就免费）。"""
+    return {v["id"]: k for k, v in build_docs().items() if v.get("id")}
+
+
+def resolve_id_arg(arg, id_map=None):
+    """--drill 入参：#编号 → 路径；非 # 开头仍按路径走（⛔断旧用法）。未知编号返 None 显式报错。"""
+    arg = (arg or "").strip()
+    if not arg.startswith("#"):
+        return arg or None
+    m = id_map if id_map is not None else _id_map()
+    return m.get(arg) or m.get(arg.upper())
+
+
 def read_full(path):
     """渐进式加载·阶段2下钻（2026-08-14 落地·外部校准 TencentDB Agent Memory）：
     读取指定卡片完整正文（去 frontmatter）。路径支持相对 HOME 或绝对。
@@ -1533,15 +1722,18 @@ def main():
     if args[0] == "--build-chunk":
         _k = int(args[1])
         _docs = _build_docs_chunk(_k)
-        _parts = os.path.join(os.path.dirname(_DOC_CACHE), "parts")
+        _parts = os.path.join(os.path.dirname(_doc_cache_path()), "parts")
         os.makedirs(_parts, exist_ok=True)
         _atomic_write_json(os.path.join(_parts, "part_%d.json" % _k), _docs)  # 原子写片·根治半截文件
         print("chunk %d: %d docs" % (_k, len(_docs)))
         return 0
     if args[0] == "--drill":
         if len(args) < 2:
-            print("用法: python3 search_kb.py --drill <相对HOME的路径>"); return 1
-        body, p = read_full(args[1])
+            print("用法: python3 search_kb.py --drill <#编号 或 相对HOME的路径>"); return 1
+        _tgt = resolve_id_arg(args[1])
+        if _tgt is None:
+            print("❌ 编号未命中索引（⛔静默回落当路径试）: %s" % args[1]); return 1
+        body, p = read_full(_tgt)
         if body is None:
             print(p); return 1
         print(f"📂 下钻: {os.path.relpath(p, HOME)}\n")
@@ -1569,7 +1761,11 @@ def main():
     # socket 在位→驻留引擎毫秒返回（实测 0.09-0.15s vs 冷路径 18.5s）；任何异常→回退冷路径
     # （kb_serve 设计约束"失败默认放行"同款·不阻塞）。trail 记 source=serve（诚实源分布账）。
     _task0 = args[0]
-    if not _task0.startswith("--") and not _rr_flag:
+    # KB_NO_SERVE=1：隔离压测专用閘（2026-11-02 缓存根隔离轮）。快通道去 daemon 拿结果，
+    # 永不触 build_docs ⇒ 夹具想压的「缓存缺失并发重建」根本不被执行（实测 6 路读者各 1s
+    # 空 tar 返回＝假绿）。閘只影响本进程不走 serve，对 daemon 与其他端零影响。
+    if (not _task0.startswith("--") and not _rr_flag
+            and os.environ.get("KB_NO_SERVE") != "1"):
         try:
             import time as _time
             import socket as _socket
@@ -1601,17 +1797,14 @@ def main():
                     _budget = int(os.environ.get("KB_CHAR_BUDGET", CHAR_BUDGET))
                     _used = 0
                     _pscores = []
+                    _vb = bool(os.environ.get("KB_VERBOSE"))
                     for _i, _h in enumerate(_hits, 1):
                         _pscores.append((_h.get("score", 0), _h.get("path", ""),
                                          {"src": _h.get("src", ""), "title": _h.get("title", ""),
                                           "summary": _h.get("summary", ""), "trust": "unverified"},
                                          _h.get("matched") or []))
-                        _sc = f"{_h.get('score', 0):.4f}" if _h.get("score", 0) < 1 else f"{_h.get('score', 0):.1f}"
-                        _rel = os.path.relpath(_h.get("path", ""), HOME) if _h.get("path") else ""
-                        _entry = (f"[{_i}] 得分{_sc} | {_h.get('src', '')} | {_h.get('title', '')}\n"
-                                  f"    {_rel}\n"
-                                  f"    命中: {', '.join((_h.get('matched') or [])[:8])} | {(_h.get('summary') or '')[:50]}\n"
-                                  f"    ⛔ 这条没用 → 回写路由表/关键词（反馈闭环）")
+                        _entry = card_line(_i, dict(_h, path=_h.get("path", ""), score=_h.get("score", 0),
+                                                    matched=_h.get("matched") or []), verbose=_vb)
                         if _used + len(_entry) > _budget:
                             print("    …（字符预算已用尽，低分条目已省略）")
                             break
@@ -1648,15 +1841,9 @@ def main():
     budget = int(os.environ.get("KB_CHAR_BUDGET", CHAR_BUDGET))
     used = 0
     truncated = False
+    _vb = bool(os.environ.get("KB_VERBOSE"))
     for i, (s, p, d, matched) in enumerate(scores, 1):
-        rel = os.path.relpath(p, HOME)
-        sc = f"{s:.4f}" if s < 1 else f"{s:.1f}"  # RRF 分数<1 用 4 位小数
-        entry = (
-            f"[{i}] 得分{sc} | {d['src']} | {d['title']}\n"
-            f"    {rel}\n"
-            f"    命中: {', '.join(matched[:8])} | {d['summary'][:50]}\n"
-            f"    ⛔ 这条没用 → 回写路由表/关键词（反馈闭环）"
-        )
+        entry = card_line(i, dict(d, path=p, score=s, matched=matched), verbose=_vb)
         if used + len(entry) > budget:
             truncated = True
             break
@@ -1665,7 +1852,8 @@ def main():
     if truncated:
         print(f"    …（字符预算 {budget} 已用尽，低分条目已省略，可用 --drill 按需下钻）")
     print(f"\nTop-K={K} · 先本地后外搜 · 来源可追溯")
-    print(f"💡 渐进式加载：上面是锚点层(title+summary+path)；要全卡正文用 → python3 search_kb.py --drill <上列路径>")
+    print("⛔ 这条没用 → 回写路由表/关键词（反馈闭环）·得分/命中/路径等调试项加 KB_VERBOSE=1")
+    print(f"💡 渐进式加载：上面是锚点层(编号+标题+内容)；要全卡正文用 → python3 search_kb.py --drill <上列编号>")
     # 写作桶参考书单（你钦定 pool_books·2026-08-07 你质疑"借势/主角也可以参考"后补）
     books = []
     for b, _ in buckets:

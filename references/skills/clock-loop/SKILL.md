@@ -29,7 +29,7 @@ source: self-built
 upstream: self(主源·本目录)
 modifiable: true
 requires_twin_on_duty: true
-version: "4.21.13"
+version: "4.21.14"
 license: MIT
 complies_with: 文件格式规范(⛔本处不写版本号·以源 frontmatter 为唯一真相源=#142·2026-09-05批5清零#2148滞后:曾写v2.0.0而源实盘v2.4.0)
 normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"

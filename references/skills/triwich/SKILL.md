@@ -15,7 +15,7 @@ author: 皮叔
 source: self-built  
 upstream: [记忆共享中心]/技能配置/triwich/  
 modifiable: true  
-version: "4.12.26"
+version: "4.12.27"
 cured_snapshot:  
   consumer: clock-loop  
   reference: 技能配置/clock-loop/references/triwich-integration.md  
@@ -272,7 +272,7 @@ normative_vocab: "RFC2119-equivalent (see 指令编写规范 §1.1)"
 
 > **病源**=格式由 AI 手写产生（占位符被当说明只填灯）。**治源**=格式由程序生成：AI 只填字段，调 `scripts/conclusion_block_render.py` 渲染输出（纯函数·零 hook·跨端一致·规范 §2「确定性操作→scripts/」）。⛔不改守卫、不扩闸、不绑 hook。
 > **必填字段**：level（L1/L2/L3）/ path_name / evidence_level（**灯+级别名两段**，如 `🟡 佐证级`）/ evidence（≤3条·每条灯+级名）/ result / next_you / next_system；**L3 另必填** agent_b（Agent B验证行）+ landing_steps（落地步骤表·⛔压成一句话）；**可选字段** cognition（四象限）与 anchors（追溯项·条目=「名称：内容」两段式冒号切分，与第三层同列结构，无冒号=拒渲）。
-> **接触法产出物锁**：缺字段 / 证据等级缺级别名 / L3 缺 agent_b|landing_steps → 渲染器报错拒渲（exit 2），⛔降级输出半截、⛔手写绕过。`python3 scripts/conclusion_block_render.py --selftest` 17/17 自证（T10 无 `**` 残留 + T11 居中 + T12 自适应区不误锁 + T13 未知未知接触法锁 + T14 认知格表格化零字符线 + T15 追溯项两段两列含>40字拒渲腿 + T16 签名进表二值锁 + T17 象限名2×2对称（仅认知格·用户硬性要求），纯文本态与渲染态同貌、展示不赌客户端，v4.12.20-26 用户批准）。
+> **接触法产出物锁**：缺字段 / 证据等级缺级别名 / L3 缺 agent_b|landing_steps → 渲染器报错拒渲（exit 2），⛔降级输出半截、⛔手写绕过。`python3 scripts/conclusion_block_render.py --selftest` 18/18 自证（T10 无 `**` 残留 + T11 左贴断言（v1.5·对齐行一律 `:---`，⛔居中标记） + T12 自适应区不误锁 + T13 未知未知接触法锁 + T14 认知格表格化零字符线 + T15 追溯项两段两列含>40字拒渲腿 + T16 签名进表二值锁 + T17 象限名2×2对称（仅认知格·用户硬性要求），纯文本态与渲染态同貌、展示不赌客户端，v4.12.20-26 用户批准·v4.12.27 左贴改判）。
 
 ```
 ## L{层} {路径} 结果

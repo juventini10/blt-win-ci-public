@@ -194,9 +194,12 @@ def _serve_search(task, rerank=None):
         resp = json.loads(buf.decode("utf-8"))
         if not (isinstance(resp, dict) and resp.get("ok")):
             return None
+        # 命中透传：⛔重拼精简 dict（原只留 src/title/summary/usage——2026-11-02 实测
+        #   因此丢了 id/dtitle，同一张卡在 CLI 正常、在注入返 «—» 且标题带着类型词）。
+        #   除 score/path/matched 外全量带上，新字段自动流通，不依赖三处同步。
         scores = [(h["score"], h["path"],
-                   {"src": h.get("src", ""), "title": h.get("title", ""),
-                    "summary": h.get("summary", ""), "usage": h.get("usage", "")}, h.get("matched", []))
+                   {k: v for k, v in h.items() if k not in ("score", "path", "matched")},
+                   h.get("matched", []))
                   for h in resp.get("hits", [])]
         return scores, resp.get("buckets", []), resp.get("nat")  # A4b inject通道补录(2026-10-17 漏检审计)
     except Exception:
@@ -365,17 +368,22 @@ def _card_source_files(path, limit=3):
 
 
 def _emit(scores, bucket_names):
-    """格式化注入文本：锚点层（title+path+summary+理由）·字符预算截断·端感知输出"""
+    """格式化注入文本：统一走 search_kb.card_line 渲染器（与 CLI 同一形态，⛔两本账），
+       另贴注入特有的「源文件」尾行（#S384：代号统一是标记字段的前置契约——两边形态不一致就是双账）。"""
+    try:
+        import search_kb as _K
+    except Exception as _e:
+        sys.stderr.write("[kb_inject] 渲染器不可用，降级为标题行: %s\n" % _e)
+        _K = None
     used = 0
     lines = []
     lines.append("%s任务命中知识场景（%s），自动召回 Top-%d 锚点（渐进式加载·可 --drill 下钻全文）："
                  % (INJECT_MARK, "/".join(bucket_names), min(len(scores), INJECT_TOPN)))
     for i, (s, p, d, matched) in enumerate(scores, 1):
-        rel = os.path.relpath(p, os.path.expanduser("~"))
-        sc = f"{s:.4f}" if s < 1 else f"{s:.1f}"
-        entry = ("[%d] %s | %s\n    路径: %s\n    命中: %s | %s"
-                 % (i, d.get("src", ""), d.get("title", ""), rel,
-                    ", ".join(matched[:6]), (d.get("usage") or d.get("summary", ""))[:90]))
+        if _K is not None:
+            entry = _K.card_line(i, dict(d, path=p, score=s, matched=matched))
+        else:
+            entry = "[%d] %s" % (i, d.get("dtitle") or d.get("title", ""))
         _srcs = _card_source_files(p)
         if _srcs:
             entry += "\n    源文件: " + ", ".join(_srcs) + "（可直读或 --drill 下钻）"
@@ -386,7 +394,7 @@ def _emit(scores, bucket_names):
     # ── 主动检索提示行（2026-10-01·你裁决落地·修"能搜不搜"行为留白）：把工具从藏着变递到手边──
     # 路径统一用 D3 契约⑧权威路径（全机惯例·脚本中心适配副本亦写此路径不写自身）。
     lines.append("📌 主动检索（锚点不够/需更多证据时必跑）：python3 [记忆共享中心]/脚本中心/search_kb.py \"关键词\"")
-    lines.append("📌 下钻全卡正文：python3 [记忆共享中心]/脚本中心/search_kb.py --drill <上列路径>")
+    lines.append("📌 下钻全卡正文：python3 [记忆共享中心]/脚本中心/search_kb.py --drill <上列编号>")
     lines.append("⛔ 这条没用 → 回写路由表/关键词（反馈闭环）")
     ctx = "\n".join(lines)
     _hp_emit(ctx)

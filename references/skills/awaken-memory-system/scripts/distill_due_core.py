@@ -69,11 +69,26 @@ def normalize_type(raw: str) -> str:
 def extract_expected(content: str, types_config: Dict[str, dict]) -> Dict[str, str]:
     """全文倒序扫，每种类型取最后一条账行的「预期下次」。
 
-    types_config: {类型名: {"match": <行内子串>, "normalize": <bool·默认True>}}
+    types_config: {类型名: {"match": <类型列子串>, "normalize": <bool·默认True>}}
       · match 由调用方定义（各 Skill 类型登记可能不同），本模块不硬编码
       · normalize=True（默认）时按 normalize_type() 归并括号后缀；
         调用方若要区分历史批次，可设 False 保留字面
     返回 {归一后类型名: expected_date_str}；无有效账行的类型不出现在结果中。
+
+    【v8.5.5 修正·2026-11-02·你「启动月度蒸馏=能做的全做完」根因修复】
+    病根：分桶原按**整行 substring** 判定（`if needle not in line: continue`）——
+      账行第4列（执行摘要）里**提到别的类型名**时，该行被误判成 needle 类型的账行：
+      实锤（2026-11-02 真盘）：`2026-11-01 | 📓 日记月报 | ✅ | …系统日志蒸馏… | 2026-12-01`
+      这一行摘要里含「系统日志蒸馏」六字 → 倒序扫描先撞上它 → 取走它的末字段
+      `2026-12-01` 归给「📊 系统日志蒸馏」→ **break 退出** → 真正的系统日志蒸馏账行
+      （2026-10-01 · 预期 2026-11-01）再也扫不到 → 该类型从待做清单**整体隐身**。
+      根因族＝「代理信号冒充判据」（铁律-002 代理信号条款）：行内 substring 是
+      **可观测代理**，类型归属的**真判据是类型列 cells[1]**。
+    修法：分桶改判**类型列**（cells[1] 的归一化字面），不再用整行 substring。
+      · 兼容：调用方配的 match 若为类型列字面（如「成长箱」）→ 归一后仍命中；
+        若配的是含摘要特征的长串 → 归一化后不命中（该用法本就违反判据等价·显形不静默）。
+      · 保留 `match_in_row` 兼容开关（默认 False）：仅当调用方显式要求整行匹配时启用。
+    依据：铁律-002「信号只做线索·判据必须等价」+ 单一真源原则（口径上移至本模块）。
     """
     scan = strip_todo_region(content)
     lines = [l for l in scan.split("\n") if "|" in l]
@@ -81,9 +96,8 @@ def extract_expected(content: str, types_config: Dict[str, dict]) -> Dict[str, s
     for dtype, cfg in types_config.items():
         needle = cfg["match"]
         do_norm = cfg.get("normalize", True)
+        match_in_row = cfg.get("match_in_row", False)
         for line in reversed(lines):
-            if needle not in line:
-                continue
             cells = [c.strip() for c in line.strip("|").split("|")]
             # ⚠️ 索引口径：strip('|') 后再 split，首尾空串被去掉 ⇒
             #    cells[0]=执行日期 cells[1]=类型 … cells[4]=预期下次
@@ -92,6 +106,21 @@ def extract_expected(content: str, types_config: Dict[str, dict]) -> Dict[str, s
             if len(cells) < 5 or not ROW_DATE_RE.match(cells[0]):
                 continue  # 非账行（表头/分隔线/子节标题）
             raw_type = cells[1]
+            if match_in_row:
+                # 兼容旧行为（仅显式开启时）——⛔ 代理信号判据·默认不走此路
+                if needle not in line:
+                    continue
+            else:
+                # ✅ 主判据：类型列归属（判据 ≡ 被检对象的真实语义）
+                #   口径＝**归一化后互为子串**（任一方向），理由：
+                #     ① 必须排除「他行摘要里提到本类型名」的冒充（v8.5.5 修正的核心）；
+                #     ② 但调用方配的 match 常省略 emoji 前缀（「成长箱蒸馏」vs「🧠 成长箱蒸馏」），
+                #        且夹具/历史账行类型列可能带括号后缀（「统一蒸馏管道（终审落地+勘误）」）
+                #        → 严格相等会误杀真声明（4 个既有负例实测红）· 双向包含才是等价判据。
+                _hay = normalize_type(raw_type) if do_norm else raw_type
+                _needle = normalize_type(needle) if do_norm else needle
+                if _hay != _needle and _needle not in _hay and _hay not in _needle:
+                    continue
             # 「预期下次」= 末字段，⛔ 不倒序回扫找日期：
             #   一次性任务末字段为 `—`，回扫会一路退到 cells[0]（执行日期），
             #   把「执行日」误当「下次日」→ 刚做完就报逾期（2026-10-02 负例实证）。
