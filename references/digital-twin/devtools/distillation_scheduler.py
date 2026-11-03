@@ -117,16 +117,10 @@ def _load_core():
 
 def parse_latest_expected_dates(content: str) -> dict:
     """解析蒸馏中心，提取每套蒸馏最近的预期下次日期。
-    取最近一个月段（## YYYY-MM），在该段内找每套蒸馏的最近一行，提取最后一列（预期下次）。
+    全文单一口径扫描（distill_due_core.extract_expected），不依赖 ## YYYY-MM 月段结构。
+    issue#9 根治（2026-11-03·tiger5325报告）：原「缺月段 return {} 早退」短路了下方委托——
+    蒸馏中心一旦格式重构无月段，调度器静默失明、月度蒸馏整月漏跑无信号（F01实测2026-10/11两月）。
     """
-    # 找到所有月份段
-    month_sections = re.findall(
-        r'## (\d{4}-\d{2})\n(.*?)(?=\n## |\n---|\Z)',
-        content, re.DOTALL
-    )
-    if not month_sections:
-        return {}
-
     # v1.1 盲区修补（2026-10-01·ZCode·你令附带发现根治）：原逻辑只扫最新月段——
     # 类型在最新月段无行时（如系统日志蒸馏最后一跑落在上一月段）即整体隐身=调度盲区
     # （实锤：2026-10-01 TODO 只标了成长箱、漏标预期 2026-10-01 的系统日志蒸馏）。
